@@ -3,7 +3,7 @@ use jni::objects::{JClass, JString};
 use jni::sys::{jstring, jlong};
 use vodozemac::olm::Account;
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_VodozemacAccount_nativeNew(
     mut env: EnvUnowned,
     _class: JClass,
@@ -15,7 +15,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_VodozemacAccount_nat
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_VodozemacAccount_nativeCurve25519Key(
     mut env: EnvUnowned,
     _class: JClass,
@@ -30,7 +30,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_VodozemacAccount_nat
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_VodozemacAccount_nativeEd25519Key(
     mut env: EnvUnowned,
     _class: JClass,
@@ -45,7 +45,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_VodozemacAccount_nat
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_VodozemacAccount_nativeSign(
     mut env: EnvUnowned,
     _class: JClass,
@@ -62,7 +62,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_VodozemacAccount_nat
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
-#[no_mangle]
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_VodozemacAccount_nativeFree(
     _env: EnvUnowned,
     _class: JClass,
