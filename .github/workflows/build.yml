@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  RUST_VERSION: "1.79.0"
+  RUST_VERSION: "1.88.0"
   JAVA_VERSION: "17"
 
 jobs:
@@ -149,13 +149,13 @@ jobs:
         run: |
           mkdir -p src/main/resources/native/linux-x86_64
           mkdir -p src/main/resources/native/linux-aarch64
-          mkdir -p src/main/resources/native/darwin-x86_64
+          # mkdir -p src/main/resources/native/darwin-x86_64
           mkdir -p src/main/resources/native/darwin-aarch64
           mkdir -p src/main/resources/native/windows-x86_64
 
           cp downloaded-natives/native-lib-linux-x86_64/*.so src/main/resources/native/linux-x86_64/
           cp downloaded-natives/native-lib-linux-aarch64/*.so src/main/resources/native/linux-aarch64/
-          cp downloaded-natives/native-lib-darwin-x86_64/*.dylib src/main/resources/native/darwin-x86_64/
+          # cp downloaded-natives/native-lib-darwin-x86_64/*.dylib src/main/resources/native/darwin-x86_64/
           cp downloaded-natives/native-lib-darwin-aarch64/*.dylib src/main/resources/native/darwin-aarch64/
           cp downloaded-natives/native-lib-windows-x86_64/*.dll src/main/resources/native/windows-x86_64/
 
