@@ -47,7 +47,7 @@
                 </os>
             </activation>
             <properties>
-                <rust.target>aarch64-apple-darwin</rust.target>
+                <rust.target>aarch64-unknown-linux-gnu</rust.target>
                 <native.lib.name>libvodozemac_java.so</native.lib.name>
             </properties>
         </profile>
