@@ -1,6 +1,6 @@
 use jni::EnvUnowned;
 use jni::objects::{JClass, JString};
-use jni::sys::{jstring, jlong};
+use jni::sys::{jlong, jstring};
 use vodozemac::olm::Account;
 
 #[unsafe(no_mangle)]
