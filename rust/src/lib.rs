@@ -54,7 +54,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_VodozemacAccount_nat
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         let account = unsafe { &*(ptr as *const Account) };
-        let msg: String = env.get_string(message)?.into();
+        let msg: String = message.to_string();
         let signature = account.sign(&msg).to_base64();
         let jni_string = env.new_string(signature)?;
         Ok(jni_string.into_raw())
