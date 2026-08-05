@@ -1,9 +1,9 @@
 use jni::objects::{JClass, JObject, JString};
-use jni::sys::{jboolean, jlong, jobject, jstring};
+use jni::sys::{jboolean, jint, jlong, jobject, jstring};
 use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};
 use std::collections::HashMap;
-use vodozemac::olm::Account;
-use vodozemac::olm::AccountPickle;
+use vodozemac::olm::{AccountPickle, PreKeyMessage};
+use vodozemac::olm::{Account, SessionConfig};
 use vodozemac::{Curve25519PublicKey, KeyId};
 
 const PICKLE_KEY: [u8; 32] = [0u8; 32];
@@ -88,6 +88,74 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
+
+fn session_config_from_version(version: jint) -> Result<SessionConfig, jni::errors::Error> {
+    match version {
+        1 => Ok(SessionConfig::version_1()),
+        2 => Ok(SessionConfig::version_2()),
+        _ => Err(jni::errors::Error::JavaException),
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeCreateOutboundSession(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    session_version: jint,
+    identity_key: JString,
+    one_time_key: JString,
+) -> jlong {
+    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
+        let account = unsafe { &mut *(ptr as *mut Account) };
+
+        let session_config = session_config_from_version(session_version)?;
+
+        let decoded_identity_key = Curve25519PublicKey::from_base64(&identity_key.to_string())
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        let decoded_one_time_key = Curve25519PublicKey::from_base64(&one_time_key.to_string())
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+
+        let session = account.create_outbound_session(
+            session_config,
+            decoded_identity_key,
+            decoded_one_time_key,
+        );
+        Ok(Box::into_raw(Box::new(session)) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeCreateInboundSession(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    their_identity_key: JString,
+    pre_key_message: JString,
+) -> jobject {
+    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        let account = unsafe { &mut *(ptr as *mut Account) };
+        let their_identity_key = Curve25519PublicKey::from_base64(&their_identity_key.to_string())
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        let pre_key_message = PreKeyMessage::from_base64(&pre_key_message.to_string())
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        let result = account.create_inbound_session(their_identity_key, &pre_key_message)
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+
+        let session_ptr = Box::into_raw(Box::new(result.session)) as jlong;
+        let plaintext_bytes = env.byte_array_from_slice(&result.plaintext)?;
+
+        let result = env.new_object(
+            jni_str!("io/github/fherbreteau/vodozemac/olm/InboundCreationResult"),
+            jni_sig!((sessionPtr: long, plaintext: byte[]) -> void),
+            &[JValue::Long(session_ptr), JValue::Object(&plaintext_bytes)],
+        )?;
+        Ok(result.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeStoredOneTimeKeyCount(
