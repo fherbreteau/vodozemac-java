@@ -8,6 +8,8 @@ jobs:
   quick-test:
     name: Quick test - Linux only
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
     steps:
       - uses: actions/checkout@v7
 
@@ -38,7 +40,9 @@ jobs:
 
       - name: Rust coverage
         working-directory: rust
-        run: cargo llvm-cov --summary-only
+        run: |
+          mkdir -p ../target/coverage
+          cargo llvm-cov --cobertura --output-path ../target/coverage/rust-coverage.xml
 
       - name: Rust clippy
         working-directory: rust
@@ -48,5 +52,15 @@ jobs:
         working-directory: rust
         run: cargo fmt -- --check
 
-      - name: Build and test Java
-        run: mvn clean verify
+      - name: Java tests with coverage
+        run: mvn test jacoco:report -DskipRustBuild=true -Djacoco.dataFile=target/jacoco/jacoco-unit-tests.exec
+
+      - name: Generate coverage report
+        run: python3 .github/scripts/coverage-report.py
+
+      - name: Post coverage comment
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          recreate: true
+          path: coverage-report.md

@@ -6,6 +6,7 @@
 /*.springBeans
 /results/
 /dist/
+/coverage-report.md
 
 /**/target/
 /**/.settings/
