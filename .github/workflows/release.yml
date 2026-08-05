@@ -42,10 +42,9 @@ jobs:
 
       - name: Organize native libraries
         run: |
-          mkdir -p src/main/resources/native/{linux-x86_64,linux-aarch64,darwin-x86_64,darwin-aarch64,windows-x86_64}
+          mkdir -p src/main/resources/native/{linux-x86_64,linux-aarch64,darwin-aarch64,windows-x86_64}
           cp downloaded-natives/native-lib-linux-x86_64/*.so src/main/resources/native/linux-x86_64/
           cp downloaded-natives/native-lib-linux-aarch64/*.so src/main/resources/native/linux-aarch64/
-          cp downloaded-natives/native-lib-darwin-x86_64/*.dylib src/main/resources/native/darwin-x86_64/
           cp downloaded-natives/native-lib-darwin-aarch64/*.dylib src/main/resources/native/darwin-aarch64/
           cp downloaded-natives/native-lib-windows-x86_64/*.dll src/main/resources/native/windows-x86_64/
 

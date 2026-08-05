@@ -5,7 +5,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
-  workflow_dispatch:
+  workflow_call:
 
 env:
   RUST_VERSION: "1.88.0"
@@ -34,12 +34,6 @@ jobs:
             lib_name: libvodozemac_java.so
             artifact_path: rust/target/aarch64-unknown-linux-gnu/release/libvodozemac_java.so
             cross: true
-
-#          - name: darwin-x86_64
-#            os: macos-13  # Intel runner
-#            target: x86_64-apple-darwin
-#            lib_name: libvodozemac_java.dylib
-#            artifact_path: rust/target/x86_64-apple-darwin/release/libvodozemac_java.dylib
 
           - name: darwin-aarch64
             os: macos-14  # M1/M2 runner
