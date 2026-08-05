@@ -7,8 +7,6 @@ public class OlmSession implements AutoCloseable {
         this.nativePtr = nativePtr;
     }
 
-
-
     private void checkNotClosed() {
         if (nativePtr == 0) {
             throw new IllegalStateException("Account has been closed");
@@ -22,7 +20,6 @@ public class OlmSession implements AutoCloseable {
             nativePtr = 0;
         }
     }
-
 
     private native void nativeFree(long ptr);
 

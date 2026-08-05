@@ -7,9 +7,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 
-public class NativeLibraryLoader {
+public final class NativeLibraryLoader {
 
-    private NativeLibraryLoader() {}
+    private NativeLibraryLoader() {
+    }
 
     private static boolean loaded = false;
 
@@ -21,7 +22,9 @@ public class NativeLibraryLoader {
     private static final String ARCH_ARM = "aarch64";
 
     public static synchronized void loadLibrary() {
-        if (loaded) return;
+        if (loaded) {
+            return;
+        }
 
         String osName = System.getProperty("os.name").toLowerCase();
         String osArch = System.getProperty("os.arch").toLowerCase();
@@ -43,8 +46,7 @@ public class NativeLibraryLoader {
                 loaded = true;
             } catch (Exception e2) {
                 throw new RuntimeException(
-                    "Impossible de charger la librairie native pour " + platform + ". Tried: " + resourcePath, e2
-                );
+                        "Impossible de charger la librairie native pour " + platform + ". Tried: " + resourcePath, e2);
             }
         }
     }
