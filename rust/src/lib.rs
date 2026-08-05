@@ -2,8 +2,8 @@ use jni::objects::{JClass, JObject, JString};
 use jni::sys::{jboolean, jint, jlong, jobject, jstring};
 use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};
 use std::collections::HashMap;
-use vodozemac::olm::{AccountPickle, PreKeyMessage};
 use vodozemac::olm::{Account, SessionConfig};
+use vodozemac::olm::{AccountPickle, PreKeyMessage};
 use vodozemac::{Curve25519PublicKey, KeyId};
 
 const PICKLE_KEY: [u8; 32] = [0u8; 32];
@@ -140,7 +140,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
             .map_err(|_e| jni::errors::Error::JavaException)?;
         let pre_key_message = PreKeyMessage::from_base64(&pre_key_message.to_string())
             .map_err(|_e| jni::errors::Error::JavaException)?;
-        let result = account.create_inbound_session(their_identity_key, &pre_key_message)
+        let result = account
+            .create_inbound_session(their_identity_key, &pre_key_message)
             .map_err(|_e| jni::errors::Error::JavaException)?;
 
         let session_ptr = Box::into_raw(Box::new(result.session)) as jlong;
@@ -155,7 +156,6 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
-
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeStoredOneTimeKeyCount(
