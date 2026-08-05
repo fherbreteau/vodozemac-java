@@ -33,7 +33,7 @@ public final class NativeLibraryLoader {
         String libName = detectLibName(osName);
 
         // First try to load from root of classpath (where Maven copies it)
-        String resourcePath = "/" + libName;
+        String resourcePath = String.format("/%s", libName);
 
         try {
             loadFromResources(resourcePath, libName);
@@ -104,5 +104,9 @@ public final class NativeLibraryLoader {
         tempDir.toFile().deleteOnExit();
 
         System.load(tempLib.toAbsolutePath().toString());
+    }
+
+    static boolean isLoaded() {
+        return loaded;
     }
 }

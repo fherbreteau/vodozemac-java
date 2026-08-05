@@ -2,7 +2,7 @@ use jni::objects::{JClass, JObject, JString};
 use jni::sys::{jboolean, jint, jlong, jobject, jstring};
 use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};
 use std::collections::HashMap;
-use vodozemac::olm::{Account, SessionConfig};
+use vodozemac::olm::{Account, Session, SessionConfig};
 use vodozemac::olm::{AccountPickle, PreKeyMessage};
 use vodozemac::{Curve25519PublicKey, KeyId};
 
@@ -184,7 +184,7 @@ fn curve25519_keys_to_arraylist<'local>(
         env.call_method(
             &array_list,
             jni_str!("add"),
-            jni_sig!((e: java.lang.Object) -> jint),
+            jni_sig!((e: java.lang.Object) -> jboolean),
             &[JValue::Object(&key_str)],
         )?;
     }
@@ -457,5 +457,16 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 ) {
     unsafe {
         let _ = Box::from_raw(ptr as *mut Account);
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativeFree(
+    _env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) {
+    unsafe {
+        let _ = Box::from_raw(ptr as *mut Session);
     }
 }

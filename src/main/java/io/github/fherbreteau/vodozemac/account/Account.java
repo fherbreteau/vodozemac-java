@@ -89,7 +89,7 @@ public class Account implements AutoCloseable {
      *
      * @param identityKey the recipient identity key
      * @param oneTimeKey  the recipient one-time key
-     * @return an Olm {@code OlmSession}
+     * @return a new {@code OlmSession}
      */
     public OlmSession createOutbpundSession(OlmSessionVersion sessionVersion, String identityKey, String oneTimeKey) {
         checkNotClosed();
@@ -98,6 +98,13 @@ public class Account implements AutoCloseable {
         return new OlmSession(sessionPtr);
     }
 
+    /**
+     * Create a {@code OlmSession} from the given pre-key message on sender identity.
+     *
+     * @param theirIdentityKey the sender identity key
+     * @param preKeyMessage the pre-key message recieved from the sebder
+     * @return a existing {@code OlmSession}
+     */
     public InboundCreationResult createInboundSession(String theirIdentityKey, String preKeyMessage) {
         checkNotClosed();
 
@@ -250,6 +257,11 @@ public class Account implements AutoCloseable {
         if (nativePtr == 0) {
             throw new IllegalStateException("Account has been closed");
         }
+    }
+
+    /* For test usage only */
+    boolean isClosed() {
+        return nativePtr == 0;
     }
 
     /**
