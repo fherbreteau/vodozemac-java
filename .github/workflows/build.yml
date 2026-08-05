@@ -29,14 +29,19 @@ jobs:
             artifact_path: rust/target/x86_64-unknown-linux-gnu/release/libvodozemac_java.so
 
           - name: linux-aarch64
-            os: ubuntu-latest
+            os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
             lib_name: libvodozemac_java.so
             artifact_path: rust/target/aarch64-unknown-linux-gnu/release/libvodozemac_java.so
-            cross: true
+
+          - name: darwin-x86_64
+            os: macos-14-intel
+            target: x86_64-apple-darwin
+            lib_name: libvodozemac_java.dylib
+            artifact_path: rust/target/x86_64-apple-darwin/release/libvodozemac_java.dylib
 
           - name: darwin-aarch64
-            os: macos-14  # M1/M2 runner
+            os: macos-latest
             target: aarch64-apple-darwin
             lib_name: libvodozemac_java.dylib
             artifact_path: rust/target/aarch64-apple-darwin/release/libvodozemac_java.dylib
@@ -68,22 +73,6 @@ jobs:
         with:
           workspaces: rust
           key: ${{ matrix.target }}
-
-      # Installation des outils de cross-compilation pour Linux ARM64
-      - name: Install cross-compilation tools (Linux ARM64)
-        if: matrix.cross
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-gnu g++-aarch64-linux-gnu libc6-dev-arm64-cross
-
-      - name: Configure cargo for cross-compilation
-        if: matrix.cross
-        run: |
-          mkdir -p ~/.cargo
-          cat >> ~/.cargo/config.toml << EOF
-          [target.aarch64-unknown-linux-gnu]
-          linker = "aarch64-linux-gnu-gcc"
-          EOF
 
       - name: Verify JAVA_HOME is set
         run: echo "JAVA_HOME=$JAVA_HOME"
@@ -143,13 +132,13 @@ jobs:
         run: |
           mkdir -p src/main/resources/native/linux-x86_64
           mkdir -p src/main/resources/native/linux-aarch64
-          # mkdir -p src/main/resources/native/darwin-x86_64
+          mkdir -p src/main/resources/native/darwin-x86_64
           mkdir -p src/main/resources/native/darwin-aarch64
           mkdir -p src/main/resources/native/windows-x86_64
 
           cp downloaded-natives/native-lib-linux-x86_64/*.so src/main/resources/native/linux-x86_64/
           cp downloaded-natives/native-lib-linux-aarch64/*.so src/main/resources/native/linux-aarch64/
-          # cp downloaded-natives/native-lib-darwin-x86_64/*.dylib src/main/resources/native/darwin-x86_64/
+          cp downloaded-natives/native-lib-darwin-x86_64/*.dylib src/main/resources/native/darwin-x86_64/
           cp downloaded-natives/native-lib-darwin-aarch64/*.dylib src/main/resources/native/darwin-aarch64/
           cp downloaded-natives/native-lib-windows-x86_64/*.dll src/main/resources/native/windows-x86_64/
 
@@ -180,11 +169,11 @@ jobs:
           - name: linux-x86_64
             os: ubuntu-latest
             native_artifact: native-lib-linux-x86_64
-#          - name: darwin-x86_64
-#            os: macos-13
-#            native_artifact: native-lib-darwin-x86_64
+          - name: darwin-x86_64
+            os: macos-14-intel
+            native_artifact: native-lib-darwin-x86_64
           - name: darwin-aarch64
-            os: macos-14
+            os: macos-latest
             native_artifact: native-lib-darwin-aarch64
           - name: windows-x86_64
             os: windows-latest
