@@ -18,14 +18,27 @@ jobs:
           cache: 'maven'
 
       - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: llvm-tools-preview
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-llvm-cov
 
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: rust
 
+      - name: Compile Java classes (for Rust JNI tests)
+        run: mvn compile -DskipTests -DskipRustBuild=true
+
       - name: Rust tests
         working-directory: rust
         run: cargo test
+
+      - name: Rust coverage
+        working-directory: rust
+        run: cargo llvm-cov --summary-only
 
       - name: Rust clippy
         working-directory: rust

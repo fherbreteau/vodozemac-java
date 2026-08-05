@@ -470,3 +470,313 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
         let _ = Box::from_raw(ptr as *mut Session);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pickle_key_is_32_bytes() {
+        assert_eq!(PICKLE_KEY.len(), 32);
+        assert!(PICKLE_KEY.iter().all(|&b| b == 0));
+    }
+
+    #[test]
+    fn test_session_config_version_1() {
+        let result = session_config_from_version(1);
+        assert!(
+            result.is_ok(),
+            "Version 1 should produce a valid SessionConfig"
+        );
+    }
+
+    #[test]
+    fn test_session_config_version_2() {
+        let result = session_config_from_version(2);
+        assert!(
+            result.is_ok(),
+            "Version 2 should produce a valid SessionConfig"
+        );
+    }
+
+    #[test]
+    fn test_session_config_invalid_version() {
+        let result = session_config_from_version(0);
+        assert!(result.is_err(), "Version 0 should produce an error");
+
+        let result = session_config_from_version(3);
+        assert!(result.is_err(), "Version 3 should produce an error");
+
+        let result = session_config_from_version(-1);
+        assert!(result.is_err(), "Negative version should produce an error");
+    }
+
+    fn get_jvm() -> jni::JavaVM {
+        static INIT: std::sync::Once = std::sync::Once::new();
+        INIT.call_once(|| {
+            let classpath = std::env::current_dir()
+                .expect("Failed to get current dir")
+                .parent()
+                .expect("Failed to get project root")
+                .join("target/classes");
+            let args = jni::InitArgsBuilder::new()
+                .option(format!("-Djava.class.path={}", classpath.to_string_lossy()))
+                .build()
+                .expect("Failed to create JVM init args");
+            let _ = jni::JavaVM::new(args).expect("Failed to create JVM");
+        });
+        jni::JavaVM::singleton().expect("JVM should be initialized")
+    }
+
+    #[test]
+    fn test_curve25519_keys_to_arraylist_empty() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let keys: Vec<Curve25519PublicKey> = vec![];
+            let list = curve25519_keys_to_arraylist(env, &keys)?;
+
+            let size = env
+                .call_method(&list, jni_str!("size"), jni_sig!(() -> jint), &[])?
+                .i()?;
+            assert_eq!(size, 0, "Empty ArrayList should have size 0");
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_curve25519_keys_to_arraylist_with_keys() {
+        let jvm = get_jvm();
+        let mut account = Account::new();
+        let result = account.generate_one_time_keys(2);
+        let keys: Vec<Curve25519PublicKey> = result.created;
+        assert_eq!(keys.len(), 2, "Should have generated 2 keys");
+
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let list = curve25519_keys_to_arraylist(env, &keys)?;
+
+            let size = env
+                .call_method(&list, jni_str!("size"), jni_sig!(() -> jint), &[])?
+                .i()?;
+            assert_eq!(size, 2, "ArrayList should contain 2 keys");
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_key_map_to_java_map_empty() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let keys: HashMap<KeyId, Curve25519PublicKey> = HashMap::new();
+            let map = key_map_to_java_map(env, &keys)?;
+
+            let size = env
+                .call_method(&map, jni_str!("size"), jni_sig!(() -> jint), &[])?
+                .i()?;
+            assert_eq!(size, 0, "Empty HashMap should have size 0");
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_key_map_to_java_map_with_keys() {
+        let jvm = get_jvm();
+        let mut account = Account::new();
+        let _ = account.generate_one_time_keys(1);
+        let keys = account.one_time_keys();
+        assert!(!keys.is_empty(), "Should have at least one one-time key");
+
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let map = key_map_to_java_map(env, &keys)?;
+
+            let size = env
+                .call_method(&map, jni_str!("size"), jni_sig!(() -> jint), &[])?
+                .i()?;
+            assert_eq!(
+                size as usize,
+                keys.len(),
+                "HashMap size should match key count"
+            );
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_one_time_key_result_to_java() {
+        let jvm = get_jvm();
+        let mut account = Account::new();
+        let result = account.generate_one_time_keys(3);
+        assert_eq!(result.created.len(), 3, "Should have generated 3 keys");
+        assert_eq!(
+            result.removed.len(),
+            0,
+            "No keys should be removed on first generation"
+        );
+
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let java_result = one_time_key_result_to_java(env, result)?;
+            assert!(
+                !java_result.is_null(),
+                "Java result object should not be null"
+            );
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_generate_fallback_key_returns_none_first_call() {
+        let mut account = Account::new();
+        let result = account.generate_fallback_key();
+        assert!(
+            result.is_none(),
+            "First fallback key generation should return None"
+        );
+    }
+
+    #[test]
+    fn test_account_pickling_roundtrip() {
+        let account = Account::new();
+        let original_curve25519 = account.curve25519_key().to_base64();
+        let original_ed25519 = account.ed25519_key().to_base64();
+
+        let pickle = account.pickle();
+        let json = serde_json::to_string(&pickle).expect("Should serialize pickle to JSON");
+        let restored: AccountPickle =
+            serde_json::from_str(&json).expect("Should deserialize pickle from JSON");
+        let restored_account = Account::from_pickle(restored);
+
+        assert_eq!(
+            restored_account.curve25519_key().to_base64(),
+            original_curve25519,
+            "Curve25519 key should survive pickling roundtrip"
+        );
+        assert_eq!(
+            restored_account.ed25519_key().to_base64(),
+            original_ed25519,
+            "Ed25519 key should survive pickling roundtrip"
+        );
+    }
+
+    #[test]
+    fn test_dehydrated_device_roundtrip() {
+        let account = Account::new();
+        let original_curve25519 = account.curve25519_key().to_base64();
+        let original_ed25519 = account.ed25519_key().to_base64();
+
+        let dehydrated = account
+            .to_dehydrated_device(&PICKLE_KEY)
+            .expect("Should create dehydrated device");
+
+        let restored =
+            Account::from_dehydrated_device(&dehydrated.ciphertext, &dehydrated.nonce, &PICKLE_KEY)
+                .expect("Should restore from dehydrated device");
+
+        assert_eq!(
+            restored.curve25519_key().to_base64(),
+            original_curve25519,
+            "Curve25519 key should survive dehydrated device roundtrip"
+        );
+        assert_eq!(
+            restored.ed25519_key().to_base64(),
+            original_ed25519,
+            "Ed25519 key should survive dehydrated device roundtrip"
+        );
+    }
+
+    #[test]
+    fn test_account_sign_and_verify_keys() {
+        let account = Account::new();
+        let message = "Hello Vodozemac!";
+        let signature = account.sign(message);
+        let signature_b64 = signature.to_base64();
+        assert!(!signature_b64.is_empty(), "Signature should not be empty");
+
+        let ed25519_key = account.ed25519_key();
+        let public_key = vodozemac::Ed25519PublicKey::from_base64(&ed25519_key.to_base64())
+            .expect("Should parse Ed25519 public key");
+        assert!(
+            public_key.verify(message.as_bytes(), &signature).is_ok(),
+            "Signature should verify against the message"
+        );
+    }
+
+    #[test]
+    fn test_max_number_of_one_time_keys() {
+        let account = Account::new();
+        let max = account.max_number_of_one_time_keys();
+        assert!(max > 0, "Max one-time keys should be positive");
+    }
+
+    #[test]
+    fn test_stored_one_time_key_count() {
+        let account = Account::new();
+        assert_eq!(
+            account.stored_one_time_key_count(),
+            0,
+            "New account should have 0 stored one-time keys"
+        );
+    }
+
+    #[test]
+    fn test_one_time_key_generation_and_retrieval() {
+        let mut account = Account::new();
+        let result = account.generate_one_time_keys(5);
+        assert_eq!(result.created.len(), 5, "Should generate 5 keys");
+        assert_eq!(result.removed.len(), 0, "No keys should be removed");
+
+        let keys = account.one_time_keys();
+        assert_eq!(keys.len(), 5, "Should have 5 unpublished one-time keys");
+
+        account.mark_keys_as_published();
+        let keys = account.one_time_keys();
+        assert!(
+            keys.is_empty(),
+            "No keys should remain unpublished after mark_keys_as_published"
+        );
+    }
+
+    #[test]
+    fn test_fallback_key_generation_and_forgetting() {
+        let mut account = Account::new();
+
+        let result = account.generate_fallback_key();
+        assert!(result.is_none(), "First fallback key should return None");
+
+        let keys = account.fallback_key();
+        assert_eq!(keys.len(), 1, "Should have 1 unpublished fallback key");
+
+        account.mark_keys_as_published();
+        let keys = account.fallback_key();
+        assert!(
+            keys.is_empty(),
+            "Fallback key should be published after mark_keys_as_published"
+        );
+
+        let forgot = account.forget_fallback_key();
+        assert!(
+            !forgot,
+            "forget_fallback_key should return false when no previously used key exists"
+        );
+    }
+
+    #[test]
+    fn test_create_outbound_session() {
+        let alice = Account::new();
+        let mut bob = Account::new();
+
+        let _ = bob.generate_one_time_keys(1);
+        let bob_keys = bob.one_time_keys();
+        assert!(!bob_keys.is_empty(), "Bob should have one-time keys");
+
+        let bob_identity = bob.curve25519_key();
+        let bob_one_time = *bob_keys.values().next().unwrap();
+
+        let session =
+            alice.create_outbound_session(SessionConfig::version_2(), bob_identity, bob_one_time);
+        let _ = session;
+    }
+}
