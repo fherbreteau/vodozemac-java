@@ -324,6 +324,12 @@
                         </configuration>
                     </execution>
                 </executions>
+                <configuration>
+                    <excludes>
+                        <exclude>io/github/fherbreteau/Sample.class</exclude>
+                        <exclude>io/github/fherbreteau/vodozemac/NativeLibraryLoader.class</exclude>
+                    </excludes>
+                </configuration>
             </plugin>
 
             <!-- Plugin pour les tests -->

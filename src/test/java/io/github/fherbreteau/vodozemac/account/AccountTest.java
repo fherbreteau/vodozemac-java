@@ -1,5 +1,6 @@
 package io.github.fherbreteau.vodozemac.account;
 
+import io.github.fherbreteau.vodozemac.VodozemacException;
 import io.github.fherbreteau.vodozemac.olm.OlmSession;
 import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
 import org.junit.jupiter.api.Test;
@@ -8,10 +9,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
+import java.security.SecureRandom;
 import java.util.Map;
 import java.util.Optional;
 
 class AccountTest {
+
+    private final SecureRandom random = new SecureRandom();
 
     @Test
     void testAccountCreationAndKeyGeneration() {
@@ -48,7 +52,7 @@ class AccountTest {
             assertThat(identityKeys)
                     .as("Identity Keys should have been generated and contain the the ed25519 and curve25519 keys")
                     .isNotNull()
-                    .extracting(IdentityKeys::getEd25519, IdentityKeys::getCurve25519)
+                    .extracting(IdentityKeys::fingerprintKey, IdentityKeys::identityKey)
                     .containsExactly(ed25519Key, curve25519Key);
         }
     }
@@ -211,19 +215,75 @@ class AccountTest {
     }
 
     @Test
-    void testDehydratedDeviceConversion() {
+    void testPicklingAndUnpicklingWithEncryption() {
+        // Create an account and get its original keys
         String originalCurve25519Key;
         String originalEd25519Key;
         String originalSignature;
-        DehydratedDeviceResult dehydratexDevice;
-        String secretKey = "mySecretKey";
+        String pickleData = null;
+
+        byte[] key = new byte[32];
+        random.nextBytes(key);
 
         try (Account originalAccount = new Account()) {
             originalCurve25519Key = originalAccount.curve25519Key();
             originalEd25519Key = originalAccount.ed25519Key();
             originalSignature = originalAccount.sign("Test message for pickling");
 
-            dehydratexDevice = originalAccount.toDehydratedDevice(secretKey);
+            // Pickle the account
+            pickleData = originalAccount.pickle(key);
+
+            // Verify that pickle data is not null and not empty
+            assertThat(pickleData)
+                    .as("Pickle data should not be null or empty")
+                    .isNotNull()
+                    .isNotEmpty();
+
+            // Verify that pickle data is valid JSON
+            assertThat(pickleData)
+                    .as("Pickle data is encrypted")
+                    .isNotEmpty()
+                    .isBase64();
+        }
+
+        // Unpickle the account
+        try (Account unpickledAccount = Account.unpickle(pickleData, key)) {
+            // Verify that the unpickled account has the same keys as the original
+            String unpickledCurve25519Key = unpickledAccount.curve25519Key();
+            String unpickledEd25519Key = unpickledAccount.ed25519Key();
+
+            assertThat(unpickledCurve25519Key)
+                    .as("Unpickled account should have the same Curve25519 key")
+                    .isEqualTo(originalCurve25519Key);
+
+            assertThat(unpickledEd25519Key)
+                    .as("Unpickled account should have the same Ed25519 key")
+                    .isEqualTo(originalEd25519Key);
+
+            // Verify that the unpickled account can sign messages with the same result
+            String unpickledSignature = unpickledAccount.sign("Test message for pickling");
+
+            assertThat(unpickledSignature)
+                    .as("Unpickled account should produce the same signature")
+                    .isEqualTo(originalSignature);
+        }
+    }
+
+    @Test
+    void testDehydratedDeviceConversion() {
+        String originalCurve25519Key;
+        String originalEd25519Key;
+        String originalSignature;
+        DehydratedDeviceResult dehydratexDevice;
+        byte[] key = new byte[32];
+        random.nextBytes(key);
+
+        try (Account originalAccount = new Account()) {
+            originalCurve25519Key = originalAccount.curve25519Key();
+            originalEd25519Key = originalAccount.ed25519Key();
+            originalSignature = originalAccount.sign("Test message for pickling");
+
+            dehydratexDevice = originalAccount.toDehydratedDevice(key);
 
             // Verify that the dehydrated device is not null and not empty
             assertThat(dehydratexDevice)
@@ -243,7 +303,7 @@ class AccountTest {
         }
 
         try (Account rehydratedDevice = Account.fromDehydratedDevice(dehydratexDevice.getCiphertext(),
-                dehydratexDevice.getNonce(), secretKey)) {
+                dehydratexDevice.getNonce(), key)) {
             String rehydratedCurve25519Key = rehydratedDevice.curve25519Key();
             String rehydratedEd25519Key = rehydratedDevice.ed25519Key();
 
@@ -320,7 +380,7 @@ class AccountTest {
     }
 
     @Test
-    void testCreateOutboundSession() throws Exception {
+    void testCreateOutboundSession() {
         try (Account aliceAccount = new Account();
                 Account bobAccount = new Account()) {
 
@@ -366,5 +426,67 @@ class AccountTest {
         account.close();
 
         assertThat(account.isClosed()).isTrue();
+    }
+
+    @Test
+    void testEncryptedPickleWithInvalidKeyThrowsException() {
+        try (Account account = new Account()) {
+            assertThatThrownBy(() -> account.pickle(new byte[16]))
+                    .as("Pickle with invalid key size should throw VodozemacException")
+                    .isInstanceOf(VodozemacException.class)
+                    .hasMessageContaining("256-bit (32-byte)");
+        }
+    }
+
+    @Test
+    void testEncryptedUnpickleWithInvalidKeyThrowsException() {
+        assertThatThrownBy(() -> Account.unpickle("invalid", new byte[16]))
+                .as("Unpickle with invalid key size should throw VodozemacException")
+                .isInstanceOf(VodozemacException.class)
+                .hasMessageContaining("256-bit (32-byte)");
+    }
+
+    @Test
+    void testDehydratedDeviceWithInvalidKeyThrowsException() {
+        try (Account account = new Account()) {
+            assertThatThrownBy(() -> account.toDehydratedDevice(new byte[16]))
+                    .as("Dehydrated device with invalid key size should throw VodozemacException")
+                    .isInstanceOf(VodozemacException.class)
+                    .hasMessageContaining("256-bit (32-byte)");
+        }
+    }
+
+    @Test
+    void testFromDehydratedDeviceWithInvalidKeyThrowsException() {
+        assertThatThrownBy(() -> Account.fromDehydratedDevice("invalid", "invalid", new byte[16]))
+                .as("From dehydrated device with invalid key size should throw VodozemacException")
+                .isInstanceOf(VodozemacException.class)
+                .hasMessageContaining("256-bit (32-byte)");
+    }
+
+    @Test
+    void testAccountUnpickleLegacy() {
+        String pickleData =
+                "u71hZK7akJasMFQqOKwZIyGfWiswSshezAEhIcWrNlbB7D+v0WIoPA+/gFAvzWv0"
+                + "TRnZJ/torMmxEh8tM90vHJx6EZuVxFlcN9niiems6i4c46CCtN5hQ9ErXwuLSv3HF"
+                + "eDbbKvNZmMXZFHPX+cZGhCX56zMg90GV2kOLRWnfrCQYMbagdW+SjnRIBaUltjy+4"
+                + "HELyE70xFbJZ/9tvawDNASW5GAiHw9BGaPr8wMxoIXLCJFEjCaPg";
+        byte[] pickleKey = new byte[32];
+
+        try (Account account = Account.unpickleLegacy(pickleData, pickleKey)) {
+            assertThat(account)
+                    .as("Unpickled legacy account should be created")
+                    .isNotNull();
+
+            assertThat(account.ed25519Key())
+                    .as("Legacy account should have a valid Ed25519 key")
+                    .isNotNull()
+                    .isNotEmpty();
+
+            assertThat(account.curve25519Key())
+                    .as("Legacy account should have a valid Curve25519 key")
+                    .isNotNull()
+                    .isNotEmpty();
+        }
     }
 }

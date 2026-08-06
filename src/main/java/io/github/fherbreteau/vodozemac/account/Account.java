@@ -4,6 +4,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
+import io.github.fherbreteau.vodozemac.VodozemacException;
 import io.github.fherbreteau.vodozemac.olm.InboundCreationResult;
 import io.github.fherbreteau.vodozemac.olm.OlmSession;
 import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
@@ -184,7 +185,7 @@ public class Account implements AutoCloseable {
 
     /**
      * Convert the account into a AccountPickle that is serialized as a JSON
-     * structure
+     * structure.
      *
      * @return a string representation of the {@code Account}
      */
@@ -194,14 +195,43 @@ public class Account implements AutoCloseable {
     }
 
     /**
+     * Encrypt the account using the given 32-byte key.
+     *
+     * @param key a 256-bit (32-byte) key for encrypting the device.
+     * @return an encrypted string representation of the {@code Account}
+     */
+    public String pickle(byte[] key) {
+        checkNotClosed();
+        if (key.length != 32) {
+            throw new VodozemacException("Encrypted Key must be 256-bit (32-byte)");
+        }
+        return nativeEncryptedPickle(nativePtr, key);
+    }
+
+    /**
      * Restore a {@code Account} from a previously saved AccountPickle deserialized
      * from a JSON structure.
      *
-     * @param pickleData
+     * @param pickleData the pickle data
      * @return a {@code Account} object
      */
     public static Account unpickle(String pickleData) {
         long nativePtr = nativeUnpickle(pickleData);
+        return new Account(nativePtr);
+    }
+
+    /**
+     * Restore a {@code Account} from an encrypted string using a 32-byte key.
+     *
+     * @param pickleData the pickle data
+     * @param key a 256-bit (32-byte) key for encrypting the device.
+     * @return a {@code Account} object
+     */
+    public static Account unpickle(String pickleData, byte[] key) {
+        if (key.length != 32) {
+            throw new VodozemacException("Encrypted Key must be 256-bit (32-byte)");
+        }
+        long nativePtr = nativeEncryptedUnpickle(pickleData, key);
         return new Account(nativePtr);
     }
 
@@ -213,7 +243,7 @@ public class Account implements AutoCloseable {
      * @param pickleKey  the key used to encrypt the pickle data
      * @return a {@code Account} object
      */
-    public static Account unpickleLegacy(String pickleData, String pickleKey) {
+    public static Account unpickleLegacy(String pickleData, byte[] pickleKey) {
         long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
         return new Account(nativePtr);
     }
@@ -233,8 +263,11 @@ public class Account implements AutoCloseable {
      * @param key a 256-bit (32-byte) key for encrypting the device.
      * @return the ciphertext and nonce.
      */
-    public DehydratedDeviceResult toDehydratedDevice(String key) {
+    public DehydratedDeviceResult toDehydratedDevice(byte[] key) {
         checkNotClosed();
+        if (key.length != 32) {
+            throw new VodozemacException("Encrypted Key must be 256-bit (32-byte)");
+        }
         return nativeToDehydratedDevice(nativePtr, key);
     }
 
@@ -248,7 +281,10 @@ public class Account implements AutoCloseable {
      * @param key        a 256-bit (32-byte) key for decrypting the device.
      * @return a {@code Account} object
      */
-    public static Account fromDehydratedDevice(String ciphertext, String nonce, String key) {
+    public static Account fromDehydratedDevice(String ciphertext, String nonce, byte[] key) {
+        if (key.length != 32) {
+            throw new VodozemacException("Encrypted Key must be 256-bit (32-byte)");
+        }
         long nativePtr = nativeFromDehydratedDevice(ciphertext, nonce, key);
         return new Account(nativePtr);
     }
@@ -311,13 +347,17 @@ public class Account implements AutoCloseable {
 
     private native String nativePickle(long ptr);
 
-    private native DehydratedDeviceResult nativeToDehydratedDevice(long ptr, String key);
+    private native String nativeEncryptedPickle(long ptr, byte[] key);
+
+    private native DehydratedDeviceResult nativeToDehydratedDevice(long ptr, byte[] key);
 
     private static native long nativeUnpickle(String pickleData);
 
-    private static native long nativeUnpickleLegacy(String pickleData, String pickleKey);
+    private static native long nativeEncryptedUnpickle(String pickleData, byte[] key);
 
-    private static native long nativeFromDehydratedDevice(String ciphertext, String nonce, String key);
+    private static native long nativeUnpickleLegacy(String pickleData, byte[] pickleKey);
+
+    private static native long nativeFromDehydratedDevice(String ciphertext, String nonce, byte[] key);
 
     private native void nativeFree(long ptr);
 }

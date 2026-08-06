@@ -1,12 +1,10 @@
-use jni::objects::{JClass, JObject, JString};
+use jni::objects::{JByteArray, JClass, JObject, JString};
 use jni::sys::{jboolean, jint, jlong, jobject, jstring};
 use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};
 use std::collections::HashMap;
 use vodozemac::olm::{Account, Session, SessionConfig};
-use vodozemac::olm::{AccountPickle, PreKeyMessage};
+use vodozemac::olm::{AccountPickle, OlmMessage, SessionPickle};
 use vodozemac::{Curve25519PublicKey, KeyId};
-
-const PICKLE_KEY: [u8; 32] = [0u8; 32];
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeNew(
@@ -138,8 +136,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
         let account = unsafe { &mut *(ptr as *mut Account) };
         let their_identity_key = Curve25519PublicKey::from_base64(&their_identity_key.to_string())
             .map_err(|_e| jni::errors::Error::JavaException)?;
-        let pre_key_message = PreKeyMessage::from_base64(&pre_key_message.to_string())
+        let olm_message: OlmMessage = serde_json::from_str(&pre_key_message.to_string())
             .map_err(|_e| jni::errors::Error::JavaException)?;
+        let pre_key_message = match olm_message {
+            OlmMessage::PreKey(pk) => pk,
+            OlmMessage::Normal(_) => {
+                return Err(jni::errors::Error::JavaException);
+            }
+        };
         let result = account
             .create_inbound_session(their_identity_key, &pre_key_message)
             .map_err(|_e| jni::errors::Error::JavaException)?;
@@ -366,6 +370,24 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeEncryptedPickle(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    key: JByteArray,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let account = unsafe { &*(ptr as *const Account) };
+        let pickle = account.pickle();
+        let key = wrap(env.convert_byte_array(key).unwrap());
+        let encrypted = pickle.encrypt(&key);
+        let jni_string = env.new_string(encrypted)?;
+        Ok(jni_string.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeUnpickle(
     mut env: EnvUnowned,
     _class: JClass,
@@ -382,21 +404,45 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeEncryptedUnpickle(
+    mut env: EnvUnowned,
+    _class: JClass,
+    pickle_data: JString,
+    key: JByteArray,
+) -> jlong {
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
+        let pickle_str: String = pickle_data.to_string();
+        let key = wrap(env.convert_byte_array(key).unwrap());
+        let pickle_data = AccountPickle::from_encrypted(&pickle_str, &key)
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        let account = Box::new(Account::from_pickle(pickle_data));
+        Ok(Box::into_raw(account) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeUnpickleLegacy(
     mut env: EnvUnowned,
     _class: JClass,
     pickle_data: JString,
-    pickle_key: JString,
+    pickle_key: JByteArray,
 ) -> jlong {
-    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
-        let pickle_key_str: String = pickle_key.to_string();
-        let from_olm = Account::from_libolm_pickle(&pickle_str, pickle_key_str.as_bytes())
+        let pickle_key = env.convert_byte_array(&pickle_key).unwrap();
+        let from_olm = Account::from_libolm_pickle(&pickle_str, &pickle_key)
             .map_err(|_e| jni::errors::Error::JavaException)?;
         let account = Box::new(from_olm);
         Ok(Box::into_raw(account) as jlong)
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+fn wrap<T>(v: Vec<T>) -> [T; 32] {
+    v.try_into().unwrap_or_else(|v: Vec<T>| {
+        panic!("Expected a Vec of length {} but it was {}", 32, v.len())
+    })
 }
 
 #[unsafe(no_mangle)]
@@ -405,14 +451,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     _class: JClass,
     ciphertext: JString,
     nonce: JString,
-    key: JString,
+    key: JByteArray,
 ) -> jlong {
-    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let ciphertext_str: String = ciphertext.to_string();
         let nonce_str: String = nonce.to_string();
-        let _key_str: String = key.to_string();
-        // TODO use the inputed key => to transform to an array of 32 u8
-        let dehydrated = Account::from_dehydrated_device(&ciphertext_str, &nonce_str, &PICKLE_KEY)
+        let key = wrap(env.convert_byte_array(key).unwrap());
+        let dehydrated = Account::from_dehydrated_device(&ciphertext_str, &nonce_str, &key)
             .map_err(|_e| jni::errors::Error::JavaException)?;
         let account = Box::new(dehydrated);
         Ok(Box::into_raw(account) as jlong)
@@ -425,14 +470,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
-    key: JString,
+    key: JByteArray,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         let account = unsafe { &*(ptr as *const Account) };
-        let _key_str = key.to_string();
-        // TODO use the inputed key => to transform to an array of 32 u8
+        let key = wrap(env.convert_byte_array(key).unwrap());
         let pickle_data = account
-            .to_dehydrated_device(&PICKLE_KEY)
+            .to_dehydrated_device(&key)
             .map_err(|_e| jni::errors::Error::JavaException)?;
 
         let ciphertext = env.new_string(pickle_data.ciphertext)?;
@@ -471,9 +515,166 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     }
 }
 
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativeSessionId(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const Session) };
+        let session_id = session.session_id();
+        let jni_string = env.new_string(session_id)?;
+        Ok(jni_string.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativeHasReceivedMessage(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) -> jboolean {
+    let outcome = env.with_env(|_env| -> Result<jboolean, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const Session) };
+        Ok(session.has_received_message())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativeEncrypt(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    plaintext: JByteArray,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let session = unsafe { &mut *(ptr as *mut Session) };
+        let plaintext_bytes = env.convert_byte_array(&plaintext)?;
+        let olm_message = session.encrypt(&plaintext_bytes);
+        let json_string =
+            serde_json::to_string(&olm_message).map_err(|_e| jni::errors::Error::JavaException)?;
+        let jni_string = env.new_string(json_string)?;
+        Ok(jni_string.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativeDecrypt(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    message: JString,
+) -> jobject {
+    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        let session = unsafe { &mut *(ptr as *mut Session) };
+        let message_str: String = message.to_string();
+        let olm_message: OlmMessage =
+            serde_json::from_str(&message_str).map_err(|_e| jni::errors::Error::JavaException)?;
+        let plaintext = session
+            .decrypt(&olm_message)
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        let plaintext_bytes = env.byte_array_from_slice(&plaintext)?;
+        Ok(plaintext_bytes.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativePickle(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const Session) };
+        let pickle_data = session.pickle();
+        let json_string =
+            serde_json::to_string(&pickle_data).map_err(|_e| jni::errors::Error::JavaException)?;
+        let jni_string = env.new_string(json_string)?;
+        Ok(jni_string.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativeEncryptedPickle(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    key: JByteArray,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const Session) };
+        let key = wrap(env.convert_byte_array(key).unwrap());
+        let pickle_data = session.pickle();
+        let encrypted = pickle_data.encrypt(&key);
+        let jni_string = env.new_string(encrypted)?;
+        Ok(jni_string.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativeUnpickle(
+    mut env: EnvUnowned,
+    _class: JClass,
+    pickle_data: JString,
+) -> jlong {
+    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
+        let pickle_str: String = pickle_data.to_string();
+        let pickle_data: SessionPickle =
+            serde_json::from_str(&pickle_str).map_err(|_e| jni::errors::Error::JavaException)?;
+        let session = Box::new(Session::from_pickle(pickle_data));
+        Ok(Box::into_raw(session) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativeEncryptedUnpickle(
+    mut env: EnvUnowned,
+    _class: JClass,
+    pickle_data: JString,
+    key: JByteArray,
+) -> jlong {
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
+        let pickle_str: String = pickle_data.to_string();
+        let key = wrap(env.convert_byte_array(key).unwrap());
+        let pickle_data: SessionPickle = SessionPickle::from_encrypted(&pickle_str, &key)
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        let session = Box::new(Session::from_pickle(pickle_data));
+        Ok(Box::into_raw(session) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativeUnpickleLegacy(
+    mut env: EnvUnowned,
+    _class: JClass,
+    pickle_data: JString,
+    pickle_key: JByteArray,
+) -> jlong {
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
+        let pickle_str: String = pickle_data.to_string();
+        let pickle_key = env.convert_byte_array(&pickle_key)?;
+        let session = Session::from_libolm_pickle(&pickle_str, &pickle_key)
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        let session = Box::new(session);
+        Ok(Box::into_raw(session) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    const PICKLE_KEY: [u8; 32] = [0u8; 32];
 
     #[test]
     fn test_pickle_key_is_32_bytes() {

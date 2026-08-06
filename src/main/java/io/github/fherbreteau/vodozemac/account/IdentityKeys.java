@@ -9,11 +9,11 @@ public class IdentityKeys {
         this.curve25519 = curve25519;
     }
 
-    public String getEd25519() {
+    public String fingerprintKey() {
         return ed25519;
     }
 
-    public String getCurve25519() {
+    public String identityKey() {
         return curve25519;
     }
 }
