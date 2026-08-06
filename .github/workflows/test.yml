@@ -9,6 +9,8 @@ jobs:
     name: Quick test - Linux only
     runs-on: ubuntu-latest
     permissions:
+      contents: read
+      packages: read
       pull-requests: write
     steps:
       - uses: actions/checkout@v7
@@ -52,15 +54,15 @@ jobs:
         working-directory: rust
         run: cargo fmt -- --check
 
-      - name: Java tests with coverage
-        run: mvn test jacoco:report -DskipRustBuild=true -Djacoco.dataFile=target/jacoco/jacoco-unit-tests.exec
+      - name: Build and test Java
+        run: mvn verify
 
       - name: Generate coverage report
         run: python3 .github/scripts/coverage-report.py
 
       - name: Post coverage comment
         if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@v2
+        uses: marocchino/sticky-pull-request-comment@v3
         with:
           recreate: true
           path: coverage-report.md
