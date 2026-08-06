@@ -2,6 +2,10 @@ use jni::objects::{JByteArray, JClass, JObject, JString};
 use jni::sys::{jboolean, jint, jlong, jobject, jstring};
 use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};
 use std::collections::HashMap;
+use vodozemac::megolm::{
+    GroupSession, GroupSessionPickle, InboundGroupSession, InboundGroupSessionPickle,
+    MegolmMessage, SessionConfig as MegolmSessionConfig, SessionKey,
+};
 use vodozemac::olm::{Account, Session, SessionConfig};
 use vodozemac::olm::{AccountPickle, OlmMessage, SessionPickle};
 use vodozemac::{Curve25519PublicKey, KeyId};
@@ -91,6 +95,16 @@ fn session_config_from_version(version: jint) -> Result<SessionConfig, jni::erro
     match version {
         1 => Ok(SessionConfig::version_1()),
         2 => Ok(SessionConfig::version_2()),
+        _ => Err(jni::errors::Error::JavaException),
+    }
+}
+
+fn megolm_session_config_from_version(
+    version: jint,
+) -> Result<MegolmSessionConfig, jni::errors::Error> {
+    match version {
+        1 => Ok(MegolmSessionConfig::version_1()),
+        2 => Ok(MegolmSessionConfig::version_2()),
         _ => Err(jni::errors::Error::JavaException),
     }
 }
@@ -670,6 +684,360 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
+// ============================================================================
+// Megolm: OutboundGroupSession (wraps vodozemac::megolm::GroupSession)
+// ============================================================================
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeNew(
+    mut env: EnvUnowned,
+    _class: JClass,
+    version: jint,
+) -> jlong {
+    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
+        let config = megolm_session_config_from_version(version)?;
+        let session = Box::new(GroupSession::new(config));
+        Ok(Box::into_raw(session) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeSessionId(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const GroupSession) };
+        let session_id = session.session_id();
+        let jni_string = env.new_string(session_id)?;
+        Ok(jni_string.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeMessageIndex(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) -> jint {
+    let outcome = env.with_env(|_env| -> Result<jint, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const GroupSession) };
+        Ok(session.message_index() as jint)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeSessionKey(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const GroupSession) };
+        let session_key = session.session_key().to_base64();
+        let jni_string = env.new_string(session_key)?;
+        Ok(jni_string.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeEncrypt(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    plaintext: JByteArray,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let session = unsafe { &mut *(ptr as *mut GroupSession) };
+        let plaintext_bytes = env.convert_byte_array(&plaintext)?;
+        let message = session.encrypt(&plaintext_bytes);
+        let base64_string = message.to_base64();
+        let jni_string = env.new_string(base64_string)?;
+        Ok(jni_string.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativePickle(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const GroupSession) };
+        let pickle_data = session.pickle();
+        let json_string =
+            serde_json::to_string(&pickle_data).map_err(|_e| jni::errors::Error::JavaException)?;
+        let jni_string = env.new_string(json_string)?;
+        Ok(jni_string.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeEncryptedPickle(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    key: JByteArray,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const GroupSession) };
+        let pickle = session.pickle();
+        let key = wrap(env.convert_byte_array(key).unwrap());
+        let encrypted = pickle.encrypt(&key);
+        let jni_string = env.new_string(encrypted)?;
+        Ok(jni_string.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeUnpickle(
+    mut env: EnvUnowned,
+    _class: JClass,
+    pickle_data: JString,
+) -> jlong {
+    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
+        let pickle_str: String = pickle_data.to_string();
+        let pickle_data: GroupSessionPickle =
+            serde_json::from_str(&pickle_str).map_err(|_e| jni::errors::Error::JavaException)?;
+        let session = Box::new(GroupSession::from_pickle(pickle_data));
+        Ok(Box::into_raw(session) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeEncryptedUnpickle(
+    mut env: EnvUnowned,
+    _class: JClass,
+    pickle_data: JString,
+    key: JByteArray,
+) -> jlong {
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
+        let pickle_str: String = pickle_data.to_string();
+        let key = wrap(env.convert_byte_array(key).unwrap());
+        let pickle_data = GroupSessionPickle::from_encrypted(&pickle_str, &key)
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        let session = Box::new(GroupSession::from_pickle(pickle_data));
+        Ok(Box::into_raw(session) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeUnpickleLegacy(
+    mut env: EnvUnowned,
+    _class: JClass,
+    pickle_data: JString,
+    pickle_key: JByteArray,
+) -> jlong {
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
+        let pickle_str: String = pickle_data.to_string();
+        let pickle_key = env.convert_byte_array(&pickle_key)?;
+        let session = GroupSession::from_libolm_pickle(&pickle_str, &pickle_key)
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        let session = Box::new(session);
+        Ok(Box::into_raw(session) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeFree(
+    _env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) {
+    unsafe {
+        let _ = Box::from_raw(ptr as *mut GroupSession);
+    }
+}
+
+// ============================================================================
+// Megolm: InboundGroupSession (wraps vodozemac::megolm::InboundGroupSession)
+// ============================================================================
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeNew(
+    mut env: EnvUnowned,
+    _class: JClass,
+    session_key: JString,
+    version: jint,
+) -> jlong {
+    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
+        let config = megolm_session_config_from_version(version)?;
+        let session_key = SessionKey::from_base64(&session_key.to_string())
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        let session = Box::new(InboundGroupSession::new(&session_key, config));
+        Ok(Box::into_raw(session) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeSessionId(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const InboundGroupSession) };
+        let session_id = session.session_id();
+        let jni_string = env.new_string(session_id)?;
+        Ok(jni_string.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeFirstKnownIndex(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) -> jint {
+    let outcome = env.with_env(|_env| -> Result<jint, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const InboundGroupSession) };
+        Ok(session.first_known_index() as jint)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeDecrypt(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    message: JString,
+) -> jobject {
+    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
+        let message_str: String = message.to_string();
+        let megolm_message = MegolmMessage::from_base64(&message_str)
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        let decrypted = session
+            .decrypt(&megolm_message)
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+
+        let plaintext_bytes = env.byte_array_from_slice(&decrypted.plaintext)?;
+        let result = env.new_object(
+            jni_str!("io/github/fherbreteau/vodozemac/megolm/DecryptedMessage"),
+            jni_sig!((plaintext: byte[], messageIndex: int) -> void),
+            &[
+                JValue::Object(&plaintext_bytes),
+                JValue::Int(decrypted.message_index as jint),
+            ],
+        )?;
+        Ok(result.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativePickle(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const InboundGroupSession) };
+        let pickle_data = session.pickle();
+        let json_string =
+            serde_json::to_string(&pickle_data).map_err(|_e| jni::errors::Error::JavaException)?;
+        let jni_string = env.new_string(json_string)?;
+        Ok(jni_string.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeEncryptedPickle(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    key: JByteArray,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const InboundGroupSession) };
+        let pickle = session.pickle();
+        let key = wrap(env.convert_byte_array(key).unwrap());
+        let encrypted = pickle.encrypt(&key);
+        let jni_string = env.new_string(encrypted)?;
+        Ok(jni_string.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeUnpickle(
+    mut env: EnvUnowned,
+    _class: JClass,
+    pickle_data: JString,
+) -> jlong {
+    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
+        let pickle_str: String = pickle_data.to_string();
+        let pickle_data: InboundGroupSessionPickle =
+            serde_json::from_str(&pickle_str).map_err(|_e| jni::errors::Error::JavaException)?;
+        let session = Box::new(InboundGroupSession::from_pickle(pickle_data));
+        Ok(Box::into_raw(session) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeEncryptedUnpickle(
+    mut env: EnvUnowned,
+    _class: JClass,
+    pickle_data: JString,
+    key: JByteArray,
+) -> jlong {
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
+        let pickle_str: String = pickle_data.to_string();
+        let key = wrap(env.convert_byte_array(key).unwrap());
+        let pickle_data = InboundGroupSessionPickle::from_encrypted(&pickle_str, &key)
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        let session = Box::new(InboundGroupSession::from_pickle(pickle_data));
+        Ok(Box::into_raw(session) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeUnpickleLegacy(
+    mut env: EnvUnowned,
+    _class: JClass,
+    pickle_data: JString,
+    pickle_key: JByteArray,
+) -> jlong {
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
+        let pickle_str: String = pickle_data.to_string();
+        let pickle_key = env.convert_byte_array(&pickle_key)?;
+        let session = InboundGroupSession::from_libolm_pickle(&pickle_str, &pickle_key)
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        let session = Box::new(session);
+        Ok(Box::into_raw(session) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeFree(
+    _env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) {
+    unsafe {
+        let _ = Box::from_raw(ptr as *mut InboundGroupSession);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -979,5 +1347,160 @@ mod tests {
         let session =
             alice.create_outbound_session(SessionConfig::version_2(), bob_identity, bob_one_time);
         let _ = session;
+    }
+
+    #[test]
+    fn test_megolm_session_config_version_1() {
+        let result = megolm_session_config_from_version(1);
+        assert!(
+            result.is_ok(),
+            "Megolm version 1 should produce a valid SessionConfig"
+        );
+    }
+
+    #[test]
+    fn test_megolm_session_config_version_2() {
+        let result = megolm_session_config_from_version(2);
+        assert!(
+            result.is_ok(),
+            "Megolm version 2 should produce a valid SessionConfig"
+        );
+    }
+
+    #[test]
+    fn test_megolm_session_config_invalid_version() {
+        let result = megolm_session_config_from_version(0);
+        assert!(result.is_err(), "Megolm version 0 should produce an error");
+
+        let result = megolm_session_config_from_version(3);
+        assert!(result.is_err(), "Megolm version 3 should produce an error");
+    }
+
+    #[test]
+    fn test_megolm_group_session_encrypt_and_decrypt() {
+        let mut outbound = GroupSession::new(MegolmSessionConfig::version_2());
+
+        let session_id = outbound.session_id();
+        assert!(!session_id.is_empty(), "Session ID should not be empty");
+
+        assert_eq!(
+            outbound.message_index(),
+            0,
+            "Initial message index should be 0"
+        );
+
+        let session_key = outbound.session_key();
+        let mut inbound = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        assert_eq!(
+            inbound.session_id(),
+            session_id,
+            "Inbound and outbound session IDs should match"
+        );
+
+        assert_eq!(
+            inbound.first_known_index(),
+            0,
+            "First known index should be 0"
+        );
+
+        let plaintext = "Hello Megolm!";
+        let message = outbound.encrypt(plaintext);
+
+        assert_eq!(
+            outbound.message_index(),
+            1,
+            "Message index should increment after encrypt"
+        );
+
+        let decrypted = inbound
+            .decrypt(&message)
+            .expect("Should decrypt Megolm message");
+
+        assert_eq!(
+            decrypted.plaintext,
+            plaintext.as_bytes(),
+            "Decrypted plaintext should match original"
+        );
+        assert_eq!(
+            decrypted.message_index, 0,
+            "Message index in decrypted message should be 0"
+        );
+    }
+
+    #[test]
+    fn test_megolm_group_session_pickle_roundtrip() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_1());
+        let original_session_id = outbound.session_id();
+
+        let pickle = outbound.pickle();
+        let json = serde_json::to_string(&pickle).expect("Should serialize to JSON");
+        let restored: GroupSessionPickle =
+            serde_json::from_str(&json).expect("Should deserialize from JSON");
+        let restored_session = GroupSession::from_pickle(restored);
+
+        assert_eq!(
+            restored_session.session_id(),
+            original_session_id,
+            "Session ID should survive pickle roundtrip"
+        );
+    }
+
+    #[test]
+    fn test_megolm_group_session_encrypted_pickle_roundtrip() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let original_session_id = outbound.session_id();
+
+        let pickle = outbound.pickle();
+        let encrypted = pickle.encrypt(&PICKLE_KEY);
+        let restored = GroupSessionPickle::from_encrypted(&encrypted, &PICKLE_KEY)
+            .expect("Should decrypt pickle");
+        let restored_session = GroupSession::from_pickle(restored);
+
+        assert_eq!(
+            restored_session.session_id(),
+            original_session_id,
+            "Session ID should survive encrypted pickle roundtrip"
+        );
+    }
+
+    #[test]
+    fn test_megolm_inbound_group_session_pickle_roundtrip() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_1());
+        let session_key = outbound.session_key();
+        let inbound = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_1());
+        let original_session_id = inbound.session_id();
+
+        let pickle = inbound.pickle();
+        let json = serde_json::to_string(&pickle).expect("Should serialize to JSON");
+        let restored: InboundGroupSessionPickle =
+            serde_json::from_str(&json).expect("Should deserialize from JSON");
+        let restored_inbound = InboundGroupSession::from_pickle(restored);
+
+        assert_eq!(
+            restored_inbound.session_id(),
+            original_session_id,
+            "Session ID should survive pickle roundtrip"
+        );
+    }
+
+    #[test]
+    fn test_megolm_inbound_group_session_encrypted_pickle_roundtrip() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let inbound = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+        let original_session_id = inbound.session_id();
+
+        let pickle = inbound.pickle();
+        let encrypted = pickle.encrypt(&PICKLE_KEY);
+        let restored = InboundGroupSessionPickle::from_encrypted(&encrypted, &PICKLE_KEY)
+            .expect("Should decrypt pickle");
+        let restored_inbound = InboundGroupSession::from_pickle(restored);
+
+        assert_eq!(
+            restored_inbound.session_id(),
+            original_session_id,
+            "Session ID should survive encrypted pickle roundtrip"
+        );
     }
 }
