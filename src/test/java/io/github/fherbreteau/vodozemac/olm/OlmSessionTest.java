@@ -1,6 +1,7 @@
 package io.github.fherbreteau.vodozemac.olm;
 
-import io.github.fherbreteau.vodozemac.VodozemacException;
+import io.github.fherbreteau.vodozemac.KeyException;
+import io.github.fherbreteau.vodozemac.SessionCreationException;
 import io.github.fherbreteau.vodozemac.account.Account;
 import io.github.fherbreteau.vodozemac.account.OneTimeKeyGenerationResult;
 import org.junit.jupiter.api.Test;
@@ -170,8 +171,8 @@ class OlmSessionTest {
 
                 byte[] invalidKey = new byte[16];
                 assertThatThrownBy(() -> session.pickle(invalidKey))
-                        .as("Pickle with invalid key size should throw VodozemacException")
-                        .isInstanceOf(VodozemacException.class)
+                        .as("Pickle with invalid key size should throw KeyException")
+                        .isInstanceOf(KeyException.class)
                         .hasMessageContaining("256-bit (32-byte)");
             }
         }
@@ -181,8 +182,8 @@ class OlmSessionTest {
     void testUnpickleWithInvalidKeyThrowsException() {
         byte[] invalidKey = new byte[16];
         assertThatThrownBy(() -> OlmSession.unpickle("invalid", invalidKey))
-                .as("Unpickle with invalid key size should throw VodozemacException")
-                .isInstanceOf(VodozemacException.class)
+                .as("Unpickle with invalid key size should throw KeyException")
+                .isInstanceOf(KeyException.class)
                 .hasMessageContaining("256-bit (32-byte)");
     }
 
@@ -231,6 +232,28 @@ class OlmSessionTest {
                     .as("Legacy session should have a valid session ID")
                     .isNotNull()
                     .isNotEmpty();
+        }
+    }
+
+    @Test
+    void testSessionCreationExceptionOnVersionMismatch() {
+        try (Account aliceAccount = new Account();
+                Account bobAccount = new Account()) {
+
+            OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
+            String bobOneTimeKey = result.getCreated().iterator().next();
+            bobAccount.markKeysAsPublished();
+
+            try (OlmSession outboundSession = aliceAccount.createOutbpundSession(
+                    OlmSessionVersion.V2, bobAccount.curve25519Key(), bobOneTimeKey)) {
+                String encrypted = outboundSession.encrypt("Hello Bob".getBytes(StandardCharsets.UTF_8));
+
+                assertThatThrownBy(() -> bobAccount.createInboundSession(
+                        OlmSessionVersion.V1, aliceAccount.curve25519Key(), encrypted))
+                        .as("Creating inbound session with mismatched version should throw SessionCreationException")
+                        .isInstanceOf(SessionCreationException.class)
+                        .isInstanceOf(io.github.fherbreteau.vodozemac.VodozemacException.class);
+            }
         }
     }
 }

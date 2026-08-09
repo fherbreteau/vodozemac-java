@@ -3,6 +3,7 @@ use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jint, jlong, jstring};
 use vodozemac::megolm::{GroupSession, GroupSessionPickle};
 
+use crate::errors::throw_pickle_error;
 use crate::helpers::{megolm_session_config_from_version, wrap};
 
 // ============================================================================
@@ -17,6 +18,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
 ) -> jlong {
     let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
         let config = megolm_session_config_from_version(version)?;
+
         let session = Box::new(GroupSession::new(config));
         Ok(Box::into_raw(session) as jlong)
     });
@@ -31,6 +33,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         let session = unsafe { &*(ptr as *const GroupSession) };
+
         let session_id = session.session_id();
         let jni_string = env.new_string(session_id)?;
         Ok(jni_string.into_raw())
@@ -46,6 +49,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
 ) -> jint {
     let outcome = env.with_env(|_env| -> Result<jint, jni::errors::Error> {
         let session = unsafe { &*(ptr as *const GroupSession) };
+
         Ok(session.message_index() as jint)
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
@@ -59,6 +63,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         let session = unsafe { &*(ptr as *const GroupSession) };
+
         let session_key = session.session_key().to_base64();
         let jni_string = env.new_string(session_key)?;
         Ok(jni_string.into_raw())
@@ -76,6 +81,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         let session = unsafe { &mut *(ptr as *mut GroupSession) };
         let plaintext_bytes = env.convert_byte_array(&plaintext)?;
+
         let message = session.encrypt(&plaintext_bytes);
         let base64_string = message.to_base64();
         let jni_string = env.new_string(base64_string)?;
@@ -92,9 +98,10 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         let session = unsafe { &*(ptr as *const GroupSession) };
+
         let pickle_data = session.pickle();
-        let json_string =
-            serde_json::to_string(&pickle_data).map_err(|_e| jni::errors::Error::JavaException)?;
+        let json_string = serde_json::to_string(&pickle_data)
+            .map_err(|e| throw_pickle_error(env, e))?;
         let jni_string = env.new_string(json_string)?;
         Ok(jni_string.into_raw())
     });
@@ -110,9 +117,9 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         let session = unsafe { &*(ptr as *const GroupSession) };
-        let pickle = session.pickle();
         let key = wrap(env.convert_byte_array(key).unwrap());
-        let encrypted = pickle.encrypt(&key);
+
+        let encrypted = session.pickle().encrypt(&key);
         let jni_string = env.new_string(encrypted)?;
         Ok(jni_string.into_raw())
     });
@@ -125,10 +132,11 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     _class: JClass,
     pickle_data: JString,
 ) -> jlong {
-    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
-        let pickle_data: GroupSessionPickle =
-            serde_json::from_str(&pickle_str).map_err(|_e| jni::errors::Error::JavaException)?;
+
+        let pickle_data: GroupSessionPickle = serde_json::from_str(&pickle_str)
+            .map_err(|e| throw_pickle_error(env, e))?;
         let session = Box::new(GroupSession::from_pickle(pickle_data));
         Ok(Box::into_raw(session) as jlong)
     });
@@ -145,8 +153,9 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
         let key = wrap(env.convert_byte_array(key).unwrap());
+
         let pickle_data = GroupSessionPickle::from_encrypted(&pickle_str, &key)
-            .map_err(|_e| jni::errors::Error::JavaException)?;
+            .map_err(|e| throw_pickle_error(env, e))?;
         let session = Box::new(GroupSession::from_pickle(pickle_data));
         Ok(Box::into_raw(session) as jlong)
     });
@@ -163,8 +172,9 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
         let pickle_key = env.convert_byte_array(&pickle_key)?;
+
         let session = GroupSession::from_libolm_pickle(&pickle_str, &pickle_key)
-            .map_err(|_e| jni::errors::Error::JavaException)?;
+            .map_err(|e| throw_pickle_error(env, e))?;
         let session = Box::new(session);
         Ok(Box::into_raw(session) as jlong)
     });

@@ -1,6 +1,6 @@
 package io.github.fherbreteau.vodozemac.account;
 
-import io.github.fherbreteau.vodozemac.VodozemacException;
+import io.github.fherbreteau.vodozemac.KeyException;
 import io.github.fherbreteau.vodozemac.olm.OlmSession;
 import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
 import org.junit.jupiter.api.Test;
@@ -432,8 +432,8 @@ class AccountTest {
     void testEncryptedPickleWithInvalidKeyThrowsException() {
         try (Account account = new Account()) {
             assertThatThrownBy(() -> account.pickle(new byte[16]))
-                    .as("Pickle with invalid key size should throw VodozemacException")
-                    .isInstanceOf(VodozemacException.class)
+                    .as("Pickle with invalid key size should throw KeyException")
+                    .isInstanceOf(KeyException.class)
                     .hasMessageContaining("256-bit (32-byte)");
         }
     }
@@ -441,8 +441,8 @@ class AccountTest {
     @Test
     void testEncryptedUnpickleWithInvalidKeyThrowsException() {
         assertThatThrownBy(() -> Account.unpickle("invalid", new byte[16]))
-                .as("Unpickle with invalid key size should throw VodozemacException")
-                .isInstanceOf(VodozemacException.class)
+                .as("Unpickle with invalid key size should throw KeyException")
+                .isInstanceOf(KeyException.class)
                 .hasMessageContaining("256-bit (32-byte)");
     }
 
@@ -450,8 +450,8 @@ class AccountTest {
     void testDehydratedDeviceWithInvalidKeyThrowsException() {
         try (Account account = new Account()) {
             assertThatThrownBy(() -> account.toDehydratedDevice(new byte[16]))
-                    .as("Dehydrated device with invalid key size should throw VodozemacException")
-                    .isInstanceOf(VodozemacException.class)
+                    .as("Dehydrated device with invalid key size should throw KeyException")
+                    .isInstanceOf(KeyException.class)
                     .hasMessageContaining("256-bit (32-byte)");
         }
     }
@@ -459,8 +459,8 @@ class AccountTest {
     @Test
     void testFromDehydratedDeviceWithInvalidKeyThrowsException() {
         assertThatThrownBy(() -> Account.fromDehydratedDevice("invalid", "invalid", new byte[16]))
-                .as("From dehydrated device with invalid key size should throw VodozemacException")
-                .isInstanceOf(VodozemacException.class)
+                .as("From dehydrated device with invalid key size should throw KeyException")
+                .isInstanceOf(KeyException.class)
                 .hasMessageContaining("256-bit (32-byte)");
     }
 

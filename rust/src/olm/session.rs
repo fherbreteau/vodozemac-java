@@ -3,6 +3,7 @@ use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jboolean, jlong, jobject, jstring};
 use vodozemac::olm::{OlmMessage, Session, SessionPickle};
 
+use crate::errors::{throw_decryption_error, throw_generic_error, throw_pickle_error};
 use crate::helpers::wrap;
 
 #[unsafe(no_mangle)]
@@ -24,6 +25,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         let session = unsafe { &*(ptr as *const Session) };
+
         let session_id = session.session_id();
         let jni_string = env.new_string(session_id)?;
         Ok(jni_string.into_raw())
@@ -39,6 +41,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
 ) -> jboolean {
     let outcome = env.with_env(|_env| -> Result<jboolean, jni::errors::Error> {
         let session = unsafe { &*(ptr as *const Session) };
+
         Ok(session.has_received_message())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
@@ -54,13 +57,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         let session = unsafe { &mut *(ptr as *mut Session) };
         let plaintext_bytes = env.convert_byte_array(&plaintext)?;
+
         let olm_message = session
             .encrypt(&plaintext_bytes)
-            .map_err(|_e| jni::errors::Error::JavaException)?;
-        let json_string =
-            serde_json::to_string(&olm_message).map_err(|_e| jni::errors::Error::JavaException)?;
-        let jni_string = env.new_string(json_string)?;
-        Ok(jni_string.into_raw())
+            .map_err(|e| throw_generic_error(env, e))?;
+        let json_string = serde_json::to_string(&olm_message)
+            .map_err(|e| throw_generic_error(env, e))?;
+        let result = env.new_string(json_string)?;
+        Ok(result.into_raw())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -75,11 +79,12 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         let session = unsafe { &mut *(ptr as *mut Session) };
         let message_str: String = message.to_string();
-        let olm_message: OlmMessage =
-            serde_json::from_str(&message_str).map_err(|_e| jni::errors::Error::JavaException)?;
+
+        let olm_message: OlmMessage = serde_json::from_str(&message_str)
+            .map_err(|e| throw_decryption_error(env, e))?;
         let plaintext = session
             .decrypt(&olm_message)
-            .map_err(|_e| jni::errors::Error::JavaException)?;
+            .map_err(|e| throw_decryption_error(env, e))?;
         let plaintext_bytes = env.byte_array_from_slice(&plaintext)?;
         Ok(plaintext_bytes.into_raw())
     });
@@ -94,9 +99,10 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         let session = unsafe { &*(ptr as *const Session) };
+
         let pickle_data = session.pickle();
-        let json_string =
-            serde_json::to_string(&pickle_data).map_err(|_e| jni::errors::Error::JavaException)?;
+        let json_string = serde_json::to_string(&pickle_data)
+            .map_err(|e| throw_pickle_error(env, e))?;
         let jni_string = env.new_string(json_string)?;
         Ok(jni_string.into_raw())
     });
@@ -113,6 +119,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         let session = unsafe { &*(ptr as *const Session) };
         let key = wrap(env.convert_byte_array(key).unwrap());
+
         let pickle_data = session.pickle();
         let encrypted = pickle_data.encrypt(&key);
         let jni_string = env.new_string(encrypted)?;
@@ -127,10 +134,11 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     _class: JClass,
     pickle_data: JString,
 ) -> jlong {
-    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
-        let pickle_data: SessionPickle =
-            serde_json::from_str(&pickle_str).map_err(|_e| jni::errors::Error::JavaException)?;
+
+        let pickle_data: SessionPickle = serde_json::from_str(&pickle_str)
+        .map_err(|e| throw_pickle_error(env, e))?;
         let session = Box::new(Session::from_pickle(pickle_data));
         Ok(Box::into_raw(session) as jlong)
     });
@@ -147,8 +155,9 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
         let key = wrap(env.convert_byte_array(key).unwrap());
+
         let pickle_data: SessionPickle = SessionPickle::from_encrypted(&pickle_str, &key)
-            .map_err(|_e| jni::errors::Error::JavaException)?;
+            .map_err(|e| throw_pickle_error(env, e))?;
         let session = Box::new(Session::from_pickle(pickle_data));
         Ok(Box::into_raw(session) as jlong)
     });
@@ -165,8 +174,9 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
         let pickle_key = env.convert_byte_array(&pickle_key)?;
+
         let session = Session::from_libolm_pickle(&pickle_str, &pickle_key)
-            .map_err(|_e| jni::errors::Error::JavaException)?;
+            .map_err(|e| throw_pickle_error(env, e))?;
         let session = Box::new(session);
         Ok(Box::into_raw(session) as jlong)
     });

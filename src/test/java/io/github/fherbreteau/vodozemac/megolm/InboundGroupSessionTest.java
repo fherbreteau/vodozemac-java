@@ -1,5 +1,9 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
+import io.github.fherbreteau.vodozemac.DecryptionException;
+import io.github.fherbreteau.vodozemac.PickleException;
+import io.github.fherbreteau.vodozemac.SignatureException;
+import io.github.fherbreteau.vodozemac.VodozemacException;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -364,7 +368,7 @@ class InboundGroupSessionTest {
 
             assertThatThrownBy(() -> inbound.decrypt(encrypted))
                     .as("Should not decrypt message before first known index after advancing")
-                    .isInstanceOf(RuntimeException.class);
+                    .isInstanceOf(DecryptionException.class);
         }
     }
 
@@ -587,5 +591,72 @@ class InboundGroupSessionTest {
                 .as("AdvanceTo on closed session should throw IllegalStateException")
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Account has been closed");
+    }
+
+    @Test
+    void testPickleExceptionOnInvalidPickleData() {
+        assertThatThrownBy(() -> InboundGroupSession.unpickle("invalid-json"))
+                .as("Unpickling invalid JSON should throw PickleException")
+                .isInstanceOf(PickleException.class)
+                .isInstanceOf(VodozemacException.class);
+    }
+
+    @Test
+    void testPickleExceptionOnInvalidEncryptedUnpickle() {
+        byte[] key = new byte[32];
+        assertThatThrownBy(() -> InboundGroupSession.unpickle("invalid-encrypted-data", key))
+                .as("Unpickling invalid encrypted data should throw PickleException")
+                .isInstanceOf(PickleException.class)
+                .isInstanceOf(VodozemacException.class);
+    }
+
+    @Test
+    void testSignatureExceptionOnWrongSessionDecrypt() {
+        String plaintext = "Hello Megolm!";
+        String sessionKey1;
+        String encrypted;
+
+        try (OutboundGroupSession outbound1 = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey1 = outbound1.sessionKey();
+            encrypted = outbound1.encrypt(plaintext.getBytes(StandardCharsets.UTF_8));
+        }
+
+        try (OutboundGroupSession outbound2 = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            String sessionKey2 = outbound2.sessionKey();
+            try (InboundGroupSession wrongInbound = new InboundGroupSession(sessionKey2, MegolmSessionVersion.V2)) {
+                assertThatThrownBy(() -> wrongInbound.decrypt(encrypted))
+                        .as("Decrypting with wrong session should throw SignatureException")
+                        .isInstanceOf(SignatureException.class)
+                        .isInstanceOf(VodozemacException.class);
+            }
+        }
+    }
+
+    @Test
+    void testDecryptionExceptionOnUnknownMessageIndex() {
+        String plaintext = "Early message";
+        String sessionKey;
+        String encrypted;
+
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey = outbound.sessionKey();
+            encrypted = outbound.encrypt(plaintext.getBytes(StandardCharsets.UTF_8));
+        }
+
+        try (InboundGroupSession inbound = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+            inbound.advanceTo(1);
+
+            assertThatThrownBy(() -> inbound.decrypt(encrypted))
+                    .as("Decrypting with unknown message index should throw DecryptionException")
+                    .isInstanceOf(DecryptionException.class)
+                    .isInstanceOf(VodozemacException.class);
+        }
+    }
+
+    @Test
+    void testKeyExceptionOnInvalidSessionKey() {
+        assertThatThrownBy(() -> new InboundGroupSession("invalid-base64-key", MegolmSessionVersion.V2))
+                .as("Creating session with invalid key should throw VodozemacException")
+                .isInstanceOf(VodozemacException.class);
     }
 }

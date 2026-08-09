@@ -1,6 +1,6 @@
 package io.github.fherbreteau.vodozemac.olm;
 
-import io.github.fherbreteau.vodozemac.VodozemacException;
+import io.github.fherbreteau.vodozemac.KeyException;
 
 public class OlmSession implements AutoCloseable {
     private long nativePtr;
@@ -69,7 +69,7 @@ public class OlmSession implements AutoCloseable {
     public String pickle(byte[] key) {
         checkNotClosed();
         if (key.length != 32) {
-            throw new VodozemacException("Encrypted Key must be 256-bit (32-byte)");
+            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
         }
         return nativeEncryptedPickle(nativePtr, key);
     }
@@ -94,7 +94,7 @@ public class OlmSession implements AutoCloseable {
      */
     public static OlmSession unpickle(String pickleData, byte[] key) {
         if (key.length != 32) {
-            throw new VodozemacException("Encrypted Key must be 256-bit (32-byte)");
+            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
         }
         long nativePtr = nativeEncryptedUnpickle(pickleData, key);
         return new OlmSession(nativePtr);

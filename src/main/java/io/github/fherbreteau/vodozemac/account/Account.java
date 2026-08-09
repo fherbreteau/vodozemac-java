@@ -3,8 +3,8 @@ package io.github.fherbreteau.vodozemac.account;
 import java.util.Map;
 import java.util.Optional;
 
+import io.github.fherbreteau.vodozemac.KeyException;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
-import io.github.fherbreteau.vodozemac.VodozemacException;
 import io.github.fherbreteau.vodozemac.olm.InboundCreationResult;
 import io.github.fherbreteau.vodozemac.olm.OlmSession;
 import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
@@ -230,7 +230,7 @@ public class Account implements AutoCloseable {
     public String pickle(byte[] key) {
         checkNotClosed();
         if (key.length != 32) {
-            throw new VodozemacException("Encrypted Key must be 256-bit (32-byte)");
+            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
         }
         return nativeEncryptedPickle(nativePtr, key);
     }
@@ -256,7 +256,7 @@ public class Account implements AutoCloseable {
      */
     public static Account unpickle(String pickleData, byte[] key) {
         if (key.length != 32) {
-            throw new VodozemacException("Encrypted Key must be 256-bit (32-byte)");
+            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
         }
         long nativePtr = nativeEncryptedUnpickle(pickleData, key);
         return new Account(nativePtr);
@@ -293,7 +293,7 @@ public class Account implements AutoCloseable {
     public DehydratedDeviceResult toDehydratedDevice(byte[] key) {
         checkNotClosed();
         if (key.length != 32) {
-            throw new VodozemacException("Encrypted Key must be 256-bit (32-byte)");
+            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
         }
         return nativeToDehydratedDevice(nativePtr, key);
     }
@@ -310,7 +310,7 @@ public class Account implements AutoCloseable {
      */
     public static Account fromDehydratedDevice(String ciphertext, String nonce, byte[] key) {
         if (key.length != 32) {
-            throw new VodozemacException("Encrypted Key must be 256-bit (32-byte)");
+            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
         }
         long nativePtr = nativeFromDehydratedDevice(ciphertext, nonce, key);
         return new Account(nativePtr);
