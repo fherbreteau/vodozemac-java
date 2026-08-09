@@ -1,8 +1,8 @@
-use jni::objects::{JByteArray, JClass, JString};
-use jni::sys::{jint, jlong, jobject, jstring};
-use jni::{EnvUnowned, JValue, jni_sig, jni_str};
+use jni::objects::{JByteArray, JClass, JObject, JString};
+use jni::sys::{jboolean, jint, jlong, jobject, jstring};
+use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};
 use vodozemac::megolm::{
-    InboundGroupSession, InboundGroupSessionPickle, MegolmMessage, SessionKey,
+    ExportedSessionKey, InboundGroupSession, InboundGroupSessionPickle, MegolmMessage, SessionKey, SessionOrdering,
 };
 
 use crate::helpers::{megolm_session_config_from_version, wrap};
@@ -121,6 +121,153 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeExportAt(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    index: jint,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
+
+        let result = session.export_at(index as u32);
+        match result {
+            Some(key) => {
+                let key_str = env.new_string(key.to_base64())?;
+                Ok(key_str.into_raw())
+            }
+            None => Ok(std::ptr::null_mut()),
+        }
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeExportAtFirstKnownIndex(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
+
+        let result = session.export_at_first_known_index();
+        let key_str = env.new_string(result.to_base64())?;
+        Ok(key_str.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeAdvanceTo(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    index: jint,
+) -> jboolean {
+    let outcome = env.with_env(|_env| -> Result<jboolean, jni::errors::Error> {
+        let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
+
+        let result = session.advance_to(index as u32);
+        Ok(result as jboolean)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeConnected(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    other_ptr: jlong,
+) -> jboolean {
+    let outcome = env.with_env(|_env| -> Result<jboolean, jni::errors::Error> {
+        let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
+        let other_session = unsafe { &mut *(other_ptr as *mut InboundGroupSession) };
+
+        let result = session.connected(other_session);
+        Ok(result as jboolean)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+fn session_ordering_to_jobject<'local>(
+    env: &mut Env<'local>,
+    ordering: SessionOrdering,
+) -> Result<JObject<'local>, jni::errors::Error> {
+    let name = match ordering {
+        SessionOrdering::Equal => jni_str!("EQUAL"),
+        SessionOrdering::Better => jni_str!("BETTER"),
+        SessionOrdering::Worse => jni_str!("WORSE"),
+        SessionOrdering::Unconnected => jni_str!("UNCONNECTED"),
+    };
+    env.get_static_field(
+        jni_str!("io/github/fherbreteau/vodozemac/megolm/SessionOrdering"),
+        name, 
+        jni_sig!(io.github.fherbreteau.vodozemac.megolm.SessionOrdering))
+        .and_then(|value| value.l())
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeCompare(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    other_ptr: jlong,
+) -> jobject {
+    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
+        let other_session = unsafe { &mut *(other_ptr as *mut InboundGroupSession) };
+
+        let result = session.compare(other_session);
+
+        let ordering = session_ordering_to_jobject(env, result)
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        Ok(ordering.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeMerge(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    other_ptr: jlong,
+) -> jobject {
+    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
+        let other_session = unsafe { &mut *(other_ptr as *mut InboundGroupSession) };
+
+        let result = session.merge(other_session);
+
+        match result {
+            Some(new_session) => {
+                let new_ptr = Box::into_raw(Box::new(new_session)) as jlong;
+                let result = env.new_object(
+                    jni_str!("java/lang/Long"),
+                     jni_sig!((long) -> void),
+                      &[JValue::Long(new_ptr)])?;
+                Ok(result.into_raw())
+            }
+            None => Ok(std::ptr::null_mut()),
+        }
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeFree(
+    _env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) {
+    unsafe {
+        let _ = Box::from_raw(ptr as *mut InboundGroupSession);
+    }
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeUnpickle(
     mut env: EnvUnowned,
     _class: JClass,
@@ -173,14 +320,22 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
 }
 
 #[unsafe(no_mangle)]
-pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeFree(
-    _env: EnvUnowned,
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeImport(
+    mut env: EnvUnowned,
     _class: JClass,
-    ptr: jlong,
-) {
-    unsafe {
-        let _ = Box::from_raw(ptr as *mut InboundGroupSession);
-    }
+    session_key: JString,
+    version: jint,
+) -> jlong {
+    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
+        let config = megolm_session_config_from_version(version)?;
+        let session_str: String = session_key.to_string();
+        let exported_session = ExportedSessionKey::from_base64(&session_str)
+            .map_err(|_e| jni::errors::Error::JavaException)?;
+        let session = InboundGroupSession::import(&exported_session, config);
+        let session = Box::new(session);
+        Ok(Box::into_raw(session) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
 #[cfg(test)]

@@ -13,4 +13,8 @@ public enum OlmSessionVersion {
     public int getValue() {
         return value;
     }
+
+    public static OlmSessionVersion defaultVersion() {
+        return V1;
+    }
 }

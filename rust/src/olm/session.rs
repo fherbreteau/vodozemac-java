@@ -54,7 +54,9 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         let session = unsafe { &mut *(ptr as *mut Session) };
         let plaintext_bytes = env.convert_byte_array(&plaintext)?;
-        let olm_message = session.encrypt(&plaintext_bytes);
+        let olm_message = session
+            .encrypt(&plaintext_bytes)
+            .map_err(|_e| jni::errors::Error::JavaException)?;
         let json_string =
             serde_json::to_string(&olm_message).map_err(|_e| jni::errors::Error::JavaException)?;
         let jni_string = env.new_string(json_string)?;
@@ -174,7 +176,6 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::helpers::PICKLE_KEY;
     use vodozemac::olm::{Account, SessionConfig};
 
     #[test]
@@ -185,8 +186,9 @@ mod tests {
         let bob_keys = bob.one_time_keys();
         let bob_identity = bob.curve25519_key();
         let bob_one_time = *bob_keys.values().next().unwrap();
-        let session =
-            alice.create_outbound_session(SessionConfig::version_2(), bob_identity, bob_one_time);
+        let session = alice
+            .create_outbound_session(SessionConfig::version_2(), bob_identity, bob_one_time)
+            .expect("Should create the outbound session");
 
         let pickle = session.pickle();
         let json = serde_json::to_string(&pickle).expect("Should serialize to JSON");
@@ -206,10 +208,13 @@ mod tests {
         let bob_identity = bob.curve25519_key();
         let bob_one_time = *bob_keys.values().next().unwrap();
 
-        let mut alice_session =
-            alice.create_outbound_session(SessionConfig::version_1(), bob_identity, bob_one_time);
+        let mut alice_session = alice
+            .create_outbound_session(SessionConfig::version_1(), bob_identity, bob_one_time)
+            .expect("Should create the outbound session");
         let plaintext = b"Hello from test";
-        let olm_message = alice_session.encrypt(plaintext);
+        let olm_message = alice_session
+            .encrypt(plaintext)
+            .expect("Should encrypt the Pre Key message");
 
         assert!(!alice_session.has_received_message());
         let pre_key_message = match olm_message {
@@ -217,7 +222,11 @@ mod tests {
             OlmMessage::Normal(_) => panic!("First message should be pre-key"),
         };
         let decrypted = bob
-            .create_inbound_session(alice.curve25519_key(), &pre_key_message)
+            .create_inbound_session(
+                SessionConfig::version_1(),
+                alice.curve25519_key(),
+                &pre_key_message,
+            )
             .expect("Should create inbound session");
         assert_eq!(decrypted.plaintext, plaintext);
     }

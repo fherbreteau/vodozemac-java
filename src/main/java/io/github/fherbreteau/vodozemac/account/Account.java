@@ -92,6 +92,18 @@ public class Account implements AutoCloseable {
      * @param oneTimeKey  the recipient one-time key
      * @return a new {@code OlmSession}
      */
+    public OlmSession createOutbpundSession(String identityKey, String oneTimeKey) {
+        return createOutbpundSession(OlmSessionVersion.defaultVersion(), identityKey, oneTimeKey);
+    }
+
+    /**
+     * Create a {@code OlmSession} with the given identity key and one-time key.
+     *
+     * @param sessionVersion the version of the Olm Session to create
+     * @param identityKey    the recipient identity key
+     * @param oneTimeKey     the recipient one-time key
+     * @return a new {@code OlmSession}
+     */
     public OlmSession createOutbpundSession(OlmSessionVersion sessionVersion, String identityKey, String oneTimeKey) {
         checkNotClosed();
 
@@ -100,16 +112,31 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Create a {@code OlmSession} from the given pre-key message on sender identity.
+     * Create a {@code OlmSession} from the given pre-key message on sender
+     * identity.
      *
      * @param theirIdentityKey the sender identity key
-     * @param preKeyMessage the pre-key message recieved from the sebder
+     * @param preKeyMessage    the pre-key message recieved from the sebder
      * @return a existing {@code OlmSession}
      */
     public InboundCreationResult createInboundSession(String theirIdentityKey, String preKeyMessage) {
+        return createInboundSession(OlmSessionVersion.defaultVersion(), theirIdentityKey, preKeyMessage);
+    }
+
+    /**
+     * Create a {@code OlmSession} from the given pre-key message on sender
+     * identity.
+     *
+     * @param sessionVersion   the version of the Olm Session to create
+     * @param theirIdentityKey the sender identity key
+     * @param preKeyMessage    the pre-key message recieved from the sebder
+     * @return a existing {@code OlmSession}
+     */
+    public InboundCreationResult createInboundSession(OlmSessionVersion sessionVersion, String theirIdentityKey,
+            String preKeyMessage) {
         checkNotClosed();
 
-        return nativeCreateInboundSession(nativePtr, theirIdentityKey, preKeyMessage);
+        return nativeCreateInboundSession(nativePtr, sessionVersion.getValue(), theirIdentityKey, preKeyMessage);
     }
 
     /**
@@ -224,7 +251,7 @@ public class Account implements AutoCloseable {
      * Restore a {@code Account} from an encrypted string using a 32-byte key.
      *
      * @param pickleData the pickle data
-     * @param key a 256-bit (32-byte) key for encrypting the device.
+     * @param key        a 256-bit (32-byte) key for encrypting the device.
      * @return a {@code Account} object
      */
     public static Account unpickle(String pickleData, byte[] key) {
@@ -326,8 +353,8 @@ public class Account implements AutoCloseable {
     private native long nativeCreateOutboundSession(long ptr, int sessionVersion, String identityKey,
             String oneTimeKey);
 
-    private native InboundCreationResult nativeCreateInboundSession(long ptr, String theirIdentityKey,
-            String preKeyMessage);
+    private native InboundCreationResult nativeCreateInboundSession(long ptr, int sessionVersion,
+            String theirIdentityKey, String preKeyMessage);
 
     private native long nativeStoredOneTimeKeyCount(long ptr);
 

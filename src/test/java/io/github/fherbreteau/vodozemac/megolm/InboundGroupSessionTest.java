@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -173,5 +174,418 @@ class InboundGroupSessionTest {
                     .isNotNull()
                     .isNotEmpty();
         }
+    }
+
+    @Test
+    void testExportAt() {
+        String sessionKey;
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey = outbound.sessionKey();
+        }
+
+        try (InboundGroupSession inbound = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+            assertThat(inbound.exportAt(0))
+                    .as("Export at index 0 should return a non-null key")
+                    .isNotNull()
+                    .isNotEmpty();
+
+            assertThat(inbound.exportAt(10))
+                    .as("Export at index 10 should return a non-null key")
+                    .isNotNull()
+                    .isNotEmpty();
+
+            inbound.advanceTo(5);
+
+            assertThat(inbound.exportAt(3))
+                    .as("Export at index below first known index should return null")
+                    .isNull();
+
+            assertThat(inbound.exportAt(5))
+                    .as("Export at first known index should return a non-null key")
+                    .isNotNull()
+                    .isNotEmpty();
+
+            assertThat(inbound.exportAt(15))
+                    .as("Export at index above first known index should return a non-null key")
+                    .isNotNull()
+                    .isNotEmpty();
+        }
+    }
+
+    @Test
+    void testExportAtFirstKnownIndex() {
+        String sessionKey;
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey = outbound.sessionKey();
+        }
+
+        try (InboundGroupSession inbound = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+            String exported = inbound.exportAtFirstKnownIndex();
+
+            assertThat(exported)
+                    .as("Export at first known index should return a non-null key")
+                    .isNotNull()
+                    .isNotEmpty();
+
+            assertThat(exported)
+                    .as("Export at first known index should match exportAt(firstKnownIndex)")
+                    .isEqualTo(inbound.exportAt(inbound.firstKnownIndex()));
+
+            inbound.advanceTo(10);
+
+            String exportedAfterAdvance = inbound.exportAtFirstKnownIndex();
+
+            assertThat(exportedAfterAdvance)
+                    .as("Export at first known index after advance should return a non-null key")
+                    .isNotNull()
+                    .isNotEmpty();
+
+            assertThat(exportedAfterAdvance)
+                    .as("Export at first known index after advance should match exportAt(firstKnownIndex)")
+                    .isEqualTo(inbound.exportAt(inbound.firstKnownIndex()));
+        }
+    }
+
+    @Test
+    void testImportSession() {
+        String sessionKey;
+        String sessionId;
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey = outbound.sessionKey();
+            sessionId = outbound.sessionId();
+        }
+
+        try (InboundGroupSession inbound = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+            String exportedKey = inbound.exportAt(10);
+
+            try (InboundGroupSession imported = InboundGroupSession.importSession(exportedKey, MegolmSessionVersion.V2)) {
+                assertThat(imported)
+                        .as("Imported session should be created")
+                        .isNotNull();
+
+                assertThat(imported.sessionId())
+                        .as("Imported session should have the same session ID as the original")
+                        .isEqualTo(sessionId);
+
+                assertThat(imported.firstKnownIndex())
+                        .as("Imported session first known index should match the export index")
+                        .isEqualTo(10);
+            }
+        }
+    }
+
+    @Test
+    void testImportSessionCanDecryptFromExportIndex() {
+        String plaintext = "Hello from index 10";
+        String sessionKey;
+        String encryptedAt10;
+
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey = outbound.sessionKey();
+            for (int i = 0; i < 10; i++) {
+                outbound.encrypt(("Filler " + i).getBytes(StandardCharsets.UTF_8));
+            }
+            encryptedAt10 = outbound.encrypt(plaintext.getBytes(StandardCharsets.UTF_8));
+        }
+
+        try (InboundGroupSession inbound = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+            String exportedKey = inbound.exportAt(10);
+
+            try (InboundGroupSession imported = InboundGroupSession.importSession(exportedKey, MegolmSessionVersion.V2)) {
+                DecryptedMessage decrypted = imported.decrypt(encryptedAt10);
+
+                assertThat(new String(decrypted.plaintext(), StandardCharsets.UTF_8))
+                        .as("Imported session should decrypt message at the export index")
+                        .isEqualTo(plaintext);
+
+                assertThat(decrypted.messageIndex())
+                        .as("Decrypted message index should be 10")
+                        .isEqualTo(10);
+            }
+        }
+    }
+
+    @Test
+    void testAdvanceTo() {
+        String sessionKey;
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey = outbound.sessionKey();
+        }
+
+        try (InboundGroupSession inbound = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+            assertThat(inbound.firstKnownIndex())
+                    .as("New session should start at first known index 0")
+                    .isZero();
+
+            assertThat(inbound.advanceTo(10))
+                    .as("Advance to 10 should succeed")
+                    .isTrue();
+
+            assertThat(inbound.firstKnownIndex())
+                    .as("First known index should be 10 after advance")
+                    .isEqualTo(10);
+
+            assertThat(inbound.advanceTo(10))
+                    .as("Advance to the same index should return false")
+                    .isFalse();
+
+            assertThat(inbound.advanceTo(5))
+                    .as("Advance to a lower index should return false")
+                    .isFalse();
+
+            assertThat(inbound.advanceTo(20))
+                    .as("Advance to 20 should succeed")
+                    .isTrue();
+
+            assertThat(inbound.firstKnownIndex())
+                    .as("First known index should be 20 after advance")
+                    .isEqualTo(20);
+        }
+    }
+
+    @Test
+    void testAdvanceToRemovesAbilityToDecryptEarlierMessages() {
+        String plaintext = "Early message";
+        String sessionKey;
+        String encrypted;
+
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey = outbound.sessionKey();
+            encrypted = outbound.encrypt(plaintext.getBytes(StandardCharsets.UTF_8));
+        }
+
+        try (InboundGroupSession inbound = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+            DecryptedMessage decrypted = inbound.decrypt(encrypted);
+            assertThat(new String(decrypted.plaintext(), StandardCharsets.UTF_8))
+                    .as("Should decrypt before advancing")
+                    .isEqualTo(plaintext);
+
+            inbound.advanceTo(1);
+
+            assertThatThrownBy(() -> inbound.decrypt(encrypted))
+                    .as("Should not decrypt message before first known index after advancing")
+                    .isInstanceOf(RuntimeException.class);
+        }
+    }
+
+    @Test
+    void testConnectedWithSameOutbound() {
+        String sessionKey;
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey = outbound.sessionKey();
+        }
+
+        try (InboundGroupSession session1 = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2);
+                InboundGroupSession session2 = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+
+            assertThat(session1.connected(session2))
+                    .as("Sessions from the same outbound should be connected")
+                    .isTrue();
+
+            assertThat(session2.connected(session1))
+                    .as("Connected should be symmetric")
+                    .isTrue();
+
+            session2.advanceTo(10);
+
+            assertThat(session1.connected(session2))
+                    .as("Sessions should still be connected after advancing one")
+                    .isTrue();
+
+            assertThat(session2.connected(session1))
+                    .as("Connected should be symmetric after advancing")
+                    .isTrue();
+        }
+    }
+
+    @Test
+    void testConnectedWithDifferentOutbound() {
+        String sessionKey1;
+        String sessionKey2;
+        try (OutboundGroupSession outbound1 = new OutboundGroupSession(MegolmSessionVersion.V2);
+                OutboundGroupSession outbound2 = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey1 = outbound1.sessionKey();
+            sessionKey2 = outbound2.sessionKey();
+        }
+
+        try (InboundGroupSession session1 = new InboundGroupSession(sessionKey1, MegolmSessionVersion.V2);
+                InboundGroupSession session2 = new InboundGroupSession(sessionKey2, MegolmSessionVersion.V2)) {
+
+            assertThat(session1.connected(session2))
+                    .as("Sessions from different outbound sessions should not be connected")
+                    .isFalse();
+        }
+    }
+
+    @Test
+    void testConnectedWithDifferentVersions() {
+        String sessionKey;
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V1)) {
+            sessionKey = outbound.sessionKey();
+        }
+
+        try (InboundGroupSession sessionV1 = new InboundGroupSession(sessionKey, MegolmSessionVersion.V1);
+                InboundGroupSession sessionV2 = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+
+            assertThat(sessionV1.connected(sessionV2))
+                    .as("Sessions with different versions should not be connected")
+                    .isFalse();
+        }
+    }
+
+    @Test
+    void testCompareEqual() {
+        String sessionKey;
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey = outbound.sessionKey();
+        }
+
+        try (InboundGroupSession session1 = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2);
+                InboundGroupSession session2 = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+
+            assertThat(session1.compare(session2))
+                    .as("Identical sessions should compare as EQUAL")
+                    .isEqualTo(SessionOrdering.EQUAL);
+
+            assertThat(session2.compare(session1))
+                    .as("Compare should be symmetric for equal sessions")
+                    .isEqualTo(SessionOrdering.EQUAL);
+        }
+    }
+
+    @Test
+    void testCompareBetterAndWorse() {
+        String sessionKey;
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey = outbound.sessionKey();
+        }
+
+        try (InboundGroupSession session1 = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2);
+                InboundGroupSession session2 = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+
+            session2.advanceTo(10);
+
+            assertThat(session1.compare(session2))
+                    .as("Session with lower index should be BETTER")
+                    .isEqualTo(SessionOrdering.BETTER);
+
+            assertThat(session2.compare(session1))
+                    .as("Session with higher index should be WORSE")
+                    .isEqualTo(SessionOrdering.WORSE);
+        }
+    }
+
+    @Test
+    void testCompareUnconnected() {
+        String sessionKey1;
+        String sessionKey2;
+        try (OutboundGroupSession outbound1 = new OutboundGroupSession(MegolmSessionVersion.V2);
+                OutboundGroupSession outbound2 = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey1 = outbound1.sessionKey();
+            sessionKey2 = outbound2.sessionKey();
+        }
+
+        try (InboundGroupSession session1 = new InboundGroupSession(sessionKey1, MegolmSessionVersion.V2);
+                InboundGroupSession session2 = new InboundGroupSession(sessionKey2, MegolmSessionVersion.V2)) {
+
+            assertThat(session1.compare(session2))
+                    .as("Sessions from different outbound should compare as UNCONNECTED")
+                    .isEqualTo(SessionOrdering.UNCONNECTED);
+
+            assertThat(session2.compare(session1))
+                    .as("Unconnected compare should be symmetric")
+                    .isEqualTo(SessionOrdering.UNCONNECTED);
+        }
+    }
+
+    @Test
+    void testMergeConnectedSessions() {
+        String sessionKey;
+        String sessionId;
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey = outbound.sessionKey();
+            sessionId = outbound.sessionId();
+        }
+
+        try (InboundGroupSession firstSession = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+            String exportedKey = firstSession.exportAt(10);
+
+            try (InboundGroupSession secondSession = InboundGroupSession.importSession(exportedKey, MegolmSessionVersion.V2)) {
+                assertThat(firstSession.compare(secondSession))
+                        .as("First session (lower index) should be BETTER")
+                        .isEqualTo(SessionOrdering.BETTER);
+
+                Optional<InboundGroupSession> mergedOpt = secondSession.merge(firstSession);
+
+                assertThat(mergedOpt)
+                        .as("Merge of connected sessions should return a session")
+                        .isPresent();
+
+                try (InboundGroupSession merged = mergedOpt.get()) {
+                    assertThat(merged.sessionId())
+                            .as("Merged session should have the same session ID")
+                            .isEqualTo(sessionId);
+
+                    assertThat(merged.firstKnownIndex())
+                            .as("Merged session should have the lower first known index")
+                            .isZero();
+
+                    assertThat(merged.compare(secondSession))
+                            .as("Merged session should be BETTER than the imported (higher index) session")
+                            .isEqualTo(SessionOrdering.BETTER);
+
+                    assertThat(merged.compare(firstSession))
+                            .as("Merged session should be EQUAL to the first session")
+                            .isEqualTo(SessionOrdering.EQUAL);
+                }
+            }
+        }
+    }
+
+    @Test
+    void testMergeUnconnectedSessionsReturnsEmpty() {
+        String sessionKey1;
+        String sessionKey2;
+        try (OutboundGroupSession outbound1 = new OutboundGroupSession(MegolmSessionVersion.V2);
+                OutboundGroupSession outbound2 = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey1 = outbound1.sessionKey();
+            sessionKey2 = outbound2.sessionKey();
+        }
+
+        try (InboundGroupSession session1 = new InboundGroupSession(sessionKey1, MegolmSessionVersion.V2);
+                InboundGroupSession session2 = new InboundGroupSession(sessionKey2, MegolmSessionVersion.V2)) {
+
+            Optional<InboundGroupSession> merged = session1.merge(session2);
+
+            assertThat(merged)
+                    .as("Merge of unconnected sessions should return empty")
+                    .isEmpty();
+        }
+    }
+
+    @Test
+    void testClosedSessionMethodsThrowAfterClose() {
+        String sessionKey;
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey = outbound.sessionKey();
+        }
+
+        InboundGroupSession inbound = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2);
+        inbound.close();
+
+        assertThatThrownBy(inbound::exportAtFirstKnownIndex)
+                .as("Export on closed session should throw IllegalStateException")
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Account has been closed");
+
+        assertThatThrownBy(() -> inbound.exportAt(0))
+                .as("Export at index on closed session should throw IllegalStateException")
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Account has been closed");
+
+        assertThatThrownBy(() -> inbound.advanceTo(1))
+                .as("AdvanceTo on closed session should throw IllegalStateException")
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Account has been closed");
     }
 }

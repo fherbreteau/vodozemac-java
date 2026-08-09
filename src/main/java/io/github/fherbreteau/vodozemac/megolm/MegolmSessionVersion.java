@@ -13,4 +13,8 @@ public enum MegolmSessionVersion {
     public int getValue() {
         return value;
     }
+
+    public static MegolmSessionVersion defaultVersion() {
+        return V1;
+    }
 }

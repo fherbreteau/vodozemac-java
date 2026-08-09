@@ -54,7 +54,7 @@ class OlmSessionTest {
 
                 // Bob creates an inbound session from the pre-key message
                 InboundCreationResult inboundResult = bobAccount.createInboundSession(
-                        aliceAccount.curve25519Key(), encrypted);
+                        OlmSessionVersion.V2, aliceAccount.curve25519Key(), encrypted);
 
                 assertThat(inboundResult)
                         .as("Inbound creation result should not be null")

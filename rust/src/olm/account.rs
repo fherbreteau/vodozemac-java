@@ -121,15 +121,20 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
+    session_version: jint,
     their_identity_key: JString,
     pre_key_message: JString,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         let account = unsafe { &mut *(ptr as *mut Account) };
+
+        let session_config = olm_session_config_from_version(session_version)?;
+
         let their_identity_key = Curve25519PublicKey::from_base64(&their_identity_key.to_string())
             .map_err(|_e| jni::errors::Error::JavaException)?;
         let olm_message: OlmMessage = serde_json::from_str(&pre_key_message.to_string())
             .map_err(|_e| jni::errors::Error::JavaException)?;
+
         let pre_key_message = match olm_message {
             OlmMessage::PreKey(pk) => pk,
             OlmMessage::Normal(_) => {
@@ -137,7 +142,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
             }
         };
         let result = account
-            .create_inbound_session(their_identity_key, &pre_key_message)
+            .create_inbound_session(session_config, their_identity_key, &pre_key_message)
             .map_err(|_e| jni::errors::Error::JavaException)?;
 
         let session_ptr = Box::into_raw(Box::new(result.session)) as jlong;

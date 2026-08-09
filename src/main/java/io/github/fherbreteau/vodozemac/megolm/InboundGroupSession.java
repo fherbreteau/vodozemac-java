@@ -1,5 +1,7 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
+import java.util.Optional;
+
 public class InboundGroupSession implements AutoCloseable {
 
     private long nativePtr;
@@ -37,6 +39,40 @@ public class InboundGroupSession implements AutoCloseable {
         return nativeEncryptedPickle(nativePtr, key);
     }
 
+    public String exportAt(int index) {
+        checkNotClosed();
+        return nativeExportAt(nativePtr, index);
+    }
+
+    public String exportAtFirstKnownIndex() {
+        checkNotClosed();
+        return nativeExportAtFirstKnownIndex(nativePtr);
+    }
+
+    public boolean advanceTo(int index) {
+        checkNotClosed();
+        return nativeAdvanceTo(nativePtr, index);
+    }
+
+    boolean connected(InboundGroupSession other) {
+        checkNotClosed();
+        other.checkNotClosed();
+        return nativeConnected(nativePtr, other.nativePtr);
+    }
+
+    SessionOrdering compare(InboundGroupSession other) {
+        checkNotClosed();
+        other.checkNotClosed();
+        return nativeCompare(nativePtr, other.nativePtr);
+    }
+
+    Optional<InboundGroupSession> merge(InboundGroupSession other) {
+        checkNotClosed();
+        other.checkNotClosed();
+        Long result = nativeMerge(nativePtr, other.nativePtr);
+        return Optional.ofNullable(result).map(InboundGroupSession::new);
+    }
+
     public static InboundGroupSession unpickle(String pickleData) {
         long nativePtr = nativeUnpickle(pickleData);
         return new InboundGroupSession(nativePtr);
@@ -49,6 +85,11 @@ public class InboundGroupSession implements AutoCloseable {
 
     public static InboundGroupSession unpickleLegacy(String pickleData, byte[] pickleKey) {
         long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
+        return new InboundGroupSession(nativePtr);
+    }
+
+    public static InboundGroupSession importSession(String sessionKey, MegolmSessionVersion version) {
+        long nativePtr = nativeImport(sessionKey, version.getValue());
         return new InboundGroupSession(nativePtr);
     }
 
@@ -86,6 +127,20 @@ public class InboundGroupSession implements AutoCloseable {
 
     private native String nativePickle(long ptr);
 
+    private native String nativeExportAt(long ptr, int index);
+
+    private native String nativeExportAtFirstKnownIndex(long ptr);
+
+    private native boolean nativeAdvanceTo(long ptr, int index);
+
+    private native boolean nativeConnected(long ptr, long otherPtr);
+
+    private native SessionOrdering nativeCompare(long ptr, long otherPtr);
+
+    private native Long nativeMerge(long ptr, long otherPtr);
+
+    private native void nativeFree(long ptr);
+
     private native String nativeEncryptedPickle(long ptr, byte[] key);
 
     private static native long nativeUnpickle(String pickleData);
@@ -94,5 +149,5 @@ public class InboundGroupSession implements AutoCloseable {
 
     private static native long nativeUnpickleLegacy(String pickleData, byte[] pickleKey);
 
-    private native void nativeFree(long ptr);
+    private static native long nativeImport(String sessionKey, long version);
 }
