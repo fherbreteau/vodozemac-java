@@ -4,51 +4,10 @@ This document tracks the gap between the vodozemac 0.9.0 Rust API and the Java b
 as well as issues identified in the code review (`CODE_REVIEW.md`).
 It is organized into phases by priority, with each phase being independently deliverable.
 
-Phases 1-9 cover missing vodozemac features.
-Phases 10-14 cover code review fixes (duplicated code, security hardening, build/config, documentation, and refactoring).
+Phases 2-7, 9 cover missing vodozemac features.
+Phases 12-14 cover code review fixes (security hardening, build/config, documentation, and refactoring).
 
----
-
-## Phase 1: InboundGroupSession session management (High priority)
-
-These methods are needed for session sharing, key rotation, and trust management —
-core Megolm functionality that clients need.
-
-### 1.1 `InboundGroupSession.import(ExportedSessionKey, MegolmSessionVersion)`
-
-- **Java**: Add constructor `InboundGroupSession(ExportedSessionKey key, MegolmSessionVersion version)`
-  or static factory `InboundGroupSession.import(String exportedKey, MegolmSessionVersion version)`
-- **Rust**: `Java_..._InboundGroupSession_nativeImport(String, jint) -> jlong` calling
-  `InboundGroupSession::import(&ExportedSessionKey::from_base64(...), config)`
-- **Java type**: `ExportedSessionKey` — either a new class or just a base64 `String` parameter
-  (simpler, consistent with `SessionKey` handling)
-
-### 1.2 `export_at(index)` and `export_at_first_known_index()`
-
-- **Java**: `String exportAt(int index)` returning base64 `ExportedSessionKey`,
-  `String exportAtFirstKnownIndex()` returning base64
-- **Rust**: `Java_..._InboundGroupSession_nativeExportAt(long, jint) -> jstring` calling
-  `session.export_at(index)` -> `ExportedSessionKey::to_base64()`
-- **Rust**: `Java_..._InboundGroupSession_nativeExportAtFirstKnownIndex(long) -> jstring`
-  calling `session.export_at_first_known_index().to_base64()`
-
-### 1.3 `advance_to(index)`
-
-- **Java**: `boolean advanceTo(int index)`
-- **Rust**: `Java_..._InboundGroupSession_nativeAdvanceTo(long, jint) -> jboolean` calling
-  `session.advance_to(index)`
-
-### 1.4 `connected(other)`, `compare(other)`, `merge(other)` + `SessionOrdering` enum
-
-- **Java**: `boolean connected(InboundGroupSession other)`,
-  `SessionOrdering compare(InboundGroupSession other)`,
-  `Optional<InboundGroupSession> merge(InboundGroupSession other)`
-- **Java enum**: `SessionOrdering` with values `EQUAL`, `BETTER`, `WORSE`, `UNCONNECTED`
-- **Rust**: 3 JNI functions + Java object construction for `InboundGroupSession` result from merge
-- **Note**: `merge` returns `Option<InboundGroupSession>` — needs to return either a new
-  `InboundGroupSession` pointer or null
-
-### Estimated effort: ~6 JNI functions, 1 Java enum, ~4 new Java methods
+**Completed phases:** Phase 1 (InboundGroupSession session management), Phase 8 (Granular error types), Phase 10 (Code quality and duplication fixes), and Phase 11 (Build and configuration fixes) have been implemented. Phase 13.3 (cause chaining for VodozemacException) was implemented as part of Phase 8.
 
 ---
 
@@ -228,35 +187,6 @@ Expose `Ed25519PublicKey`, `Ed25519Signature`, `Curve25519PublicKey` as Java typ
 
 ---
 
-## Phase 8: Granular error types (Low priority)
-
-Replace `VodozemacException(String)` with typed exceptions.
-
-### 8.1 Approach
-
-Option A: Subclass `VodozemacException` with specific types:
-- `PickleException extends VodozemacException`
-- `DecryptionException extends VodozemacException` (with variants `InvalidMAC`, `InvalidPadding`,
-  `UnknownMessageIndex`, etc.)
-- `SessionCreationException extends VodozemacException`
-- `KeyException extends VodozemacException`
-- `SignatureException extends VodozemacException`
-
-Option B: Single `VodozemacException` with an error code enum:
-- `VodozemacException(VodozemacError error, String message)`
-- `enum VodozemacError { PICKLE, DECRYPTION, SESSION_CREATION, KEY, SIGNATURE, ... }`
-
-### 8.2 Design decisions
-
-- Option A is more idiomatic Java but requires many classes.
-- Option B is simpler but less type-safe.
-- **Recommendation**: Option A with a common base class, only for errors that Java callers
-  need to handle differently (e.g., `UnknownMessageIndex` vs `InvalidMAC` in Megolm decryption).
-
-### Estimated effort: ~10 exception classes, JNI error mapping changes
-
----
-
 ## Phase 9: Utility functions (Low priority)
 
 ### 9.1 `base64Encode(byte[]) -> String` and `base64Decode(String) -> byte[]`
@@ -269,141 +199,6 @@ Option B: Single `VodozemacException` with an error code enum:
 - `Vodozemac.getVersion() -> String` returning the vodozemac crate version
 
 ### Estimated effort: 3 JNI functions, 1 Java class
-
----
-
-## Phase 10: Code quality and duplication fixes (High priority)
-
-Addresses CODE_REVIEW.md findings C2, C4, C5, C6, C7, C13, C14, and duplication items 5.1, 5.4.
-
-### 10.1 Fix `checkNotClosed()` error messages
-
-The `checkNotClosed()` method in `OlmSession`, `OutboundGroupSession`, and `InboundGroupSession`
-all throw `"Account has been closed"` — a copy-paste bug from `Account`.
-
-- **Java**: Update the error message in each class to reference the correct class name:
-  - `OlmSession.checkNotClosed()` → `"OlmSession has been closed"`
-  - `OutboundGroupSession.checkNotClosed()` → `"OutboundGroupSession has been closed"`
-  - `InboundGroupSession.checkNotClosed()` → `"InboundGroupSession has been closed"`
-- **Tests**: Update assertions in `OlmSessionTest`, `OutboundGroupSessionTest`,
-  `InboundGroupSessionTest` that check for `"Account has been closed"`
-- **Files**: `OlmSession.java:118`, `OutboundGroupSession.java:62`, `InboundGroupSession.java:57`
-
-### 10.2 Add 32-byte key validation to Megolm pickle/unpickle methods
-
-`OutboundGroupSession` and `InboundGroupSession` pickle/unpickle methods accept `byte[] key`
-without validating that the key is 32 bytes, unlike `Account` and `OlmSession`.
-
-- **Java**: Add the following validation to 4 methods:
-  - `OutboundGroupSession.pickle(byte[] key)` — `OutboundGroupSession.java:40`
-  - `OutboundGroupSession.unpickle(String, byte[])` — `OutboundGroupSession.java:50`
-  - `InboundGroupSession.pickle(byte[] key)` — `InboundGroupSession.java:35`
-  - `InboundGroupSession.unpickle(String, byte[])` — `InboundGroupSession.java:45`
-- **Pattern** (consistent with `Account` and `OlmSession`):
-  ```java
-  if (key.length != 32) {
-      throw new VodozemacException("Encrypted Key must be 256-bit (32-byte)");
-  }
-  ```
-- **Tests**: Add tests for invalid key length on all 4 methods (same pattern as
-  `AccountTest.testEncryptedPickleWithInvalidKeyThrowsException`)
-
-### 10.3 Replace `.unwrap()` in Rust `helpers.rs:wrap()` with proper error handling
-
-`helpers.rs:6` uses `unwrap()` which panics on wrong key length instead of returning a JNI error.
-
-- **Rust**: Change `wrap()` to return `Result<[T; 32], jni::errors::Error>` and propagate the error:
-  ```rust
-  pub(crate) fn wrap<T>(v: Vec<T>) -> Result<[T; 32], jni::errors::Error> {
-      v.try_into().map_err(|v: Vec<T>| {
-          // This will be caught by the JNI error handler
-          jni::errors::Error::JavaException
-      })
-  }
-  ```
-- **Rust**: Update all callers in `account.rs`, `session.rs`, `inbound_group_session.rs`,
-  `outbound_group_session.rs` to use `?` operator instead of `.unwrap()`
-
-### 10.4 Replace `.unwrap()` on `convert_byte_array` in Rust JNI pickle functions
-
-Several Rust JNI functions call `env.convert_byte_array(key).unwrap()` which will panic
-on failure instead of throwing a Java exception.
-
-- **Rust**: Replace `.unwrap()` with `?` operator in:
-  - `account.rs:374` (`nativeEncryptedPickle`), `account.rs:407` (`nativeEncryptedUnpickle`),
-    `account.rs:445` (`nativeFromDehydratedDevice`), `account.rs:463` (`nativeToDehydratedDevice`)
-  - `session.rs:113` (`nativeEncryptedPickle`), `session.rs:147` (`nativeEncryptedUnpickle`)
-  - `inbound_group_session.rs:115` (`nativeEncryptedPickle`), `inbound_group_session.rs:148` (`nativeEncryptedUnpickle`)
-  - `outbound_group_session.rs:114` (`nativeEncryptedPickle`), `outbound_group_session.rs:147` (`nativeEncryptedUnpickle`)
-- **Pattern**: `let key = wrap(env.convert_byte_array(key)?)?;` (combines with 10.3)
-
-### 10.5 Remove unused import in Rust tests
-
-- **Rust**: Remove `use crate::helpers::PICKLE_KEY;` from `rust/src/olm/session.rs:177`
-  (unused since the test module doesn't use `PICKLE_KEY`)
-
-### Estimated effort: ~0 JNI functions, ~0 Java classes, Rust + Java fixes across existing files
-
----
-
-## Phase 11: Build and configuration fixes (High priority)
-
-Addresses CODE_REVIEW.md findings D1, D2, D3, C12, and the JaCoCo coverage enforcement gap.
-
-### 11.1 Fix `pom.xml` `mainClass` reference
-
-`pom.xml:353` declares `mainClass` as `io.github.fherbreteau.Main` — a class that does not exist.
-The actual demo class is `io.github.fherbreteau.Sample`.
-
-- **pom.xml**: Change `<mainClass>io.github.fherbreteau.Main</mainClass>` to
-  `<mainClass>io.github.fherbreteau.Sample</mainClass>`
-- **Alternative**: Remove the `mainClass` configuration entirely if the JAR is not meant to be
-  directly executable (it's a library binding, not an application)
-
-### 11.2 Fix undefined Maven property `${dependencies-version.version}`
-
-`pom.xml:197` references `${dependencies-version.version}` for the `versions-maven-plugin`
-but no such property is defined.
-
-- **Option A**: Define the property: `<dependencies-version.version>3.10.0</dependencies-version.version>`
-  in the `<properties>` section
-- **Option B**: Hardcode the version in the plugin declaration and remove the property reference
-- **Recommended**: Option A, consistent with how other plugin versions are managed
-
-### 11.3 Remove stale root-level `Cargo.lock`
-
-A root-level `Cargo.lock` (1087 lines) exists alongside `rust/Cargo.lock` (941 lines) with
-different dependency versions (e.g., anyhow 1.0.98 vs 1.0.104). The Rust project lives in `rust/`
-so the root-level lockfile is stale and misleading.
-
-- **Action**: Delete the root-level `Cargo.lock`
-- **`.gitignore`**: Ensure root `Cargo.lock` is ignored (but NOT `rust/Cargo.lock`)
-
-### 11.4 Align Java version across pom.xml and CI workflows
-
-| Location | Current | Target |
-|---|---|---|
-| `pom.xml` (`java.version`) | 17 | Decide on one version and align |
-| `build.yml` (`JAVA_VERSION`) | 25 | Same as pom.xml |
-| `test.yml` (`java-version`) | 25 | Same as pom.xml |
-| `release.yml` (`JAVA_VERSION`) | 17 | Same as pom.xml |
-
-- **Decision needed**: Either bump `pom.xml` to 25 (matching CI) or downgrade CI to 17 (matching pom.xml)
-- **Recommendation**: Bump `pom.xml` to 25 to match CI, since CI is already running on 25
-
-### 11.5 Enforce JaCoCo coverage ratio or remove the property
-
-`pom.xml` declares `jacoco.coverage.ratio` at 95% but no JaCoCo `check` goal is configured.
-Current Java coverage is 63.9% — well below the target.
-
-- **Option A**: Add a `check` execution to `jacoco-maven-plugin` that enforces the 95% ratio
-  (will fail the build until coverage improves)
-- **Option B**: Lower the ratio to a realistic target (e.g., 80%) and add the `check` execution
-- **Option C**: Remove the property if coverage enforcement is not desired
-- **Recommendation**: Option B — add a `check` execution with a realistic ratio that can be
-  incrementally raised as coverage improves
-
-### Estimated effort: 0 code, build/config changes only
 
 ---
 
@@ -519,20 +314,7 @@ any caller to construct a session with an arbitrary pointer.
   is in a different package
 - **Design decision**: Same as 13.1 — need cross-package access solution
 
-### 13.3 Add cause chaining to `VodozemacException`
-
-`VodozemacException` only has a `String` constructor, preventing exception cause chaining.
-
-- **Java**: Add a second constructor:
-  ```java
-  public VodozemacException(String message, Throwable cause) {
-      super(message, cause);
-  }
-  ```
-- **Impact**: Allows Java callers to wrap JNI exceptions with context while preserving the
-  original cause
-
-### 13.4 Set restrictive permissions on extracted native library
+### 13.3 Set restrictive permissions on extracted native library
 
 `NativeLibraryLoader.java:96-106` extracts the native library to a temp directory but does
 not set file permissions, potentially allowing other users to read/modify the library.
@@ -545,7 +327,7 @@ not set file permissions, potentially allowing other users to read/modify the li
 - **Fallback**: On Windows (no POSIX permissions), use `tempLib.toFile().setReadable(false, false)`
   and `setWritable(false, false)` to restrict access for other users
 
-### 13.5 Add `--enable-native-access=ALL-UNNAMED` for Java 25+ compatibility
+### 13.4 Add `--enable-native-access=ALL-UNNAMED` for Java 25+ compatibility
 
 The JVM warns about restricted native access when calling `System.load()`. On Java 25+,
 this may become a hard error.
@@ -554,12 +336,12 @@ this may become a hard error.
   `--enable-native-access=ALL-UNNAMED`
 - **Documentation**: Document the requirement in README for consumers of the library
 
-### 13.6 Fix Javadoc `@link` with wrong method signature
+### 13.5 Fix Javadoc `@link` with wrong method signature
 
 - `Account.java:278`: `@link Account#toDehydratedDevice(String)` should be
   `@link Account#toDehydratedDevice(byte[])` — the actual method takes `byte[]`, not `String`
 
-### Estimated effort: ~0 JNI functions, ~1 Java class change (VodozemacException), security hardening
+### Estimated effort: ~0 JNI functions, security hardening (VodozemacException cause chaining done in Phase 8)
 
 ---
 
@@ -697,51 +479,51 @@ All 4 `nativeFree` functions are identical except for the Rust type.
 
 | Phase                              | Priority | JNI functions | Java classes | Rust modules     |
 | ---------------------------------- | -------- | ------------- | ------------ | ---------------- |
-| 1. InboundGroupSession management  | High     | ~6            | 1 enum       | Existing `megolm/` |
+| ~~1. InboundGroupSession management~~ | ~~High~~ | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | 2. SAS module                      | High     | ~12           | 2-4          | New `sas/`       |
 | 3. ECIES module                    | High     | ~15           | 5            | New `ecies/`     |
 | 4. PK Encryption                   | High     | ~10           | 3            | New `pk_encryption/` + Cargo.toml |
 | 5. Structured messages             | Medium   | ~8 changes    | 2-3          | Existing modules |
 | 6. Crypto key types                | Medium   | ~6            | 3            | New `types/`     |
 | 7. Missing methods                 | Medium   | ~4            | 1            | Existing modules |
-| 8. Error types                      | Low      | ~0 (mapping)  | ~10          | Existing modules |
+| ~~8. Error types~~                    | ~~Low~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | 9. Utilities                       | Low      | ~3            | 1            | New `utils/`     |
-| 10. Code quality & duplication     | High     | ~0            | ~0           | Existing modules (Rust fixes) |
-| 11. Build & configuration          | High     | N/A           | N/A          | N/A (config only) |
+| ~~10. Code quality & duplication~~ | ~~High~~ | ~~Done~~    | ~~Done~~     | ~~Done~~         |
+| ~~11. Build & configuration~~      | ~~High~~ | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | 12. Documentation overhaul          | Medium   | N/A           | N/A          | N/A (docs only)  |
-| 13. Security hardening             | Medium   | ~0            | ~1           | N/A              |
+| 13. Security hardening             | Medium   | ~0            | ~0           | N/A              |
 | 14. Refactoring & deduplication    | Low      | ~0            | ~3           | Existing `helpers.rs` |
-| **Total**                          |          | **~64**       | **~38**      | **4 new + helpers** |
+| **Remaining total**                |          | **~58**       | **~23**      | **4 new + helpers** |
 
 ### Code review findings coverage
 
 | CODE_REVIEW.md finding | Phase | Section |
 |---|---|---|
 | C1: Typo `createOutbpundSession` | Phase 7 | 7.4 |
-| C2: Wrong `checkNotClosed()` error messages | Phase 10 | 10.1 |
+| ~~C2: Wrong `checkNotClosed()` error messages~~ | ~~Phase 10~~ | ~~Done~~ |
 | C3: `OlmSession` constructor is public | Phase 13 | 13.1 |
-| C4-C7: Missing key validation in Megolm | Phase 10 | 10.2 |
-| C8: Unused import in Rust tests | Phase 10 | 10.5 |
-| C9: `VodozemacException` no cause chaining | Phase 13 | 13.3 |
+| ~~C4-C7: Missing key validation in Megolm~~ | ~~Phase 10~~ | ~~Done~~ |
+| ~~C8: Unused import in Rust tests~~ | ~~Phase 10~~ | ~~Done (already absent)~~ |
+| ~~C9: `VodozemacException` no cause chaining~~ | ~~Phase 13~~ | ~~Done (Phase 8)~~ |
 | C10: `InboundCreationResult` constructor public | Phase 13 | 13.2 |
-| C11: Javadoc `@link` wrong signature | Phase 13 | 13.6 |
-| C12: `pom.xml` mainClass wrong | Phase 11 | 11.1 |
-| C13: `helpers.rs:wrap()` uses `unwrap()` | Phase 10 | 10.3 |
-| C14: Rust JNI `.unwrap()` on `convert_byte_array` | Phase 10 | 10.4 |
+| C11: Javadoc `@link` wrong signature | Phase 13 | 13.5 |
+| ~~C12: `pom.xml` mainClass wrong~~ | ~~Phase 11~~ | ~~Done~~ |
+| ~~C13: `helpers.rs:wrap()` uses `unwrap()`~~ | ~~Phase 10~~ | ~~Done~~ |
+| ~~C14: Rust JNI `.unwrap()` on `convert_byte_array`~~ | ~~Phase 10~~ | ~~Done~~ |
 | C15: README imports `VodozemacAccount` | Phase 12 | 12.1 |
-| D1: Undefined Maven property | Phase 11 | 11.2 |
-| D2: Stale root `Cargo.lock` | Phase 11 | 11.3 |
-| D3: Java version mismatch | Phase 11 | 11.4 |
+| ~~D1: Undefined Maven property~~ | ~~Phase 11~~ | ~~Done~~ |
+| ~~D2: Stale root `Cargo.lock`~~ | ~~Phase 11~~ | ~~Done~~ |
+| ~~D3: Java version mismatch~~ | ~~Phase 11~~ | ~~Done~~ |
 | DOC1-DOC4: README inaccuracies | Phase 12 | 12.1 |
 | DOC5-DOC6: `Sample.java` wrong log messages | Phase 12 | 12.3 |
 | DOC7: Missing `CODE_OF_CONDUCT.md` | Phase 12 | 12.7 |
 | DOC8-DOC10: Javadoc typos | Phase 12 | 12.2 |
 | S1: Fake GPG key in SECURITY.md | Phase 12 | 12.4 |
-| S2: Missing key validation (Megolm) | Phase 10 | 10.2 |
+| ~~S2: Missing key validation (Megolm)~~ | ~~Phase 10~~ | ~~Done~~ |
 | S3: Native pointer exposed in `InboundCreationResult` | Phase 13 | 13.2 |
 | S4: Inconsistent contact info | Phase 12 | 12.5 |
 | S5: French error messages | Phase 12 | 12.6 |
-| S6: Temp file permissions | Phase 13 | 13.4 |
-| S7: `System.load` restricted warning | Phase 13 | 13.5 |
+| S6: Temp file permissions | Phase 13 | 13.3 |
+| S7: `System.load` restricted warning | Phase 13 | 13.4 |
 | 5.1-5.8: Duplicated code patterns | Phase 14 | 14.1-14.6 |
-| JaCoCo coverage not enforced | Phase 11 | 11.5 |
+| ~~JaCoCo coverage not enforced~~ | ~~Phase 11~~ | ~~Done~~ |

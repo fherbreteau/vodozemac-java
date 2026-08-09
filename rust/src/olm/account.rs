@@ -377,7 +377,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
         let account = unsafe { &*(ptr as *const Account) };
 
         let pickle = account.pickle();
-        let key = wrap(env.convert_byte_array(key).unwrap());
+        let key = wrap(env.convert_byte_array(key)?)?;
         let encrypted = pickle.encrypt(&key);
         let result = env.new_string(encrypted)?;
         Ok(result.into_raw())
@@ -411,7 +411,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
-        let key = wrap(env.convert_byte_array(key).unwrap());
+        let key = wrap(env.convert_byte_array(key)?)?;
 
         let pickle_data = AccountPickle::from_encrypted(&pickle_str, &key)
             .map_err(|e| throw_pickle_error(env, e))?;
@@ -430,7 +430,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
-        let pickle_key = env.convert_byte_array(&pickle_key).unwrap();
+        let pickle_key = env.convert_byte_array(&pickle_key)?;
 
         let from_olm = Account::from_libolm_pickle(&pickle_str, &pickle_key)
             .map_err(|e| throw_pickle_error(env, e))?;
@@ -451,7 +451,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let ciphertext_str: String = ciphertext.to_string();
         let nonce_str: String = nonce.to_string();
-        let key = wrap(env.convert_byte_array(key).unwrap());
+        let key = wrap(env.convert_byte_array(key)?)?;
 
         let dehydrated = Account::from_dehydrated_device(&ciphertext_str, &nonce_str, &key)
             .map_err(|e| throw_pickle_error(env, e))?;
@@ -470,7 +470,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         let account = unsafe { &*(ptr as *const Account) };
-        let key = wrap(env.convert_byte_array(key).unwrap());
+        let key = wrap(env.convert_byte_array(key)?)?;
 
         let pickle_data = account
             .to_dehydrated_device(&key)

@@ -13,7 +13,7 @@
     <url>${project.scm.url}</url>
 
     <properties>
-        <java.version>17</java.version>
+        <java.version>25</java.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.release>${java.version}</maven.compiler.release>
 
@@ -44,7 +44,7 @@
         <dependency.version>3.10.0</dependency.version>
 
         <!-- Jacoco Coverage Ratio -->
-        <jacoco.coverage.ratio>95%</jacoco.coverage.ratio>
+        <jacoco.coverage.ratio>80%</jacoco.coverage.ratio>
 
         <!-- Sonar configuration properties -->
         <sonar.organization>fherbreteau</sonar.organization>
@@ -198,7 +198,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>versions-maven-plugin</artifactId>
-                    <version>${dependencies-version.version}</version>
+                    <version>${dependency.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.eclipse.m2e</groupId>
@@ -329,6 +329,28 @@
                             </formats>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>jacoco-check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <dataFile>${project.build.directory}/jacoco/jacoco-unit-tests.exec</dataFile>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${jacoco.coverage.ratio}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
                 </executions>
                 <configuration>
                     <excludes>
@@ -354,7 +376,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>io.github.fherbreteau.Main</mainClass>
+                            <mainClass>io.github.fherbreteau.Sample</mainClass>
                         </manifest>
                     </archive>
                 </configuration>

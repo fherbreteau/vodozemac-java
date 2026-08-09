@@ -207,7 +207,7 @@ class OlmSessionTest {
             assertThatThrownBy(session::sessionId)
                     .as("Using closed session should throw IllegalStateException")
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Account has been closed");
+                    .hasMessage("OlmSession has been closed");
 
             session.close();
         }

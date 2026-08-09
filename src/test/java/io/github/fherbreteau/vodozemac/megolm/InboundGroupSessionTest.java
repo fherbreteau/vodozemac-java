@@ -1,6 +1,7 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
 import io.github.fherbreteau.vodozemac.DecryptionException;
+import io.github.fherbreteau.vodozemac.KeyException;
 import io.github.fherbreteau.vodozemac.PickleException;
 import io.github.fherbreteau.vodozemac.SignatureException;
 import io.github.fherbreteau.vodozemac.VodozemacException;
@@ -154,7 +155,7 @@ class InboundGroupSessionTest {
         assertThatThrownBy(inbound::sessionId)
                 .as("Using closed session should throw IllegalStateException")
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Account has been closed");
+                .hasMessage("InboundGroupSession has been closed");
     }
 
     @Test
@@ -580,17 +581,17 @@ class InboundGroupSessionTest {
         assertThatThrownBy(inbound::exportAtFirstKnownIndex)
                 .as("Export on closed session should throw IllegalStateException")
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Account has been closed");
+                .hasMessage("InboundGroupSession has been closed");
 
         assertThatThrownBy(() -> inbound.exportAt(0))
                 .as("Export at index on closed session should throw IllegalStateException")
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Account has been closed");
+                .hasMessage("InboundGroupSession has been closed");
 
         assertThatThrownBy(() -> inbound.advanceTo(1))
                 .as("AdvanceTo on closed session should throw IllegalStateException")
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Account has been closed");
+                .hasMessage("InboundGroupSession has been closed");
     }
 
     @Test
@@ -658,5 +659,28 @@ class InboundGroupSessionTest {
         assertThatThrownBy(() -> new InboundGroupSession("invalid-base64-key", MegolmSessionVersion.V2))
                 .as("Creating session with invalid key should throw VodozemacException")
                 .isInstanceOf(VodozemacException.class);
+    }
+
+    @Test
+    void testPickleWithInvalidKeyThrowsException() {
+        String sessionKey;
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V1)) {
+            sessionKey = outbound.sessionKey();
+        }
+
+        try (InboundGroupSession inbound = new InboundGroupSession(sessionKey, MegolmSessionVersion.V1)) {
+            assertThatThrownBy(() -> inbound.pickle(new byte[16]))
+                    .as("Pickle with invalid key size should throw KeyException")
+                    .isInstanceOf(KeyException.class)
+                    .hasMessageContaining("256-bit (32-byte)");
+        }
+    }
+
+    @Test
+    void testUnpickleWithInvalidKeyThrowsException() {
+        assertThatThrownBy(() -> InboundGroupSession.unpickle("invalid", new byte[16]))
+                .as("Unpickle with invalid key size should throw KeyException")
+                .isInstanceOf(KeyException.class)
+                .hasMessageContaining("256-bit (32-byte)");
     }
 }

@@ -2,10 +2,8 @@ use jni::sys::jint;
 use vodozemac::megolm::SessionConfig as MegolmSessionConfig;
 use vodozemac::olm::SessionConfig as OlmSessionConfig;
 
-pub(crate) fn wrap<T>(v: Vec<T>) -> [T; 32] {
-    v.try_into().unwrap_or_else(|v: Vec<T>| {
-        panic!("Expected a Vec of length {} but it was {}", 32, v.len())
-    })
+pub(crate) fn wrap<T>(v: Vec<T>) -> Result<[T; 32], jni::errors::Error> {
+    v.try_into().map_err(|_v| jni::errors::Error::JavaException)
 }
 
 pub(crate) fn olm_session_config_from_version(

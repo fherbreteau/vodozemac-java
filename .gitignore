@@ -8,6 +8,9 @@
 /dist/
 /coverage-report.md
 
+# Rust: ignore root-level Cargo.lock, keep rust/Cargo.lock tracked
+/Cargo.lock
+
 /**/target/
 /**/.settings/
 /**/.classpath

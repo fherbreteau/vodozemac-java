@@ -1,5 +1,6 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
+import io.github.fherbreteau.vodozemac.KeyException;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
@@ -127,7 +128,7 @@ class OutboundGroupSessionTest {
         assertThatThrownBy(session::sessionId)
                 .as("Using closed session should throw IllegalStateException")
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Account has been closed");
+                .hasMessage("OutboundGroupSession has been closed");
     }
 
     @Test
@@ -150,5 +151,23 @@ class OutboundGroupSessionTest {
                     .isNotNull()
                     .isNotEmpty();
         }
+    }
+
+    @Test
+    void testPickleWithInvalidKeyThrowsException() {
+        try (OutboundGroupSession session = new OutboundGroupSession(MegolmSessionVersion.V1)) {
+            assertThatThrownBy(() -> session.pickle(new byte[16]))
+                    .as("Pickle with invalid key size should throw KeyException")
+                    .isInstanceOf(KeyException.class)
+                    .hasMessageContaining("256-bit (32-byte)");
+        }
+    }
+
+    @Test
+    void testUnpickleWithInvalidKeyThrowsException() {
+        assertThatThrownBy(() -> OutboundGroupSession.unpickle("invalid", new byte[16]))
+                .as("Unpickle with invalid key size should throw KeyException")
+                .isInstanceOf(KeyException.class)
+                .hasMessageContaining("256-bit (32-byte)");
     }
 }

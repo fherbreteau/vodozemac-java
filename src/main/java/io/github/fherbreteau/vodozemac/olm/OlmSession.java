@@ -115,7 +115,7 @@ public class OlmSession implements AutoCloseable {
 
     private void checkNotClosed() {
         if (nativePtr == 0) {
-            throw new IllegalStateException("Account has been closed");
+            throw new IllegalStateException("OlmSession has been closed");
         }
     }
 

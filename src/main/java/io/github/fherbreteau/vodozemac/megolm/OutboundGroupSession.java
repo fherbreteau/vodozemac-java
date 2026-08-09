@@ -1,5 +1,7 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
+import io.github.fherbreteau.vodozemac.KeyException;
+
 public class OutboundGroupSession implements AutoCloseable {
 
     private long nativePtr;
@@ -39,6 +41,9 @@ public class OutboundGroupSession implements AutoCloseable {
 
     public String pickle(byte[] key) {
         checkNotClosed();
+        if (key.length != 32) {
+            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
+        }
         return nativeEncryptedPickle(nativePtr, key);
     }
 
@@ -48,6 +53,9 @@ public class OutboundGroupSession implements AutoCloseable {
     }
 
     public static OutboundGroupSession unpickle(String pickleData, byte[] pickleKey) {
+        if (pickleKey.length != 32) {
+            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
+        }
         long nativePtr = nativeEncryptedUnpickle(pickleData, pickleKey);
         return new OutboundGroupSession(nativePtr);
     }
@@ -59,7 +67,7 @@ public class OutboundGroupSession implements AutoCloseable {
 
     private void checkNotClosed() {
         if (nativePtr == 0) {
-            throw new IllegalStateException("Account has been closed");
+            throw new IllegalStateException("OutboundGroupSession has been closed");
         }
     }
 

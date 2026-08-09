@@ -118,7 +118,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         let session = unsafe { &*(ptr as *const Session) };
-        let key = wrap(env.convert_byte_array(key).unwrap());
+        let key = wrap(env.convert_byte_array(key)?)?;
 
         let pickle_data = session.pickle();
         let encrypted = pickle_data.encrypt(&key);
@@ -154,7 +154,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
-        let key = wrap(env.convert_byte_array(key).unwrap());
+        let key = wrap(env.convert_byte_array(key)?)?;
 
         let pickle_data: SessionPickle = SessionPickle::from_encrypted(&pickle_str, &key)
             .map_err(|e| throw_pickle_error(env, e))?;
