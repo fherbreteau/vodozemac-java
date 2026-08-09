@@ -5,14 +5,21 @@ import java.util.Optional;
 
 import io.github.fherbreteau.vodozemac.KeyException;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
+import io.github.fherbreteau.vodozemac.PickleException;
+import io.github.fherbreteau.vodozemac.SessionCreationException;
 import io.github.fherbreteau.vodozemac.olm.InboundCreationResult;
 import io.github.fherbreteau.vodozemac.olm.OlmSession;
 import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
 
 /**
  * An Olm Account manages all cryptographic keys used on a device.
- *
- * This account links to an Account in the vodozemac Rust library.
+ * <p>
+ * An account holds identity keys (Ed25519 for signing, Curve25519 for key
+ * agreement), one-time keys, and fallback keys. It is used to create Olm
+ * sessions for end-to-end encrypted communication with other devices.
+ * <p>
+ * This class implements {@link AutoCloseable} and should be used in a
+ * try-with-resources block to ensure native resources are properly released.
  *
  * @author François HERBRETEAU
  */
@@ -24,7 +31,7 @@ public class Account implements AutoCloseable {
     private long nativePtr;
 
     /**
-     * Create a new {@code Account} with new random identity keys.
+     * Creates a new {@code Account} with new random identity keys.
      */
     public Account() {
         this.nativePtr = nativeNew();
@@ -35,9 +42,10 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Get the IdentityKeys of this {@code Account}
+     * Returns the identity keys of this account.
      *
-     * @return the identity keys
+     * @return the {@link IdentityKeys} containing both Ed25519 and Curve25519 public keys
+     * @throws IllegalStateException if this account has been closed
      */
     public IdentityKeys identityKeys() {
         checkNotClosed();
@@ -45,9 +53,10 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Get a copy of the {@code Account}'s public Ed25519 key
+     * Returns the public Ed25519 key of this account.
      *
-     * @return a base 64 representation of the public Curve25519 key
+     * @return the base64-encoded Ed25519 public key
+     * @throws IllegalStateException if this account has been closed
      */
     public String ed25519Key() {
         checkNotClosed();
@@ -55,9 +64,10 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Get a copy of the {@code Account}'s public Curve25519 key
+     * Returns the public Curve25519 key of this account.
      *
-     * @return a base 64 representation of the public Curve25519 key
+     * @return the base64-encoded Curve25519 public key
+     * @throws IllegalStateException if this account has been closed
      */
     public String curve25519Key() {
         checkNotClosed();
@@ -65,10 +75,11 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Sign the given message using our Ed25519 fingerprint key.
+     * Signs the given message using the Ed25519 fingerprint key.
      *
      * @param message the message to sign
-     * @return the base 64 representation of message signature
+     * @return the base64-encoded signature
+     * @throws IllegalStateException if this account has been closed
      */
     public String sign(String message) {
         checkNotClosed();
@@ -76,9 +87,11 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Get the maximum number of one-time keys the client should keep on the server.
+     * Returns the maximum number of one-time keys the client should keep
+     * on the server.
      *
      * @return the maximum number of one-time keys
+     * @throws IllegalStateException if this account has been closed
      */
     public long maxNumberOfOneTimeKeys() {
         checkNotClosed();
@@ -86,51 +99,65 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Create a {@code OlmSession} with the given identity key and one-time key.
+     * Creates an {@link OlmSession} with the given identity key and
+     * one-time key, using the default session version.
      *
-     * @param identityKey the recipient identity key
-     * @param oneTimeKey  the recipient one-time key
+     * @param identityKey the recipient's Curve25519 identity key
+     * @param oneTimeKey  the recipient's Curve25519 one-time key
      * @return a new {@code OlmSession}
+     * @throws IllegalStateException    if this account has been closed
+     * @throws KeyException            if the keys cannot be decoded
+     * @throws SessionCreationException if session creation fails
      */
     public OlmSession createOutbpundSession(String identityKey, String oneTimeKey) {
         return createOutbpundSession(OlmSessionVersion.defaultVersion(), identityKey, oneTimeKey);
     }
 
     /**
-     * Create a {@code OlmSession} with the given identity key and one-time key.
+     * Creates an {@link OlmSession} with the given identity key and
+     * one-time key.
      *
-     * @param sessionVersion the version of the Olm Session to create
-     * @param identityKey    the recipient identity key
-     * @param oneTimeKey     the recipient one-time key
+     * @param sessionVersion the Olm session protocol version to use
+     * @param identityKey    the recipient's Curve25519 identity key
+     * @param oneTimeKey     the recipient's Curve25519 one-time key
      * @return a new {@code OlmSession}
+     * @throws IllegalStateException    if this account has been closed
+     * @throws KeyException            if the keys cannot be decoded
+     * @throws SessionCreationException if session creation fails
      */
     public OlmSession createOutbpundSession(OlmSessionVersion sessionVersion, String identityKey, String oneTimeKey) {
         checkNotClosed();
 
-        long sessionPtr = nativeCreateOutboundSession(nativePtr, sessionVersion.getValue(), identityKey, oneTimeKey);
-        return new OlmSession(sessionPtr);
+        return nativeCreateOutboundSession(nativePtr, sessionVersion.getValue(), identityKey, oneTimeKey);
     }
 
     /**
-     * Create a {@code OlmSession} from the given pre-key message on sender
-     * identity.
+     * Creates an inbound {@link OlmSession} from a pre-key message, using
+     * the default session version.
      *
-     * @param theirIdentityKey the sender identity key
-     * @param preKeyMessage    the pre-key message recieved from the sebder
-     * @return a existing {@code OlmSession}
+     * @param theirIdentityKey the sender's Curve25519 identity key
+     * @param preKeyMessage    the pre-key message received from the sender
+     * @return an {@link InboundCreationResult} containing the new session
+     *         and the decrypted plaintext of the pre-key message
+     * @throws IllegalStateException      if this account has been closed
+     * @throws KeyException              if the identity key cannot be decoded
+     * @throws SessionCreationException  if session creation fails
      */
     public InboundCreationResult createInboundSession(String theirIdentityKey, String preKeyMessage) {
         return createInboundSession(OlmSessionVersion.defaultVersion(), theirIdentityKey, preKeyMessage);
     }
 
     /**
-     * Create a {@code OlmSession} from the given pre-key message on sender
-     * identity.
+     * Creates an inbound {@link OlmSession} from a pre-key message.
      *
-     * @param sessionVersion   the version of the Olm Session to create
-     * @param theirIdentityKey the sender identity key
-     * @param preKeyMessage    the pre-key message recieved from the sebder
-     * @return a existing {@code OlmSession}
+     * @param sessionVersion   the Olm session protocol version to use
+     * @param theirIdentityKey the sender's Curve25519 identity key
+     * @param preKeyMessage    the pre-key message received from the sender
+     * @return an {@link InboundCreationResult} containing the new session
+     *         and the decrypted plaintext of the pre-key message
+     * @throws IllegalStateException      if this account has been closed
+     * @throws KeyException              if the identity key cannot be decoded
+     * @throws SessionCreationException  if session creation fails
      */
     public InboundCreationResult createInboundSession(OlmSessionVersion sessionVersion, String theirIdentityKey,
             String preKeyMessage) {
@@ -140,11 +167,15 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Generates the supplied number of one time keys.
+     * Generates the supplied number of one-time keys.
+     * <p>
+     * The one-time key store has a limited capacity. If new keys are
+     * generated while the store is full, the oldest keys are discarded.
      *
      * @param count the number of keys to generate
-     * @return the public parts of the one-time keys that were created and
-     *         discarded.
+     * @return a {@link OneTimeKeyGenerationResult} containing the created
+     *         and discarded keys
+     * @throws IllegalStateException if this account has been closed
      */
     public OneTimeKeyGenerationResult generateOneTimeKeys(long count) {
         checkNotClosed();
@@ -152,9 +183,14 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Get the number of one-time keys we have stored locally.
+     * Returns the number of one-time keys stored locally.
+     * <p>
+     * This will be equal to or greater than the number of one-time keys
+     * that have been published. Each time a new session is created using
+     * {@link #createInboundSession}, a one-time key is used and removed.
      *
-     * @return a number of one-time keys
+     * @return the number of stored one-time keys
+     * @throws IllegalStateException if this account has been closed
      */
     public long storedOneTimeKeyCount() {
         checkNotClosed();
@@ -162,9 +198,13 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Get the currently unpublished one-time keys.
+     * Returns the currently unpublished one-time keys.
+     * <p>
+     * The one-time keys should be published to a server and marked as
+     * published using {@link #markKeysAsPublished()}.
      *
-     * @return a map of key id to public curve25519 key
+     * @return a map of key ID to base64-encoded Curve25519 public key
+     * @throws IllegalStateException if this account has been closed
      */
     public Map<String, String> getUnpublishedOneTimeKeys() {
         checkNotClosed();
@@ -172,9 +212,14 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Generate a single new fallback key.
+     * Generates a single new fallback key.
+     * <p>
+     * The fallback key will be used by other users to establish a session
+     * if all the one-time keys on the server have been used up.
      *
-     * @return the public Curve25519 key of the <i>previous</i> fallback key.
+     * @return the public Curve25519 key of the <i>previous</i> fallback key,
+     *         or an empty {@link Optional} if there was no previous key
+     * @throws IllegalStateException if this account has been closed
      */
     public Optional<String> generateFallbackKey() {
         checkNotClosed();
@@ -182,9 +227,13 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Get the currently unpublished fallback key.
+     * Returns the currently unpublished fallback key.
+     * <p>
+     * The fallback key should be published just like the one-time keys,
+     * and marked as published using {@link #markKeysAsPublished()}.
      *
-     * @return a map of key id to public curve25519 key
+     * @return a map of key ID to base64-encoded Curve25519 public key
+     * @throws IllegalStateException if this account has been closed
      */
     public Map<String, String> getUnpublishedFallbackKey() {
         checkNotClosed();
@@ -192,10 +241,14 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Forget the previously used fallback key.
+     * Forgets the previously used fallback key.
+     * <p>
+     * The account stores at most two private parts of the fallback key.
+     * This method lets us forget the previously used one.
      *
-     * @return {@code true} if the previous key was forgotten, {@code false}
-     *         otherwise
+     * @return {@code true} if the previous key was forgotten,
+     *         {@code false} otherwise
+     * @throws IllegalStateException if this account has been closed
      */
     public boolean forgetFallbackKey() {
         checkNotClosed();
@@ -203,7 +256,10 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Mark all currently unpublished one-time and fallback keys as published.
+     * Marks all currently unpublished one-time and fallback keys as
+     * published.
+     *
+     * @throws IllegalStateException if this account has been closed
      */
     public void markKeysAsPublished() {
         checkNotClosed();
@@ -211,10 +267,10 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Convert the account into a AccountPickle that is serialized as a JSON
-     * structure.
+     * Converts the account into a JSON string representation.
      *
-     * @return a string representation of the {@code Account}
+     * @return a JSON string representing the account
+     * @throws IllegalStateException if this account has been closed
      */
     public String pickle() {
         checkNotClosed();
@@ -222,10 +278,13 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Encrypt the account using the given 32-byte key.
+     * Encrypts the account using the given 32-byte key and returns the
+     * encrypted representation.
      *
-     * @param key a 256-bit (32-byte) key for encrypting the device.
-     * @return an encrypted string representation of the {@code Account}
+     * @param key a 256-bit (32-byte) key for encrypting the account
+     * @return an encrypted string representation of the account
+     * @throws IllegalStateException if this account has been closed
+     * @throws KeyException         if the key is not 32 bytes
      */
     public String pickle(byte[] key) {
         checkNotClosed();
@@ -236,11 +295,11 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Restore a {@code Account} from a previously saved AccountPickle deserialized
-     * from a JSON structure.
+     * Restores an {@code Account} from a previously saved JSON string.
      *
-     * @param pickleData the pickle data
-     * @return a {@code Account} object
+     * @param pickleData the JSON string from {@link #pickle()}
+     * @return a restored {@code Account}
+     * @throws PickleException if the data cannot be deserialized
      */
     public static Account unpickle(String pickleData) {
         long nativePtr = nativeUnpickle(pickleData);
@@ -248,11 +307,14 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Restore a {@code Account} from an encrypted string using a 32-byte key.
+     * Restores an {@code Account} from an encrypted string using a
+     * 32-byte key.
      *
-     * @param pickleData the pickle data
-     * @param key        a 256-bit (32-byte) key for encrypting the device.
-     * @return a {@code Account} object
+     * @param pickleData the encrypted pickle data from {@link #pickle(byte[])}
+     * @param key        a 256-bit (32-byte) key for decrypting the account
+     * @return a restored {@code Account}
+     * @throws KeyException   if the key is not 32 bytes
+     * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static Account unpickle(String pickleData, byte[] key) {
         if (key.length != 32) {
@@ -263,12 +325,13 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Create an {@code Account} object by unpickling an account pickle in libolm
-     * legacy pickle format
+     * Restores an {@code Account} from a legacy libolm pickle format.
+     * The pickle must be encrypted with the provided key.
      *
      * @param pickleData the libolm pickle data
      * @param pickleKey  the key used to encrypt the pickle data
-     * @return a {@code Account} object
+     * @return a restored {@code Account}
+     * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static Account unpickleLegacy(String pickleData, byte[] pickleKey) {
         long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
@@ -276,19 +339,25 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Create a dehydrated device from the account.
-     *
+     * Creates a dehydrated device from the account.
+     * <p>
      * A dehydrated device is a device that is stored encrypted on the server
      * that can receive messages when the user has no other active devices.
      * Upon login, the user can rehydrate the device (using
-     * {@link Account#fromDehydratedDevice(String, String, String)}
-     * and decrypt the messages sent to the dehydrated device.
-     *
+     * {@link Account#fromDehydratedDevice(String, String, byte[])}) and
+     * decrypt the messages sent to the dehydrated device.
+     * <p>
      * The account must be a newly-created account that does not have any Olm
      * sessions, since the dehydrated device format does not store sessions.
+     * <p>
+     * The format used is defined in
+     * <a href="https://github.com/matrix-org/matrix-spec-proposals/pull/3814">MSC3814</a>.
      *
-     * @param key a 256-bit (32-byte) key for encrypting the device.
-     * @return the ciphertext and nonce.
+     * @param key a 256-bit (32-byte) key for encrypting the device
+     * @return the ciphertext and nonce
+     * @throws IllegalStateException if this account has been closed
+     * @throws KeyException         if the key is not 32 bytes
+     * @throws PickleException       if creating the dehydrated device fails
      */
     public DehydratedDeviceResult toDehydratedDevice(byte[] key) {
         checkNotClosed();
@@ -299,14 +368,14 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Create an {@code Account} object from a dehydrated device.
+     * Creates an {@code Account} object from a dehydrated device.
      *
-     * @param ciphertext a ciphertext generated by
-     *                   {@link Account#toDehydratedDevice(String)}
-     * @param nonce      a nonce generated by
-     *                   {@link Account#toDehydratedDevice(String)}
-     * @param key        a 256-bit (32-byte) key for decrypting the device.
-     * @return a {@code Account} object
+     * @param ciphertext the ciphertext generated by {@link Account#toDehydratedDevice(byte[])}
+     * @param nonce      the nonce generated by {@link Account#toDehydratedDevice(byte[])}
+     * @param key        a 256-bit (32-byte) key for decrypting the device
+     * @return a restored {@code Account}
+     * @throws KeyException   if the key is not 32 bytes
+     * @throws PickleException if the dehydrated device cannot be decrypted
      */
     public static Account fromDehydratedDevice(String ciphertext, String nonce, byte[] key) {
         if (key.length != 32) {
@@ -328,9 +397,10 @@ public class Account implements AutoCloseable {
     }
 
     /**
-     * Close the {@code Account} by releasing its associated native resources
+     * Closes the {@code Account} by releasing its associated native
+     * resources.
      *
-     * {@InheritDoc}
+     * {@inheritDoc}
      */
     @Override
     public void close() {
@@ -350,7 +420,7 @@ public class Account implements AutoCloseable {
 
     private native long nativeMaxNumberOfOneTimeKeys(long ptr);
 
-    private native long nativeCreateOutboundSession(long ptr, int sessionVersion, String identityKey,
+    private native OlmSession nativeCreateOutboundSession(long ptr, int sessionVersion, String identityKey,
             String oneTimeKey);
 
     private native InboundCreationResult nativeCreateInboundSession(long ptr, int sessionVersion,

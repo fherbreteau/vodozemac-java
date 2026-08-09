@@ -49,7 +49,7 @@ public final class Sample {
             try (OlmSession inboundOlmSession = result.getSession()) {
                 System.out.println("Bob: Inbound olm session's session id: " + inboundOlmSession.sessionId());
 
-                System.out.println("Bob: Received message: + " + new String(result.getPlaintext(), StandardCharsets.UTF_8));
+                System.out.println("Bob: Received message: " + new String(result.getPlaintext(), StandardCharsets.UTF_8));
 
                 String message = "Hello Alice";
 
@@ -59,7 +59,7 @@ public final class Sample {
 
             try (OlmSession outboundOlmSession = OlmSession.unpickle(alicePickleSession)) {
                 byte[] message = outboundOlmSession.decrypt(encrypted);
-                System.out.println("Bob: Received message: + " + new String(message, StandardCharsets.UTF_8));
+                System.out.println("Alice: Received message: " + new String(message, StandardCharsets.UTF_8));
             }
         }
     }

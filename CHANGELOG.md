@@ -119,7 +119,7 @@ When making changes, please:
 For questions about this changelog or versioning:
 
 - **GitHub Issues**: [fherbreteau/vodozemac-java/issues](https://github.com/fherbreteau/vodozemac-java/issues)
-- **Email**: fherbreteau@protonmail.com
+- **Email**: fherbreteau@gmail.com
 - **Matrix**: @fherbreteau:matrix.org
 
 ---

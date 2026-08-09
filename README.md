@@ -2,7 +2,7 @@
 
 [![Build Status](https://github.com/fherbreteau/vodozemac-java/actions/workflows/build.yml/badge.svg)](https://github.com/fherbreteau/vodozemac-java/actions/workflows/build.yml)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-[![Java 17+](https://img.shields.io/badge/Java-17+-red.svg)](https://www.oracle.com/java/technologies/javase/jdk17-archive-downloads.html)
+[![Java 25+](https://img.shields.io/badge/Java-25+-red.svg)](https://www.oracle.com/java/technologies/downloads/)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.fherbreteau/vodozemac-java.svg)](https://search.maven.org/artifact/io.github.fherbreteau/vodozemac-java)
 
 **Java bindings for the [Vodozemac](https://github.com/matrix-org/vodozemac) Matrix cryptography library**
@@ -13,16 +13,16 @@ Vodozemac Java provides Java Native Interface (JNI) bindings for the [Vodozemac]
 
 ## ✨ Features
 
-- **🔐 Cryptographic Operations**: Curve25519 and Ed25519 key generation, message signing
-- **🌍 Cross-Platform**: Linux (x86_64, ARM64), macOS (Intel, Apple Silicon), Windows
+- **🔐 Cryptographic Operations**: Curve25519 and Ed25519 key generation, message signing, Olm and Megolm sessions
+- **🌍 Cross-Platform**: Linux (x86_64, ARM64), macOS (Apple Silicon), Windows (x86_64)
 - **📦 Maven Integration**: Automatic Rust compilation and native library packaging
 - **🗑️ Memory Safety**: Proper resource management with Java's `AutoCloseable`
-- **🧪 Comprehensive Testing**: AssertJ-based test suite with 6 test cases
+- **🧪 Comprehensive Testing**: AssertJ-based test suite with 71 test cases
 - **🔧 GitHub CI/CD**: Multi-platform build and test pipeline
 
 ## 📋 Requirements
 
-- **Java 17+** (Required for JNI and modern features)
+- **Java 25+** (Required for JNI and modern features)
 - **Maven 3.8+** (For building the project)
 - **Rust toolchain** (For native library compilation)
 - **Git** (For version control)
@@ -57,12 +57,12 @@ Add to your `pom.xml`:
 ### Basic Example
 
 ```java
-import io.github.fherbreteau.vodozemac.VodozemacAccount;
+import io.github.fherbreteau.vodozemac.account.Account;
 
 public class MatrixCryptoExample {
     public static void main(String[] args) {
         // Create a new cryptographic account
-        try (VodozemacAccount account = new VodozemacAccount()) {
+        try (Account account = new Account()) {
             // Generate cryptographic keys
             String curve25519Key = account.curve25519Key();
             String ed25519Key = account.ed25519Key();
@@ -82,17 +82,17 @@ public class MatrixCryptoExample {
 
 ### Resource Management
 
-The `VodozemacAccount` implements `AutoCloseable` for safe resource management:
+The `Account` implements `AutoCloseable` for safe resource management:
 
 ```java
 // Recommended: Use try-with-resources
-try (VodozemacAccount account = new VodozemacAccount()) {
+try (Account account = new Account()) {
     String key = account.curve25519Key();
     // Use the account...
 } // Automatically freed when block exits
 
 // Manual management also supported
-VodozemacAccount account = new VodozemacAccount();
+Account account = new Account();
 try {
     String key = account.ed25519Key();
 } finally {
@@ -102,43 +102,91 @@ try {
 
 ## 🗃️ API Reference
 
-### VodozemacAccount
+### Account
 
-Main class providing cryptographic operations.
+Main class for Olm account management — identity keys, one-time keys, fallback keys, session creation, signing, pickle/unpickle, and dehydrated devices.
 
-#### Constructor
+| Method | Description |
+|--------|-------------|
+| `IdentityKeys identityKeys()` | Get both Ed25519 and Curve25519 public keys |
+| `String ed25519Key()` | Get Ed25519 public key (base64) |
+| `String curve25519Key()` | Get Curve25519 public key (base64) |
+| `String sign(String message)` | Sign a message with Ed25519 key |
+| `long maxNumberOfOneTimeKeys()` | Get max one-time keys to store |
+| `OneTimeKeyGenerationResult generateOneTimeKeys(long count)` | Generate one-time keys |
+| `long storedOneTimeKeyCount()` | Get number of stored one-time keys |
+| `Map getUnpublishedOneTimeKeys()` | Get unpublished one-time keys |
+| `Optional<String> generateFallbackKey()` | Generate a fallback key |
+| `Map getUnpublishedFallbackKey()` | Get unpublished fallback key |
+| `boolean forgetFallbackKey()` | Forget previously used fallback key |
+| `void markKeysAsPublished()` | Mark keys as published |
+| `OlmSession createOutboundSession(...)` | Create an outbound Olm session |
+| `InboundCreationResult createInboundSession(...)` | Create an inbound Olm session from a pre-key message |
+| `String pickle()` / `pickle(byte[] key)` | Serialize account (plain or encrypted) |
+| `static Account unpickle(...)` | Restore account from pickle |
+| `static Account unpickleLegacy(...)` | Restore from libolm legacy pickle |
+| `DehydratedDeviceResult toDehydratedDevice(byte[] key)` | Create a dehydrated device |
+| `static Account fromDehydratedDevice(...)` | Restore from a dehydrated device |
 
-```java
-VodozemacAccount() throws RuntimeException
-```
-Creates a new cryptographic account. Automatically loads the appropriate native library.
+### OlmSession
 
-#### Methods
+Represents an Olm session for 1-to-1 encrypted communication.
 
-```java
-String curve25519Key()
-```
-- **Returns**: Curve25519 public key (base64 encoded)
-- **Throws**: `IllegalStateException` if account is closed
+| Method | Description |
+|--------|-------------|
+| `String sessionId()` | Get the session ID |
+| `boolean hasReceivedMessage()` | Check if a message has been received |
+| `String encrypt(byte[] plaintext)` | Encrypt a message (returns JSON) |
+| `byte[] decrypt(String message)` | Decrypt a message |
+| `String pickle()` / `pickle(byte[] key)` | Serialize session |
+| `static OlmSession unpickle(...)` | Restore from pickle |
+| `static OlmSession unpickleLegacy(...)` | Restore from libolm legacy pickle |
 
-```java
-String ed25519Key()
-```
-- **Returns**: Ed25519 public key (base64 encoded)
-- **Throws**: `IllegalStateException` if account is closed
+### OutboundGroupSession
 
-```java
-String sign(String message)
-```
-- **Parameters**: `message` - Message to sign
-- **Returns**: Signature (base64 encoded)
-- **Throws**: `IllegalStateException` if account is closed
+Megolm outbound group session for multi-recipient encrypted communication.
 
-```java
-void close()
-```
-- **Description**: Frees native resources
-- **Note**: Called automatically with try-with-resources
+| Method | Description |
+|--------|-------------|
+| `String sessionId()` | Get the session ID |
+| `int messageIndex()` | Get current message index |
+| `String sessionKey()` | Get the session key for sharing with recipients |
+| `String encrypt(byte[] plaintext)` | Encrypt a message (returns base64) |
+| `String pickle()` / `pickle(byte[] key)` | Serialize session |
+| `static OutboundGroupSession unpickle(...)` | Restore from pickle |
+| `static OutboundGroupSession unpickleLegacy(...)` | Restore from libolm legacy pickle |
+
+### InboundGroupSession
+
+Megolm inbound group session for receiving encrypted group messages.
+
+| Method | Description |
+|--------|-------------|
+| `String sessionId()` | Get the session ID |
+| `int firstKnownIndex()` | Get the first known message index |
+| `DecryptedMessage decrypt(String message)` | Decrypt a message |
+| `String exportAt(int index)` | Export session key at a given index |
+| `String exportAtFirstKnownIndex()` | Export session key at first known index |
+| `boolean advanceTo(int index)` | Advance the session to a given index |
+| `boolean connected(InboundGroupSession other)` | Check if two sessions are connected |
+| `SessionOrdering compare(InboundGroupSession other)` | Compare two sessions |
+| `Optional<InboundGroupSession> merge(InboundGroupSession other)` | Merge two connected sessions |
+| `static InboundGroupSession importSession(...)` | Import from an exported session key |
+| `String pickle()` / `pickle(byte[] key)` | Serialize session |
+| `static InboundGroupSession unpickle(...)` | Restore from pickle |
+| `static InboundGroupSession unpickleLegacy(...)` | Restore from libolm legacy pickle |
+
+### Exceptions
+
+All exceptions extend `VodozemacException` (which extends `RuntimeException`):
+
+| Exception | Thrown when |
+|-----------|------------|
+| `PickleException` | Pickle/unpickle or dehydrated device errors |
+| `DecryptionException` | Olm or Megolm decryption failures |
+| `SessionCreationException` | Inbound session creation errors |
+| `KeyException` | Key decoding or validation errors |
+| `SignatureException` | Signature verification failures |
 
 ## 🏗️ Architecture
 
@@ -147,16 +195,37 @@ void close()
 ```
 vodozemac-java/
 ├── .github/
-│   └── workflows/          # GitHub Actions CI/CD
-│       └── build.yml       # Multi-platform build pipeline
-├── rust/                  # Rust JNI bindings
-│   ├── Cargo.toml         # Rust project configuration
-│   └── src/lib.rs         # JNI implementation
-├── src/                   # Java source code
-│   ├── main/java/         # Main Java classes
-│   └── test/java/         # Test classes
-├── pom.xml                # Maven build configuration
-└── README.md              # This file
+│   └── workflows/              # GitHub Actions CI/CD
+│       ├── build.yml           # Multi-platform build pipeline
+│       ├── test.yml            # Test pipeline
+│       └── release.yml         # Release pipeline
+├── rust/                       # Rust JNI bindings
+│   ├── Cargo.toml              # Rust project configuration
+│   └── src/
+│       ├── lib.rs              # Module declarations
+│       ├── errors.rs           # JNI error mapping helpers
+│       ├── helpers.rs          # Shared utilities (wrap, version config)
+│       ├── olm/
+│       │   ├── account.rs      # Account JNI functions
+│       │   └── session.rs       # OlmSession JNI functions
+│       └── megolm/
+│           ├── inbound_group_session.rs   # InboundGroupSession JNI
+│           └── outbound_group_session.rs # OutboundGroupSession JNI
+├── src/
+│   ├── main/java/io/github/fherbreteau/vodozemac/
+│   │   ├── account/            # Account, IdentityKeys, etc.
+│   │   ├── olm/                # OlmSession, InboundCreationResult
+│   │   ├── megolm/             # InboundGroupSession, OutboundGroupSession
+│   │   ├── VodozemacException.java
+│   │   ├── PickleException.java
+│   │   ├── DecryptionException.java
+│   │   ├── SessionCreationException.java
+│   │   ├── KeyException.java
+│   │   ├── SignatureException.java
+│   │   └── NativeLibraryLoader.java
+│   └── test/java/              # Test classes
+├── pom.xml                     # Maven build configuration
+└── README.md                   # This file
 ```
 
 ### Build Process
@@ -172,7 +241,7 @@ vodozemac-java/
 |----------|--------------|-------------|--------|
 | 🐧 Linux | x86_64 | `x86_64-unknown-linux-gnu` | ✅ Supported |
 | 🐧 Linux | ARM64 | `aarch64-unknown-linux-gnu` | ✅ Supported |
-| 🍎 macOS | Intel | `x86_64-apple-darwin` | ✅ Supported |
+| 🍎 macOS | Intel | `x86_64-apple-darwin` | ❌ Not built (disabled in CI) |
 | 🍎 macOS | Apple Silicon | `aarch64-apple-darwin` | ✅ Supported |
 | 🪟 Windows | x86_64 | `x86_64-pc-windows-msvc` | ✅ Supported |
 
@@ -191,7 +260,7 @@ mvn package -DskipRustBuild=true
 mvn test
 
 # Run specific test
-mvn test -Dtest=VodozemacAccountTest
+mvn test -Dtest=AccountTest
 ```
 
 ### Adding New Bindings
@@ -201,10 +270,10 @@ mvn test -Dtest=VodozemacAccountTest
    private native String nativeNewMethod(long ptr, String param);
    ```
 
-2. **Implement JNI function** in `rust/src/lib.rs`:
+2. **Implement JNI function** in the appropriate Rust module (e.g., `rust/src/olm/account.rs`):
    ```rust
-   #[no_mangle]
-   pub extern "system" fn Java_io_github_fherbreteau_vodozemac_VodozemacAccount_nativeNewMethod(
+   #[unsafe(no_mangle)]
+   pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeNewMethod(
        env: EnvUnowned,
        _class: JClass,
        ptr: jlong,
@@ -224,7 +293,8 @@ mvn test -Dtest=VodozemacAccountTest
 Add these JVM options for JNI debugging:
 
 ```bash
-java -Djava.library.path=/path/to/native/libs \
+java --enable-native-access=ALL-UNNAMED \
+     -Djava.library.path=/path/to/native/libs \
      -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005 \
      YourMainClass
 ```
@@ -239,22 +309,16 @@ mvn test
 
 ### Test Coverage
 
-- ✅ **Account Creation**: Tests successful account initialization
-- ✅ **Key Generation**: Validates Curve25519 and Ed25519 keys
-- ✅ **Message Signing**: Verifies cryptographic signing
-- ✅ **Resource Management**: Ensures proper cleanup
-- ✅ **Concurrency**: Tests multiple account handling
-- ✅ **Key Validation**: Checks base64 format and length
+- ✅ **Account**: Creation, identity keys, one-time keys, fallback keys, signing, pickle/unpickle, dehydrated devices
+- ✅ **OlmSession**: Full session lifecycle, encrypt/decrypt, pickle/unpickle, legacy pickle
+- ✅ **OutboundGroupSession**: Creation, encrypt, session key, pickle/unpickle
+- ✅ **InboundGroupSession**: Decrypt, export/import, advance, connected/compare/merge, pickle/unpickle
+- ✅ **Error Handling**: Typed exceptions (Pickle, Decryption, SessionCreation, Key, Signature)
+- ✅ **Key Validation**: Invalid key length, invalid base64, version mismatch
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these guidelines:
-
-1. **Fork** the repository
-2. **Create** a feature branch: `git checkout -b feature/your-feature`
-3. **Commit** your changes: `git commit -am 'Add some feature'`
-4. **Push** to the branch: `git push origin feature/your-feature`
-5. **Submit** a pull request
+Contributions are welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
 ### Code Standards
 

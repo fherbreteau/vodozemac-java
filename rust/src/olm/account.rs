@@ -99,8 +99,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     session_version: jint,
     identity_key: JString,
     one_time_key: JString,
-) -> jlong {
-    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
+) -> jobject {
+    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         let account = unsafe { &mut *(ptr as *mut Account) };
         let session_config = olm_session_config_from_version(session_version)?;
         let decoded_identity_key = Curve25519PublicKey::from_base64(&identity_key.to_string())
@@ -113,7 +113,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
             decoded_identity_key,
             decoded_one_time_key,
         );
-        Ok(Box::into_raw(Box::new(session)) as jlong)
+        let session_ptr = Box::into_raw(Box::new(session)) as jlong;
+        let result = env.new_object(
+            jni_str!("io/github/fherbreteau/vodozemac/olm/OlmSession"),
+            jni_sig!((nativePtr: long) -> void),
+            &[JValue::Long(session_ptr)],
+        )?;
+        Ok(result.into_raw())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

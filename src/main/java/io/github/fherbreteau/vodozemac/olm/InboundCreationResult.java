@@ -1,28 +1,38 @@
 package io.github.fherbreteau.vodozemac.olm;
 
 /**
- * Result of a creation of inbound {@code OlmSession}.
+ * Return type for the creation of an inbound {@link OlmSession}.
+ * <p>
+ * When an inbound session is created from a pre-key message, the first
+ * message (the pre-key message itself) is decrypted as part of the session
+ * creation process. This result contains both the newly created session
+ * and the decrypted plaintext of that first message.
+ *
+ * @see io.github.fherbreteau.vodozemac.account.Account#createInboundSession(io.github.fherbreteau.vodozemac.olm.OlmSessionVersion, String, String)
  */
 public class InboundCreationResult {
     private final OlmSession session;
     private final byte[] plaintext;
 
-    public InboundCreationResult(long sessionPtr, byte[] plaintext) {
+    InboundCreationResult(long sessionPtr, byte[] plaintext) {
         session = new OlmSession(sessionPtr);
         this.plaintext = plaintext;
     }
 
     /**
-     * Returns The {@code OlmSession} that was created from a pre-key message.
-     * @return an {@code OlmSession} object
+     * Returns the {@link OlmSession} that was created from the pre-key message.
+     *
+     * @return the newly created session
      */
     public OlmSession getSession() {
         return session;
     }
 
     /**
-     * Returns The plaintext of the pre-key message.
-     * @return the text of the message
+     * Returns the plaintext of the pre-key message that was decrypted
+     * as part of the session creation.
+     *
+     * @return the decrypted plaintext bytes
      */
     public byte[] getPlaintext() {
         return plaintext;

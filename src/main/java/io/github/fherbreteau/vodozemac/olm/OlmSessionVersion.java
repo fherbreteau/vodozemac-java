@@ -1,7 +1,15 @@
 package io.github.fherbreteau.vodozemac.olm;
 
+/**
+ * Represents the version of the Olm session protocol to use.
+ * <p>
+ * The session version determines the cryptographic configuration used
+ * for encryption and MAC operations.
+ */
 public enum OlmSessionVersion {
+    /** Version 1 — uses truncated MAC, compatible with the original libolm. */
     V1(1),
+    /** Version 2 — uses full-length MAC for stronger integrity protection. */
     V2(2);
 
     private final int value;
@@ -10,10 +18,20 @@ public enum OlmSessionVersion {
         this.value = value;
     }
 
+    /**
+     * Returns the numeric value of this session version.
+     *
+     * @return the version number (1 for V1, 2 for V2)
+     */
     public int getValue() {
         return value;
     }
 
+    /**
+     * Returns the default Olm session version.
+     *
+     * @return {@link #V1}
+     */
     public static OlmSessionVersion defaultVersion() {
         return V1;
     }
