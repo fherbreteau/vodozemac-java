@@ -100,8 +100,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
         let session = unsafe { &*(ptr as *const GroupSession) };
 
         let pickle_data = session.pickle();
-        let json_string = serde_json::to_string(&pickle_data)
-            .map_err(|e| throw_pickle_error(env, e))?;
+        let json_string =
+            serde_json::to_string(&pickle_data).map_err(|e| throw_pickle_error(env, e))?;
         let jni_string = env.new_string(json_string)?;
         Ok(jni_string.into_raw())
     });
@@ -135,8 +135,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
 
-        let pickle_data: GroupSessionPickle = serde_json::from_str(&pickle_str)
-            .map_err(|e| throw_pickle_error(env, e))?;
+        let pickle_data: GroupSessionPickle =
+            serde_json::from_str(&pickle_str).map_err(|e| throw_pickle_error(env, e))?;
         let session = Box::new(GroupSession::from_pickle(pickle_data));
         Ok(Box::into_raw(session) as jlong)
     });

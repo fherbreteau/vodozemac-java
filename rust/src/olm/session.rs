@@ -61,8 +61,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
         let olm_message = session
             .encrypt(&plaintext_bytes)
             .map_err(|e| throw_generic_error(env, e))?;
-        let json_string = serde_json::to_string(&olm_message)
-            .map_err(|e| throw_generic_error(env, e))?;
+        let json_string =
+            serde_json::to_string(&olm_message).map_err(|e| throw_generic_error(env, e))?;
         let result = env.new_string(json_string)?;
         Ok(result.into_raw())
     });
@@ -80,8 +80,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
         let session = unsafe { &mut *(ptr as *mut Session) };
         let message_str: String = message.to_string();
 
-        let olm_message: OlmMessage = serde_json::from_str(&message_str)
-            .map_err(|e| throw_decryption_error(env, e))?;
+        let olm_message: OlmMessage =
+            serde_json::from_str(&message_str).map_err(|e| throw_decryption_error(env, e))?;
         let plaintext = session
             .decrypt(&olm_message)
             .map_err(|e| throw_decryption_error(env, e))?;
@@ -101,8 +101,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
         let session = unsafe { &*(ptr as *const Session) };
 
         let pickle_data = session.pickle();
-        let json_string = serde_json::to_string(&pickle_data)
-            .map_err(|e| throw_pickle_error(env, e))?;
+        let json_string =
+            serde_json::to_string(&pickle_data).map_err(|e| throw_pickle_error(env, e))?;
         let jni_string = env.new_string(json_string)?;
         Ok(jni_string.into_raw())
     });
@@ -137,8 +137,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
 
-        let pickle_data: SessionPickle = serde_json::from_str(&pickle_str)
-        .map_err(|e| throw_pickle_error(env, e))?;
+        let pickle_data: SessionPickle =
+            serde_json::from_str(&pickle_str).map_err(|e| throw_pickle_error(env, e))?;
         let session = Box::new(Session::from_pickle(pickle_data));
         Ok(Box::into_raw(session) as jlong)
     });

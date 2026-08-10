@@ -1,13 +1,16 @@
 use jni::Env;
-use jni::strings::{JNIString, JNIStr};
 use jni::jni_str;
+use jni::strings::{JNIStr, JNIString};
 
 fn throw(env: &mut Env, class: &JNIStr, message: &str) -> jni::errors::Error {
     let _ = env.throw_new(class, JNIString::from(message));
     jni::errors::Error::JavaException
 }
 
-pub(crate) fn throw_pickle_error<E: std::fmt::Display>(env: &mut Env, error: E) -> jni::errors::Error {
+pub(crate) fn throw_pickle_error<E: std::fmt::Display>(
+    env: &mut Env,
+    error: E,
+) -> jni::errors::Error {
     throw(
         env,
         jni_str!("io/github/fherbreteau/vodozemac/PickleException"),
@@ -72,9 +75,7 @@ pub(crate) fn throw_megolm_decryption_error(
     error: vodozemac::megolm::DecryptionError,
 ) -> jni::errors::Error {
     match &error {
-        vodozemac::megolm::DecryptionError::Signature(e) => {
-            throw_signature_error(env, e)
-        }
+        vodozemac::megolm::DecryptionError::Signature(e) => throw_signature_error(env, e),
         _ => throw_decryption_error(env, error),
     }
 }
@@ -84,9 +85,7 @@ pub(crate) fn throw_session_key_decode_error(
     error: vodozemac::megolm::SessionKeyDecodeError,
 ) -> jni::errors::Error {
     match &error {
-        vodozemac::megolm::SessionKeyDecodeError::Signature(e) => {
-            throw_signature_error(env, e)
-        }
+        vodozemac::megolm::SessionKeyDecodeError::Signature(e) => throw_signature_error(env, e),
         _ => throw_key_error(env, error),
     }
 }
@@ -96,9 +95,7 @@ pub(crate) fn throw_decode_error(
     error: vodozemac::DecodeError,
 ) -> jni::errors::Error {
     match &error {
-        vodozemac::DecodeError::Signature(e) => {
-            throw_signature_error(env, e)
-        }
+        vodozemac::DecodeError::Signature(e) => throw_signature_error(env, e),
         _ => throw_decryption_error(env, error),
     }
 }

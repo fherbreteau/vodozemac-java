@@ -5,7 +5,9 @@ use std::collections::HashMap;
 use vodozemac::olm::{Account, AccountPickle, OlmMessage};
 use vodozemac::{Curve25519PublicKey, KeyId};
 
-use crate::errors::{throw_generic_error, throw_key_error, throw_pickle_error, throw_session_creation_error};
+use crate::errors::{
+    throw_generic_error, throw_key_error, throw_pickle_error, throw_session_creation_error,
+};
 use crate::helpers::{olm_session_config_from_version, wrap};
 
 #[unsafe(no_mangle)]
@@ -144,7 +146,10 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
         let pre_key_message = match olm_message {
             OlmMessage::PreKey(pk) => pk,
             OlmMessage::Normal(_) => {
-                return Err(throw_session_creation_error(env, "Expected a pre-key message but got a normal message"));
+                return Err(throw_session_creation_error(
+                    env,
+                    "Expected a pre-key message but got a normal message",
+                ));
             }
         };
         let result = account
@@ -173,8 +178,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
         let account = unsafe { &*(ptr as *const Account) };
 
         let stored_one_time_key_count = account.stored_one_time_key_count();
-        let result = jlong::try_from(stored_one_time_key_count)
-            .map_err(|e| throw_generic_error(env, e))?;
+        let result =
+            jlong::try_from(stored_one_time_key_count).map_err(|e| throw_generic_error(env, e))?;
         Ok(result)
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
@@ -364,8 +369,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
         let account = unsafe { &*(ptr as *const Account) };
 
         let pickle_data = account.pickle();
-        let json_string = serde_json::to_string(&pickle_data)
-            .map_err(|e| throw_pickle_error(env, e))?;
+        let json_string =
+            serde_json::to_string(&pickle_data).map_err(|e| throw_pickle_error(env, e))?;
         let result = env.new_string(json_string)?;
         Ok(result.into_raw())
     });
@@ -400,8 +405,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
 
-        let pickle_data: AccountPickle = serde_json::from_str(&pickle_str)
-            .map_err(|e| throw_pickle_error(env, e))?;
+        let pickle_data: AccountPickle =
+            serde_json::from_str(&pickle_str).map_err(|e| throw_pickle_error(env, e))?;
         let account = Box::new(Account::from_pickle(pickle_data));
         Ok(Box::into_raw(account) as jlong)
     });
