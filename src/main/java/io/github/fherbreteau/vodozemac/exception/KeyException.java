@@ -21,14 +21,4 @@ public class KeyException extends VodozemacException {
     public KeyException(String message) {
         super(message);
     }
-
-    /**
-     * Constructs a new {@code KeyException} with the specified detail message and cause.
-     *
-     * @param message the detail message
-     * @param cause   the cause of this exception
-     */
-    public KeyException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }

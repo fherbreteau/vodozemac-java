@@ -1,8 +1,8 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
 
 class MegolmSessionVersionTest {
 
@@ -25,6 +25,13 @@ class MegolmSessionVersionTest {
         assertThat(MegolmSessionVersion.V2.getValue())
                 .as("V2 should have value 2")
                 .isEqualTo(2);
+    }
+
+    @Test
+    void testDefaultValue() {
+        assertThat(MegolmSessionVersion.defaultVersion())
+                .as("default version should be V1")
+                .isEqualTo(MegolmSessionVersion.V1);
     }
 
     @Test

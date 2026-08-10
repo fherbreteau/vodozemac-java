@@ -21,14 +21,4 @@ public class SessionCreationException extends VodozemacException {
     public SessionCreationException(String message) {
         super(message);
     }
-
-    /**
-     * Constructs a new {@code SessionCreationException} with the specified detail message and cause.
-     *
-     * @param message the detail message
-     * @param cause   the cause of this exception
-     */
-    public SessionCreationException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }

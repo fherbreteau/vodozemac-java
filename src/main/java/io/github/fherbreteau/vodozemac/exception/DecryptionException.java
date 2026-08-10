@@ -17,14 +17,4 @@ public class DecryptionException extends VodozemacException {
     public DecryptionException(String message) {
         super(message);
     }
-
-    /**
-     * Constructs a new {@code DecryptionException} with the specified detail message and cause.
-     *
-     * @param message the detail message
-     * @param cause   the cause of this exception
-     */
-    public DecryptionException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }

@@ -1,8 +1,8 @@
 package io.github.fherbreteau.vodozemac.olm;
 
-import org.junit.jupiter.api.Test;
-
 import static org.assertj.core.api.Assertions.assertThat;
+
+import org.junit.jupiter.api.Test;
 
 class OlmSessionVersionTest {
 
@@ -25,6 +25,13 @@ class OlmSessionVersionTest {
         assertThat(OlmSessionVersion.V2.getValue())
                 .as("V2 should have value 2")
                 .isEqualTo(2);
+    }
+
+    @Test
+    void testDefaultValue() {
+        assertThat(OlmSessionVersion.defaultVersion())
+                .as("default version should be V1")
+                .isEqualTo(OlmSessionVersion.V1);
     }
 
     @Test

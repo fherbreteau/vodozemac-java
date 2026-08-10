@@ -20,14 +20,4 @@ public class SasException extends VodozemacException {
     public SasException(String message) {
         super(message);
     }
-
-    /**
-     * Constructs a new {@code SasException} with the specified detail message and cause.
-     *
-     * @param message the detail message
-     * @param cause   the cause of this exception
-     */
-    public SasException(String message, Throwable cause) {
-        super(message, cause);
-    }
 }

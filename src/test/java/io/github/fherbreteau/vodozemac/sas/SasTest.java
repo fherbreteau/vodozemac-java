@@ -69,6 +69,17 @@ class SasTest {
                 assertThat(aliceSasBytes.bytes())
                         .as("The two sides have raw bytes.")
                         .isEqualTo(bobSasBytes.bytes());
+
+                byte[] aliceBytes = aliceEstablishedSas.bytesRaw(info, 32);
+                byte[] bobBytes = bobEstablishedSas.bytesRaw(info, 32);
+                assertThat(aliceBytes)
+                        .as("The two sides have same generated raw bytes.")
+                        .isEqualTo(bobBytes);
+
+                assertThatThrownBy(() -> aliceEstablishedSas.bytesRaw(info, 32 * 255 + 1))
+                        .as("Established Sas can't generate more than 8160 bytes")
+                        .isInstanceOf(SasException.class)
+                        .hasMessage("The given count of bytes was too large");
                 copy = aliceEstablishedSas;
                 assertThat(copy.isClosed()).isFalse();
             }
@@ -112,5 +123,14 @@ class SasTest {
                         .hasMessage("The SAS MAC validation didn't succeed: MAC tag mismatch");
             }
         }
+    }
+
+    @Test
+    void testSasBytesEqualityAndHashCode() {
+        SasBytes bytes = new SasBytes(new byte[0], new int[0], new String[0]);
+
+        assertThat(bytes)
+                .isNotEqualTo(new Object())
+                .doesNotHaveSameHashCodeAs(new Object());
     }
 }
