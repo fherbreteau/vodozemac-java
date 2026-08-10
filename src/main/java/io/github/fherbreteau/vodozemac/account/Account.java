@@ -3,10 +3,10 @@ package io.github.fherbreteau.vodozemac.account;
 import java.util.Map;
 import java.util.Optional;
 
-import io.github.fherbreteau.vodozemac.KeyException;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
-import io.github.fherbreteau.vodozemac.PickleException;
-import io.github.fherbreteau.vodozemac.SessionCreationException;
+import io.github.fherbreteau.vodozemac.exception.KeyException;
+import io.github.fherbreteau.vodozemac.exception.PickleException;
+import io.github.fherbreteau.vodozemac.exception.SessionCreationException;
 import io.github.fherbreteau.vodozemac.olm.InboundCreationResult;
 import io.github.fherbreteau.vodozemac.olm.OlmSession;
 import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;

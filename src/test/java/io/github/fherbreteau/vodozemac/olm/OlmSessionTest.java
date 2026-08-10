@@ -1,16 +1,16 @@
 package io.github.fherbreteau.vodozemac.olm;
 
-import io.github.fherbreteau.vodozemac.KeyException;
-import io.github.fherbreteau.vodozemac.SessionCreationException;
-import io.github.fherbreteau.vodozemac.account.Account;
-import io.github.fherbreteau.vodozemac.account.OneTimeKeyGenerationResult;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import io.github.fherbreteau.vodozemac.account.Account;
+import io.github.fherbreteau.vodozemac.account.OneTimeKeyGenerationResult;
+import io.github.fherbreteau.vodozemac.exception.KeyException;
+import io.github.fherbreteau.vodozemac.exception.SessionCreationException;
+import org.junit.jupiter.api.Test;
 
 class OlmSessionTest {
 
@@ -247,12 +247,12 @@ class OlmSessionTest {
             try (OlmSession outboundSession = aliceAccount.createOutbpundSession(
                     OlmSessionVersion.V2, bobAccount.curve25519Key(), bobOneTimeKey)) {
                 String encrypted = outboundSession.encrypt("Hello Bob".getBytes(StandardCharsets.UTF_8));
+                String aliceIdentityKey = aliceAccount.curve25519Key();
 
-                assertThatThrownBy(() -> bobAccount.createInboundSession(
-                        OlmSessionVersion.V1, aliceAccount.curve25519Key(), encrypted))
+                assertThatThrownBy(() -> bobAccount.createInboundSession(OlmSessionVersion.V1, aliceIdentityKey, encrypted))
                         .as("Creating inbound session with mismatched version should throw SessionCreationException")
                         .isInstanceOf(SessionCreationException.class)
-                        .isInstanceOf(io.github.fherbreteau.vodozemac.VodozemacException.class);
+                        .isInstanceOf(io.github.fherbreteau.vodozemac.exception.VodozemacException.class);
             }
         }
     }

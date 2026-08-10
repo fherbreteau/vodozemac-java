@@ -1,4 +1,4 @@
-package io.github.fherbreteau.vodozemac;
+package io.github.fherbreteau.vodozemac.exception;
 
 /**
  * Thrown when decoding or validating a cryptographic key fails.

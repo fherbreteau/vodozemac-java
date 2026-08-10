@@ -1,18 +1,18 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
-import io.github.fherbreteau.vodozemac.DecryptionException;
-import io.github.fherbreteau.vodozemac.KeyException;
-import io.github.fherbreteau.vodozemac.PickleException;
-import io.github.fherbreteau.vodozemac.SignatureException;
-import io.github.fherbreteau.vodozemac.VodozemacException;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import io.github.fherbreteau.vodozemac.exception.DecryptionException;
+import io.github.fherbreteau.vodozemac.exception.KeyException;
+import io.github.fherbreteau.vodozemac.exception.PickleException;
+import io.github.fherbreteau.vodozemac.exception.SignatureException;
+import io.github.fherbreteau.vodozemac.exception.VodozemacException;
+import org.junit.jupiter.api.Test;
 
 class InboundGroupSessionTest {
 
@@ -614,11 +614,9 @@ class InboundGroupSessionTest {
     @Test
     void testSignatureExceptionOnWrongSessionDecrypt() {
         String plaintext = "Hello Megolm!";
-        String sessionKey1;
         String encrypted;
 
         try (OutboundGroupSession outbound1 = new OutboundGroupSession(MegolmSessionVersion.V2)) {
-            sessionKey1 = outbound1.sessionKey();
             encrypted = outbound1.encrypt(plaintext.getBytes(StandardCharsets.UTF_8));
         }
 

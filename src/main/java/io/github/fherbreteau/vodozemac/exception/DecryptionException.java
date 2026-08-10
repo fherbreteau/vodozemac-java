@@ -1,4 +1,4 @@
-package io.github.fherbreteau.vodozemac;
+package io.github.fherbreteau.vodozemac.exception;
 
 /**
  * Thrown when decrypting an Olm or Megolm message fails.

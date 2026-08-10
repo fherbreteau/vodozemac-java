@@ -1,13 +1,13 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
-import io.github.fherbreteau.vodozemac.KeyException;
-import org.junit.jupiter.api.Test;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import io.github.fherbreteau.vodozemac.exception.KeyException;
+import org.junit.jupiter.api.Test;
 
 class OutboundGroupSessionTest {
 

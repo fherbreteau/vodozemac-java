@@ -2,8 +2,8 @@ package io.github.fherbreteau.vodozemac.megolm;
 
 import java.util.Optional;
 
-import io.github.fherbreteau.vodozemac.KeyException;
-import io.github.fherbreteau.vodozemac.PickleException;
+import io.github.fherbreteau.vodozemac.exception.KeyException;
+import io.github.fherbreteau.vodozemac.exception.PickleException;
 
 /**
  * A Megolm inbound group session represents a single receiving participant
@@ -27,7 +27,7 @@ public class InboundGroupSession implements AutoCloseable {
      *
      * @param sessionKey the base64-encoded session key from {@link OutboundGroupSession#sessionKey()}
      * @param version     the Megolm session protocol version to use
-     * @throws io.github.fherbreteau.vodozemac.VodozemacException if the session key is invalid
+     * @throws io.github.fherbreteau.vodozemac.exception.VodozemacException if the session key is invalid
      */
     public InboundGroupSession(String sessionKey, MegolmSessionVersion version) {
         nativePtr = nativeNew(sessionKey, version.getValue());
@@ -272,7 +272,7 @@ public class InboundGroupSession implements AutoCloseable {
      * @param sessionKey the base64-encoded exported session key
      * @param version     the Megolm session protocol version to use
      * @return a new {@code InboundGroupSession}
-     * @throws io.github.fherbreteau.vodozemac.KeyException if the session key is invalid
+     * @throws io.github.fherbreteau.vodozemac.exception.KeyException if the session key is invalid
      */
     public static InboundGroupSession importSession(String sessionKey, MegolmSessionVersion version) {
         long nativePtr = nativeImport(sessionKey, version.getValue());

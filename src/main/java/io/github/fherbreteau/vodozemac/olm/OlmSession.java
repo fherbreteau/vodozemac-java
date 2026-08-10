@@ -1,8 +1,8 @@
 package io.github.fherbreteau.vodozemac.olm;
 
-import io.github.fherbreteau.vodozemac.DecryptionException;
-import io.github.fherbreteau.vodozemac.KeyException;
-import io.github.fherbreteau.vodozemac.PickleException;
+import io.github.fherbreteau.vodozemac.exception.DecryptionException;
+import io.github.fherbreteau.vodozemac.exception.KeyException;
+import io.github.fherbreteau.vodozemac.exception.PickleException;
 
 /**
  * An Olm session represents one end of an encrypted communication channel

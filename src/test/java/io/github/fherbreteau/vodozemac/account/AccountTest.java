@@ -1,9 +1,5 @@
 package io.github.fherbreteau.vodozemac.account;
 
-import io.github.fherbreteau.vodozemac.KeyException;
-import io.github.fherbreteau.vodozemac.olm.OlmSession;
-import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
-import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
@@ -12,6 +8,11 @@ import static org.assertj.core.api.InstanceOfAssertFactories.list;
 import java.security.SecureRandom;
 import java.util.Map;
 import java.util.Optional;
+
+import io.github.fherbreteau.vodozemac.exception.KeyException;
+import io.github.fherbreteau.vodozemac.olm.OlmSession;
+import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
+import org.junit.jupiter.api.Test;
 
 class AccountTest {
 

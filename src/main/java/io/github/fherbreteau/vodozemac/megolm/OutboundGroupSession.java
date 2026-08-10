@@ -1,6 +1,6 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
-import io.github.fherbreteau.vodozemac.KeyException;
+import io.github.fherbreteau.vodozemac.exception.KeyException;
 
 /**
  * A Megolm outbound group session represents a single sending participant in

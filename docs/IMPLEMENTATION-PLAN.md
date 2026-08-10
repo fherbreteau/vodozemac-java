@@ -4,41 +4,10 @@ This document tracks the gap between the vodozemac 0.9.0 Rust API and the Java b
 as well as issues identified in the code review (`CODE_REVIEW.md`).
 It is organized into phases by priority, with each phase being independently deliverable.
 
-Phases 2-7, 9 cover missing vodozemac features.
+Phases 3-7, 9 cover missing vodozemac features.
 Phase 14 covers code review fixes (refactoring and deduplication).
 
-**Completed phases:** Phase 1 (InboundGroupSession session management), Phase 8 (Granular error types), Phase 10 (Code quality and duplication fixes), Phase 11 (Build and configuration fixes), Phase 12 (Documentation overhaul), and Phase 13 (Security hardening) have been implemented. Phase 13.3 (cause chaining for VodozemacException) was implemented as part of Phase 8.
-
----
-
-## Phase 2: SAS module (High priority)
-
-Short Authentication String verification — needed for device verification flows.
-
-### 2.1 New Java classes
-
-| Java class           | vodozemac type                  | Key methods                                                                        |
-| -------------------- | ------------------------------- | ---------------------------------------------------------------------------------- |
-| `Sas`                | `vodozemac::sas::Sas`           | `new()`, `publicKey() -> String`, `diffieHellman(String) -> EstablishedSas`       |
-| `EstablishedSas`     | `vodozemac::sas::EstablishedSas`| `bytes(String info) -> byte[]`, `calculateMac(String, String) -> String`, `verifyMac(...)`, `ourPublicKey()`, `theirPublicKey()` |
-| `SasBytes`           | `vodozemac::sas::SasBytes`      | `emojiIndices() -> int[]`, `decimals() -> String[]`                                |
-| `Mac`                | `vodozemac::sas::Mac`           | `toBase64() -> String` (or just use String throughout)                              |
-
-### 2.2 Rust JNI module: `sas/`
-
-New directory `rust/src/sas/` with:
-- `mod.rs` — module declarations
-- `sas.rs` — `Sas` JNI functions (`nativeNew`, `nativePublicKey`, `nativeDiffieHellman`, `nativeFree`) + tests
-- `established_sas.rs` — `EstablishedSas` JNI functions (`nativeBytes`, `nativeCalculateMac`, `nativeVerifyMac`, `nativeOurPublicKey`, `nativeTheirPublicKey`, `nativeFree`) + tests
-
-### 2.3 Design decisions
-
-- **`SasBytes`**: Could be exposed as a simple class with `emojiIndices()` returning `int[]`
-  and `decimals()` returning `String[]` (3 decimal pairs). Or embed it in `EstablishedSas.bytes()` return.
-- **`Mac`**: Could be just a `String` (base64) rather than a full class — simpler API.
-- **AutoCloseable**: Both `Sas` and `EstablishedSas` need `close()` to free native resources.
-
-### Estimated effort: ~12 JNI functions, 2-4 Java classes, 1 Rust module
+**Completed phases:** Phase 1 (InboundGroupSession session management), Phase 2 (SAS module), Phase 8 (Granular error types), Phase 10 (Code quality and duplication fixes), Phase 11 (Build and configuration fixes), Phase 12 (Documentation overhaul), and Phase 13 (Security hardening) have been implemented. Phase 13.3 (cause chaining for VodozemacException) was implemented as part of Phase 8.
 
 ---
 
@@ -337,7 +306,7 @@ All 4 `nativeFree` functions are identical except for the Rust type.
 | Phase                              | Priority | JNI functions | Java classes | Rust modules     |
 | ---------------------------------- | -------- | ------------- | ------------ | ---------------- |
 | ~~1. InboundGroupSession management~~ | ~~High~~ | ~~Done~~    | ~~Done~~     | ~~Done~~         |
-| 2. SAS module                      | High     | ~12           | 2-4          | New `sas/`       |
+| ~~2. SAS module~~                      | ~~High~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | 3. ECIES module                    | High     | ~15           | 5            | New `ecies/`     |
 | 4. PK Encryption                   | High     | ~10           | 3            | New `pk_encryption/` + Cargo.toml |
 | 5. Structured messages             | Medium   | ~8 changes    | 2-3          | Existing modules |

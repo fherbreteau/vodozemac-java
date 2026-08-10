@@ -1,12 +1,13 @@
 package io.github.fherbreteau;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.Base64;
 
 import io.github.fherbreteau.vodozemac.account.Account;
 import io.github.fherbreteau.vodozemac.account.OneTimeKeyGenerationResult;
 import io.github.fherbreteau.vodozemac.olm.InboundCreationResult;
 import io.github.fherbreteau.vodozemac.olm.OlmSession;
-import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
 
 public final class Sample {
 
@@ -35,7 +36,7 @@ public final class Sample {
             // Create a Olm session between Alice and Bob
             String encrypted;
             String alicePickleSession;
-            try (OlmSession outboundOlmSession = aliceAccount.createOutbpundSession(OlmSessionVersion.V2, bobAccount.curve25519Key(), bobOneTimeKey)) {
+            try (OlmSession outboundOlmSession = aliceAccount.createOutbpundSession(bobAccount.curve25519Key(), bobOneTimeKey)) {
                 System.out.println("Alice: Outbound olm session's session id: " + outboundOlmSession.sessionId());
 
                 String message = "Hello Bob";
@@ -62,5 +63,10 @@ public final class Sample {
                 System.out.println("Alice: Received message: " + new String(message, StandardCharsets.UTF_8));
             }
         }
+
+        byte[] key = new byte[32];
+        Arrays.fill(key, (byte) 0);
+        String result = Base64.getEncoder().encodeToString(key);
+        System.out.println("result: " +  result);
     }
 }

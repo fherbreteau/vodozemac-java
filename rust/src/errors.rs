@@ -1,6 +1,8 @@
 use jni::Env;
 use jni::jni_str;
 use jni::strings::{JNIStr, JNIString};
+use vodozemac::sas::InvalidCount;
+use vodozemac::sas::SasError;
 
 fn throw(env: &mut Env, class: &JNIStr, message: &str) -> jni::errors::Error {
     let _ = env.throw_new(class, JNIString::from(message));
@@ -13,7 +15,7 @@ pub(crate) fn throw_pickle_error<E: std::fmt::Display>(
 ) -> jni::errors::Error {
     throw(
         env,
-        jni_str!("io/github/fherbreteau/vodozemac/PickleException"),
+        jni_str!("io/github/fherbreteau/vodozemac/exception/PickleException"),
         &error.to_string(),
     )
 }
@@ -24,7 +26,7 @@ pub(crate) fn throw_decryption_error<E: std::fmt::Display>(
 ) -> jni::errors::Error {
     throw(
         env,
-        jni_str!("io/github/fherbreteau/vodozemac/DecryptionException"),
+        jni_str!("io/github/fherbreteau/vodozemac/exception/DecryptionException"),
         &error.to_string(),
     )
 }
@@ -35,7 +37,7 @@ pub(crate) fn throw_session_creation_error<E: std::fmt::Display>(
 ) -> jni::errors::Error {
     throw(
         env,
-        jni_str!("io/github/fherbreteau/vodozemac/SessionCreationException"),
+        jni_str!("io/github/fherbreteau/vodozemac/exception/SessionCreationException"),
         &error.to_string(),
     )
 }
@@ -43,7 +45,7 @@ pub(crate) fn throw_session_creation_error<E: std::fmt::Display>(
 pub(crate) fn throw_key_error<E: std::fmt::Display>(env: &mut Env, error: E) -> jni::errors::Error {
     throw(
         env,
-        jni_str!("io/github/fherbreteau/vodozemac/KeyException"),
+        jni_str!("io/github/fherbreteau/vodozemac/exception/KeyException"),
         &error.to_string(),
     )
 }
@@ -54,7 +56,23 @@ pub(crate) fn throw_signature_error<E: std::fmt::Display>(
 ) -> jni::errors::Error {
     throw(
         env,
-        jni_str!("io/github/fherbreteau/vodozemac/SignatureException"),
+        jni_str!("io/github/fherbreteau/vodozemac/exception/SignatureException"),
+        &error.to_string(),
+    )
+}
+
+pub(crate) fn throw_sas_error(env: &mut Env, error: SasError) -> jni::errors::Error {
+    throw(
+        env,
+        jni_str!("io/github/fherbreteau/vodozemac/exception/SasException"),
+        &error.to_string(),
+    )
+}
+
+pub(crate) fn throw_invalid_count_error(env: &mut Env, error: InvalidCount) -> jni::errors::Error {
+    throw(
+        env,
+        jni_str!("io/github/fherbreteau/vodozemac/exception/SasException"),
         &error.to_string(),
     )
 }
@@ -65,7 +83,7 @@ pub(crate) fn throw_generic_error<E: std::fmt::Display>(
 ) -> jni::errors::Error {
     throw(
         env,
-        jni_str!("io/github/fherbreteau/vodozemac/VodozemacException"),
+        jni_str!("io/github/fherbreteau/vodozemac/exception/VodozemacException"),
         &error.to_string(),
     )
 }
