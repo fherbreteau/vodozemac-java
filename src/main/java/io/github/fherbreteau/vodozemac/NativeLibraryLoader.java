@@ -6,7 +6,9 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Set;
 
 /**
@@ -56,13 +58,13 @@ public final class NativeLibraryLoader {
         String resourcePath = String.format("/%s", libName);
 
         try {
-            loadFromResources(resourcePath, libName);
+            loadFromResources(resourcePath, libName, platform);
             loaded = true;
-        } catch (Exception e1) {
+        } catch (Exception _) {
             // If that fails, try the platform-specific directory
             resourcePath = String.format("/native/%s/%s", platform, libName);
             try {
-                loadFromResources(resourcePath, libName);
+                loadFromResources(resourcePath, libName, platform);
                 loaded = true;
             } catch (Exception e2) {
                 throw new RuntimeException(
@@ -106,32 +108,25 @@ public final class NativeLibraryLoader {
         throw new UnsupportedOperationException("Unsupported OS: " + osName);
     }
 
-    private static void loadFromResources(String resourcePath, String libName) throws IOException {
+    private static void loadFromResources(String resourcePath, String libName, String platform) throws IOException {
         InputStream in = NativeLibraryLoader.class.getResourceAsStream(resourcePath);
         if (in == null) {
             throw new FileNotFoundException("Native resource not found: " + resourcePath);
         }
 
         // Create a temp file to extract the library
-        Path tempDir = Files.createTempDirectory("vodozemac-native");
+        Path tempDir;
+        if (!platform.startsWith(OS_WINDOWS)) {
+            Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwx------");
+            FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(perms);
+            tempDir = Files.createTempDirectory("vodozemac-native", attr);
+        } else {
+            tempDir = Files.createTempDirectory("vodozemac-native");
+        }
         Path tempLib = tempDir.resolve(libName);
 
         Files.copy(in, tempLib, StandardCopyOption.REPLACE_EXISTING);
         in.close();
-
-        // Set owner-only permissions on the extracted native library
-        try {
-            Files.setPosixFilePermissions(tempLib,
-                    Set.of(PosixFilePermission.OWNER_READ,
-                            PosixFilePermission.OWNER_WRITE,
-                            PosixFilePermission.OWNER_EXECUTE));
-        } catch (UnsupportedOperationException e) {
-            tempLib.toFile().setReadable(false, false);
-            tempLib.toFile().setWritable(false, false);
-            tempLib.toFile().setReadable(true, true);
-            tempLib.toFile().setWritable(true, true);
-            tempLib.toFile().setExecutable(true, true);
-        }
 
         // Mark for deletion on JVM exit
         tempLib.toFile().deleteOnExit();
