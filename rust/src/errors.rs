@@ -72,15 +72,33 @@ pub(crate) fn throw_megolm_decryption_error(
     error: vodozemac::megolm::DecryptionError,
 ) -> jni::errors::Error {
     match &error {
-        vodozemac::megolm::DecryptionError::Signature(_) => throw(
-            env,
-            jni_str!("io/github/fherbreteau/vodozemac/SignatureException"),
-            &error.to_string(),
-        ),
-        _ => throw(
-            env,
-            jni_str!("io/github/fherbreteau/vodozemac/DecryptionException"),
-            &error.to_string(),
-        ),
+        vodozemac::megolm::DecryptionError::Signature(e) => {
+            throw_signature_error(env, e)
+        }
+        _ => throw_decryption_error(env, error),
+    }
+}
+
+pub(crate) fn throw_session_key_decode_error(
+    env: &mut Env,
+    error: vodozemac::megolm::SessionKeyDecodeError,
+) -> jni::errors::Error {
+    match &error {
+        vodozemac::megolm::SessionKeyDecodeError::Signature(e) => {
+            throw_signature_error(env, e)
+        }
+        _ => throw_key_error(env, error),
+    }
+}
+
+pub(crate) fn throw_decode_error(
+    env: &mut Env,
+    error: vodozemac::DecodeError,
+) -> jni::errors::Error {
+    match &error {
+        vodozemac::DecodeError::Signature(e) => {
+            throw_signature_error(env, e)
+        }
+        _ => throw_decryption_error(env, error),
     }
 }

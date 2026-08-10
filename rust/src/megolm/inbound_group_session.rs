@@ -6,8 +6,8 @@ use vodozemac::megolm::{
 };
 
 use crate::errors::{
-    throw_decryption_error, throw_generic_error, throw_key_error, throw_megolm_decryption_error,
-    throw_pickle_error,
+    throw_decode_error, throw_generic_error, throw_megolm_decryption_error,
+    throw_pickle_error, throw_session_key_decode_error,
 };
 use crate::helpers::{megolm_session_config_from_version, wrap};
 
@@ -24,7 +24,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let config = megolm_session_config_from_version(version)?;
         let session_key = SessionKey::from_base64(&session_key.to_string())
-            .map_err(|e| throw_key_error(env, e))?;
+            .map_err(|e| throw_session_key_decode_error(env, e))?;
 
             let session = Box::new(InboundGroupSession::new(&session_key, config));
         Ok(Box::into_raw(session) as jlong)
@@ -73,7 +73,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
         let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
         let message_str: String = message.to_string();
         let megolm_message = MegolmMessage::from_base64(&message_str)
-            .map_err(|e| throw_decryption_error(env, e))?;
+            .map_err(|e| throw_decode_error(env, e))?;
 
         let decrypted = session.decrypt(&megolm_message)
             .map_err(|e| throw_megolm_decryption_error(env, e))?;
@@ -340,7 +340,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
         let config = megolm_session_config_from_version(version)?;
         let session_str: String = session_key.to_string();
         let exported_session = ExportedSessionKey::from_base64(&session_str)
-            .map_err(|e| throw_key_error(env, e))?;
+            .map_err(|e| throw_session_key_decode_error(env, e))?;
 
         let session = InboundGroupSession::import(&exported_session, config);
         let session = Box::new(session);
