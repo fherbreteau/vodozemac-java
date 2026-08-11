@@ -25,7 +25,7 @@ import io.github.fherbreteau.vodozemac.exception.PickleException;
  * <p>
  * An {@code OlmSession} is acquired from an
  * {@link io.github.fherbreteau.vodozemac.account.Account}, by calling
- * {@link io.github.fherbreteau.vodozemac.account.Account#createOutbpundSession(OlmSessionVersion, String, String)}
+ * {@link io.github.fherbreteau.vodozemac.account.Account#createOutboundSession(OlmSessionVersion, String, String)}
  * if you are the first participant to send a message, or
  * {@link io.github.fherbreteau.vodozemac.account.Account#createInboundSession(OlmSessionVersion, String, String)}
  * if the other participant initiated the channel by sending you a message.

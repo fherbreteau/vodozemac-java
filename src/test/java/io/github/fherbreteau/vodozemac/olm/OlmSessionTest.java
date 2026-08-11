@@ -31,7 +31,7 @@ class OlmSessionTest {
 
             // Alice creates an outbound session with Bob
             String bobCurve25519Key = bobAccount.curve25519Key();
-            try (OlmSession outboundSession = aliceAccount.createOutbpundSession(
+            try (OlmSession outboundSession = aliceAccount.createOutboundSession(
                     OlmSessionVersion.V2, bobCurve25519Key, bobOneTimeKey)) {
 
                 assertThat(outboundSession.sessionId())
@@ -103,7 +103,7 @@ class OlmSessionTest {
 
             String pickleData;
             String originalSessionId;
-            try (OlmSession session = aliceAccount.createOutbpundSession(
+            try (OlmSession session = aliceAccount.createOutboundSession(
                     OlmSessionVersion.V2, bobAccount.curve25519Key(), bobOneTimeKey)) {
                 originalSessionId = session.sessionId();
                 pickleData = session.pickle();
@@ -138,7 +138,7 @@ class OlmSessionTest {
 
             String pickleData;
             String originalSessionId;
-            try (OlmSession session = aliceAccount.createOutbpundSession(
+            try (OlmSession session = aliceAccount.createOutboundSession(
                     OlmSessionVersion.V2, bobAccount.curve25519Key(), bobOneTimeKey)) {
                 originalSessionId = session.sessionId();
                 pickleData = session.pickle(key);
@@ -166,7 +166,7 @@ class OlmSessionTest {
             String bobOneTimeKey = result.getCreated().iterator().next();
             bobAccount.markKeysAsPublished();
 
-            try (OlmSession session = aliceAccount.createOutbpundSession(
+            try (OlmSession session = aliceAccount.createOutboundSession(
                     OlmSessionVersion.V2, bobAccount.curve25519Key(), bobOneTimeKey)) {
 
                 byte[] invalidKey = new byte[16];
@@ -196,7 +196,7 @@ class OlmSessionTest {
             String bobOneTimeKey = result.getCreated().iterator().next();
             bobAccount.markKeysAsPublished();
 
-            OlmSession session = aliceAccount.createOutbpundSession(
+            OlmSession session = aliceAccount.createOutboundSession(
                     OlmSessionVersion.V2, bobAccount.curve25519Key(), bobOneTimeKey);
             assertThat(session.isClosed()).isFalse();
 
@@ -244,7 +244,7 @@ class OlmSessionTest {
             String bobOneTimeKey = result.getCreated().iterator().next();
             bobAccount.markKeysAsPublished();
 
-            try (OlmSession outboundSession = aliceAccount.createOutbpundSession(
+            try (OlmSession outboundSession = aliceAccount.createOutboundSession(
                     OlmSessionVersion.V2, bobAccount.curve25519Key(), bobOneTimeKey)) {
                 String encrypted = outboundSession.encrypt("Hello Bob".getBytes(StandardCharsets.UTF_8));
                 String aliceIdentityKey = aliceAccount.curve25519Key();

@@ -342,9 +342,19 @@
                                     <element>BUNDLE</element>
                                     <limits>
                                         <limit>
-                                            <counter>LINE</counter>
+                                            <counter>INSTRUCTION</counter>
                                             <value>COVEREDRATIO</value>
                                             <minimum>${jacoco.coverage.ratio}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>CLASS</counter>
+                                            <value>MISSEDCOUNT</value>
+                                            <maximum>0</maximum>
+                                        </limit>
+                                        <limit>
+                                            <counter>METHOD</counter>
+                                            <value>MISSEDCOUNT</value>
+                                            <maximum>0</maximum>
                                         </limit>
                                     </limits>
                                 </rule>
@@ -354,7 +364,7 @@
                 </executions>
                 <configuration>
                     <excludes>
-                        <exclude>io/github/fherbreteau/Sample.class</exclude>
+                        <exclude>io/github/fherbreteau/Sample*.class</exclude>
                         <exclude>io/github/fherbreteau/vodozemac/NativeLibraryLoader.class</exclude>
                     </excludes>
                 </configuration>

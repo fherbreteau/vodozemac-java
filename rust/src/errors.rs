@@ -69,6 +69,17 @@ pub(crate) fn throw_sas_error(env: &mut Env, error: SasError) -> jni::errors::Er
     )
 }
 
+pub(crate) fn throw_ecies_error<E: std::fmt::Display>(
+    env: &mut Env,
+    error: E,
+) -> jni::errors::Error {
+    throw(
+        env,
+        jni_str!("io/github/fherbreteau/vodozemac/exception/EciesException"),
+        &error.to_string(),
+    )
+}
+
 pub(crate) fn throw_invalid_count_error(env: &mut Env, error: InvalidCount) -> jni::errors::Error {
     throw(
         env,

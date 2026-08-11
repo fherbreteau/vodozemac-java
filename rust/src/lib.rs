@@ -1,3 +1,4 @@
+mod ecies;
 mod errors;
 mod helpers;
 mod megolm;

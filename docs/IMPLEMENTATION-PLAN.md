@@ -7,11 +7,11 @@ It is organized into phases by priority, with each phase being independently del
 Phases 3-7, 9 cover missing vodozemac features.
 Phase 14 covers code review fixes (refactoring and deduplication).
 
-**Completed phases:** Phase 1 (InboundGroupSession session management), Phase 2 (SAS module), Phase 8 (Granular error types), Phase 10 (Code quality and duplication fixes), Phase 11 (Build and configuration fixes), Phase 12 (Documentation overhaul), and Phase 13 (Security hardening) have been implemented. Phase 13.3 (cause chaining for VodozemacException) was implemented as part of Phase 8.
+**Completed phases:** Phase 1 (InboundGroupSession session management), Phase 2 (SAS module), Phase 3 (ECIES module), Phase 8 (Granular error types), Phase 10 (Code quality and duplication fixes), Phase 11 (Build and configuration fixes), Phase 12 (Documentation overhaul), and Phase 13 (Security hardening) have been implemented. Phase 13.3 (cause chaining for VodozemacException) was implemented as part of Phase 8.
 
 ---
 
-## Phase 3: ECIES module (High priority)
+## ~~Phase 3: ECIES module (High priority)~~
 
 QR-code-based device login (MSC3886).
 
@@ -146,11 +146,11 @@ Expose `Ed25519PublicKey`, `Ed25519Signature`, `Curve25519PublicKey` as Java typ
 - **Java**: `MegolmSessionVersion sessionConfig()`
 - **Rust**: 1 JNI function
 
-### 7.4 Fix typo: `createOutbpundSession` -> `createOutboundSession`
+### ~~7.4 Fix typo: `createOutbpundSession` -> `createOutboundSession`~~
 
-- Rename in `Account.java` + update all callers (tests, `Sample.java`)
-- The Rust JNI name doesn't change (it's `nativeCreateOutboundSession` in Java,
-  `Java_..._nativeCreateOutboundSession` in Rust — no typo there)
+- ~~Rename in `Account.java` + update all callers (tests, `Sample.java`)~~
+- ~~The Rust JNI name doesn't change (it's `nativeCreateOutboundSession` in Java,
+  `Java_..._nativeCreateOutboundSession` in Rust — no typo there)~~
 
 ### Estimated effort: ~4 JNI functions, 1 Java class, 1 rename
 
@@ -307,7 +307,7 @@ All 4 `nativeFree` functions are identical except for the Rust type.
 | ---------------------------------- | -------- | ------------- | ------------ | ---------------- |
 | ~~1. InboundGroupSession management~~ | ~~High~~ | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | ~~2. SAS module~~                      | ~~High~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
-| 3. ECIES module                    | High     | ~15           | 5            | New `ecies/`     |
+| ~~3. ECIES module~~                    | ~~High~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | 4. PK Encryption                   | High     | ~10           | 3            | New `pk_encryption/` + Cargo.toml |
 | 5. Structured messages             | Medium   | ~8 changes    | 2-3          | Existing modules |
 | 6. Crypto key types                | Medium   | ~6            | 3            | New `types/`     |
@@ -325,7 +325,7 @@ All 4 `nativeFree` functions are identical except for the Rust type.
 
 | CODE_REVIEW.md finding | Phase | Section |
 |---|---|---|
-| C1: Typo `createOutbpundSession` | Phase 7 | 7.4 |
+| ~~C1: Typo `createOutbpundSession`~~ | ~~Phase 7~~ | ~~Done~~ |
 | ~~C2: Wrong `checkNotClosed()` error messages~~ | ~~Phase 10~~ | ~~Done~~ |
 | ~~C3: `OlmSession` constructor is public~~ | ~~Phase 13~~ | ~~Done~~ |
 | ~~C4-C7: Missing key validation in Megolm~~ | ~~Phase 10~~ | ~~Done~~ |

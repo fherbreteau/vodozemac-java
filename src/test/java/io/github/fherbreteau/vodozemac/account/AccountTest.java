@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 
 import io.github.fherbreteau.vodozemac.exception.KeyException;
+import io.github.fherbreteau.vodozemac.olm.InboundCreationResult;
 import io.github.fherbreteau.vodozemac.olm.OlmSession;
 import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
 import org.junit.jupiter.api.Test;
@@ -403,7 +404,7 @@ class AccountTest {
             String bobOneTimeKey = oneTimeKeys.values().iterator().next();
 
             // Alice creates an outbound session with Bob's identity key and one-time key
-            try (OlmSession session = aliceAccount.createOutbpundSession(
+            try (OlmSession session = aliceAccount.createOutboundSession(
                     OlmSessionVersion.V2, bobCurve25519Key, bobOneTimeKey)) {
 
                 assertThat(session)
@@ -488,6 +489,43 @@ class AccountTest {
                     .as("Legacy account should have a valid Curve25519 key")
                     .isNotNull()
                     .isNotEmpty();
+        }
+    }
+
+    @Test
+    void testCreateOutboundSessionWithDefaultVersion() {
+        try (Account aliceAccount = new Account();
+                Account bobAccount = new Account()) {
+            bobAccount.generateOneTimeKeys(1L);
+            Map<String, String> oneTimeKeys = bobAccount.getUnpublishedOneTimeKeys();
+            String bobCurve25519Key = bobAccount.curve25519Key();
+            String bobOneTimeKey = oneTimeKeys.values().iterator().next();
+
+            try (OlmSession session = aliceAccount.createOutboundSession(bobCurve25519Key, bobOneTimeKey)) {
+                assertThat(session).as("Outbound session with default version should be created").isNotNull();
+            }
+        }
+    }
+
+    @Test
+    void testCreateInboundSessionWithDefaultVersion() {
+        try (Account aliceAccount = new Account();
+                Account bobAccount = new Account()) {
+            bobAccount.generateOneTimeKeys(1L);
+            Map<String, String> oneTimeKeys = bobAccount.getUnpublishedOneTimeKeys();
+            String bobCurve25519Key = bobAccount.curve25519Key();
+            String bobOneTimeKey = oneTimeKeys.values().iterator().next();
+
+            try (OlmSession outboundSession = aliceAccount.createOutboundSession(bobCurve25519Key, bobOneTimeKey)) {
+                String plaintext = "Hello Bob";
+                String encrypted = outboundSession.encrypt(plaintext.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+
+                InboundCreationResult inboundResult = bobAccount.createInboundSession(
+                        aliceAccount.curve25519Key(), encrypted);
+                assertThat(inboundResult).as("Inbound session with default version should be created").isNotNull();
+                assertThat(new String(inboundResult.getPlaintext(), java.nio.charset.StandardCharsets.UTF_8))
+                        .isEqualTo(plaintext);
+            }
         }
     }
 }

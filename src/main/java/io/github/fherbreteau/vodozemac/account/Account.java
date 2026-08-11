@@ -109,8 +109,8 @@ public class Account implements AutoCloseable {
      * @throws KeyException            if the keys cannot be decoded
      * @throws SessionCreationException if session creation fails
      */
-    public OlmSession createOutbpundSession(String identityKey, String oneTimeKey) {
-        return createOutbpundSession(OlmSessionVersion.defaultVersion(), identityKey, oneTimeKey);
+    public OlmSession createOutboundSession(String identityKey, String oneTimeKey) {
+        return createOutboundSession(OlmSessionVersion.defaultVersion(), identityKey, oneTimeKey);
     }
 
     /**
@@ -125,7 +125,7 @@ public class Account implements AutoCloseable {
      * @throws KeyException            if the keys cannot be decoded
      * @throws SessionCreationException if session creation fails
      */
-    public OlmSession createOutbpundSession(OlmSessionVersion sessionVersion, String identityKey, String oneTimeKey) {
+    public OlmSession createOutboundSession(OlmSessionVersion sessionVersion, String identityKey, String oneTimeKey) {
         checkNotClosed();
 
         return nativeCreateOutboundSession(nativePtr, sessionVersion.getValue(), identityKey, oneTimeKey);

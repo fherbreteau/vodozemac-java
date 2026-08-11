@@ -1,7 +1,8 @@
 use jni::objects::{JClass, JString};
 use jni::sys::{jlong, jobject, jstring};
 use jni::{EnvUnowned, JValue, jni_sig, jni_str};
-use vodozemac::{Curve25519PublicKey, sas::Sas};
+use vodozemac::Curve25519PublicKey;
+use vodozemac::sas::Sas;
 
 use crate::errors::throw_key_error;
 
