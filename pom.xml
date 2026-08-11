@@ -51,7 +51,7 @@
         <sonar.projectKey>fherbreteau_vodozemac-java</sonar.projectKey>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.coverage.exclusions>
-            **/Sample.java,
+            **/Sample*.java,
             **/NativeLibraryLoader.java
         </sonar.coverage.exclusions>
 
@@ -326,6 +326,7 @@
                             <dataFile>${project.build.directory}/jacoco/jacoco-unit-tests.exec</dataFile>
                             <formats>
                                 <format>XML</format>
+                                <format>HTML</format>
                             </formats>
                         </configuration>
                     </execution>

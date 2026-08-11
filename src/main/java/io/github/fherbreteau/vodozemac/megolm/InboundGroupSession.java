@@ -2,6 +2,7 @@ package io.github.fherbreteau.vodozemac.megolm;
 
 import java.util.Optional;
 
+import io.github.fherbreteau.vodozemac.exception.DecryptionException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
 
@@ -23,10 +24,21 @@ public class InboundGroupSession implements AutoCloseable {
 
     /**
      * Creates a new inbound group session from a session key received over
+     * an authenticated channel using the default megolm version.
+     *
+     * @param sessionKey the base64-encoded session key from {@link OutboundGroupSession#sessionKey()}
+     * @throws io.github.fherbreteau.vodozemac.exception.VodozemacException if the session key is invalid
+     */
+    public InboundGroupSession(String sessionKey) {
+        this(sessionKey, MegolmSessionVersion.defaultVersion());
+    }
+
+    /**
+     * Creates a new inbound group session from a session key received over
      * an authenticated channel.
      *
      * @param sessionKey the base64-encoded session key from {@link OutboundGroupSession#sessionKey()}
-     * @param version     the Megolm session protocol version to use
+     * @param version    the Megolm session protocol version to use
      * @throws io.github.fherbreteau.vodozemac.exception.VodozemacException if the session key is invalid
      */
     public InboundGroupSession(String sessionKey, MegolmSessionVersion version) {

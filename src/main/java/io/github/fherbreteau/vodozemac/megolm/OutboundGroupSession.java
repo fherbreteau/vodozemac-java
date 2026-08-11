@@ -1,6 +1,8 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
+import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
+import io.github.fherbreteau.vodozemac.exception.PickleException;
 
 /**
  * A Megolm outbound group session represents a single sending participant in
@@ -17,8 +19,19 @@ import io.github.fherbreteau.vodozemac.exception.KeyException;
  * try-with-resources block to ensure native resources are properly released.
  */
 public class OutboundGroupSession implements AutoCloseable {
+    static {
+        NativeLibraryLoader.loadLibrary();
+    }
 
     private long nativePtr;
+
+    /**
+     * Constructs a new outbound group session with a random ratchet state
+     * and signing key pair.
+     */
+    public OutboundGroupSession() {
+        this(MegolmSessionVersion.defaultVersion());
+    }
 
     /**
      * Constructs a new outbound group session with a random ratchet state

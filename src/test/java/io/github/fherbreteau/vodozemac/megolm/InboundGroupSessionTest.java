@@ -60,12 +60,12 @@ class InboundGroupSessionTest {
         String sessionKey;
         String outboundSessionId;
 
-        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V1)) {
+        try (OutboundGroupSession outbound = new OutboundGroupSession()) {
             sessionKey = outbound.sessionKey();
             outboundSessionId = outbound.sessionId();
         }
 
-        try (InboundGroupSession inbound = new InboundGroupSession(sessionKey, MegolmSessionVersion.V1)) {
+        try (InboundGroupSession inbound = new InboundGroupSession(sessionKey)) {
             assertThat(inbound.sessionId())
                     .as("Inbound and outbound session IDs should match")
                     .isEqualTo(outboundSessionId);

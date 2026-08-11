@@ -4,9 +4,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import org.junit.jupiter.api.Test;
-
 import io.github.fherbreteau.vodozemac.exception.EciesException;
+import org.junit.jupiter.api.Test;
 
 class EciesTest {
 
@@ -32,7 +31,6 @@ class EciesTest {
     @Test
     void testEciesChannelEstablishment() {
         try (Ecies alice = new Ecies(); Ecies bob = new Ecies()) {
-            String alicePublicKey = alice.publicKey();
             String bobPublicKey = bob.publicKey();
 
             OutboundCreationResult aliceResult = alice.establishOutboundChannel(bobPublicKey, PLAINTEXT);
@@ -139,9 +137,11 @@ class EciesTest {
     @Test
     void testEciesCannotBeReusedAfterEstablishment() {
         try (Ecies alice = new Ecies(); Ecies bob = new Ecies()) {
-            alice.establishOutboundChannel(bob.publicKey(), PLAINTEXT);
+            String bobPublicKey = bob.publicKey();
+
+            alice.establishOutboundChannel(bobPublicKey, PLAINTEXT);
             assertThat(alice.isClosed()).isTrue();
-            assertThatThrownBy(() -> alice.establishOutboundChannel(bob.publicKey(), PLAINTEXT))
+            assertThatThrownBy(() -> alice.establishOutboundChannel(bobPublicKey, PLAINTEXT))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Ecies has been closed");
             assertThatThrownBy(alice::publicKey)
@@ -203,6 +203,8 @@ class EciesTest {
             aliceEcies.close();
             assertThat(aliceEcies.isClosed()).isTrue();
 
+            aliceEcies.close(); // EstablishedEcies closure must be indempotent
+
             bobEcies.close();
             assertThat(bobEcies.isClosed()).isTrue();
         }
@@ -212,7 +214,7 @@ class EciesTest {
     void testEstablishedEciesUseAfterClose() {
         try (Ecies alice = new Ecies(); Ecies bob = new Ecies()) {
             OutboundCreationResult aliceResult = alice.establishOutboundChannel(bob.publicKey(), PLAINTEXT);
-            InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.getInitialMessage());
+            bob.establishInboundChannel(aliceResult.getInitialMessage());
 
             EstablishedEcies aliceEcies = aliceResult.getEstablishedEcies();
             aliceEcies.close();
