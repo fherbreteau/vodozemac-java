@@ -1,5 +1,6 @@
 package io.github.fherbreteau.vodozemac.ecies;
 
+import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.exception.EciesException;
 
 /**
@@ -25,12 +26,10 @@ import io.github.fherbreteau.vodozemac.exception.EciesException;
  * This class implements {@link AutoCloseable} and should be used in a
  * try-with-resources block to ensure native resources are properly released.
  */
-public class EstablishedEcies implements AutoCloseable {
-
-    private long nativePtr;
+public class EstablishedEcies extends NativeHandle {
 
     EstablishedEcies(long nativePtr) {
-        this.nativePtr = nativePtr;
+        super(nativePtr);
     }
 
     /**
@@ -96,31 +95,6 @@ public class EstablishedEcies implements AutoCloseable {
         return nativeDecrypt(nativePtr, message);
     }
 
-    private void checkNotClosed() {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("EstablishedEcies has been closed");
-        }
-    }
-
-    /* For test usage only */
-    boolean isClosed() {
-        return nativePtr == 0;
-    }
-
-    /**
-     * Closes the {@code EstablishedEcies} by releasing its associated native
-     * resources.
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() {
-        if (nativePtr != 0) {
-            nativeFree(nativePtr);
-            nativePtr = 0;
-        }
-    }
-
     private native String nativePublicKey(long ptr);
 
     private native CheckCode nativeCheckCode(long ptr);
@@ -129,5 +103,5 @@ public class EstablishedEcies implements AutoCloseable {
 
     private native byte[] nativeDecrypt(long ptr, String message);
 
-    private native void nativeFree(long ptr);
+    protected native void nativeFree(long ptr);
 }

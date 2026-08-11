@@ -7,7 +7,7 @@ It is organized into phases by priority, with each phase being independently del
 Phases 3-7, 9 cover missing vodozemac features.
 Phase 14 covers code review fixes (refactoring and deduplication).
 
-**Completed phases:** Phase 1 (InboundGroupSession session management), Phase 2 (SAS module), Phase 3 (ECIES module), Phase 8 (Granular error types), Phase 10 (Code quality and duplication fixes), Phase 11 (Build and configuration fixes), Phase 12 (Documentation overhaul), and Phase 13 (Security hardening) have been implemented. Phase 13.3 (cause chaining for VodozemacException) was implemented as part of Phase 8.
+**Completed phases:** Phase 1 (InboundGroupSession session management), Phase 2 (SAS module), Phase 3 (ECIES module), Phase 4 (PK Encryption module), Phase 8 (Granular error types), Phase 10 (Code quality and duplication fixes), Phase 11 (Build and configuration fixes), Phase 12 (Documentation overhaul), and Phase 13 (Security hardening) have been implemented. Phase 13.3 (cause chaining for VodozemacException) was implemented as part of Phase 8.
 
 ---
 
@@ -40,36 +40,45 @@ New directory `rust/src/ecies/` with JNI functions following the same pattern as
 
 ---
 
-## Phase 4: PK Encryption module (High priority)
+## ~~Phase 4: PK Encryption module (High priority)~~
 
 Megolm key backup. Requires the `insecure-pk-encryption` cargo feature.
 
-### 4.1 Cargo.toml change
+### ~~4.1 Cargo.toml change~~
 
 ```toml
 [dependencies]
-vodozemac = { version = "0.9.0", features = ["libolm-compat", "insecure-pk-encryption"] }
+vodozemac = { version = "0.10.0", features = ["libolm-compat", "insecure-pk-encryption"] }
 ```
 
-### 4.2 New Java classes
+Done. Note: vodozemac 0.10.0 is used instead of the originally planned 0.9.0.
+
+### ~~4.2 New Java classes~~
 
 | Java class      | vodozemac type                          | Key methods                                                                    |
 | --------------- | --------------------------------------- | ----------------------------------------------------------------------------- |
 | `PkEncryption`  | `vodozemac::pk_encryption::PkEncryption` | `fromKey(String key) -> PkEncryption`, `encrypt(byte[] plaintext) -> PkMessage` |
-| `PkDecryption`  | `vodozemac::pk_encryption::PkDecryption` | `new()`, `fromKey(String key)`, `secretKey() -> String`, `publicKey() -> String`, `decrypt(PkMessage) -> byte[]`, `pickle(key)` / `unpickle` / `unpickleLegacy` |
+| `PkDecryption`  | `vodozemac::pk_encryption::PkDecryption` | `new()`, `fromKey(String key)`, `secretKey() -> String`, `publicKey() -> String`, `decrypt(PkMessage) -> byte[]`, `unpickleLegacy(String, byte[])` |
 | `PkMessage`     | `vodozemac::pk_encryption::Message`      | `getCiphertext() -> String`, `getMac() -> String`, `getEphemeralKey() -> String` |
 
-### 4.3 Rust JNI module: `pk_encryption/`
+Done. All three classes are implemented with full Javadoc. Note: PkDecryption only
+implements `unpickleLegacy` — vodozemac does not provide JSON-based `pickle()`/`unpickle()`
+for PkDecryption, only `to_libolm_pickle`/`from_libolm_pickle`. An `EncryptionException`
+class was also created (referenced by the Rust JNI layer but previously missing in Java).
 
-New directory `rust/src/pk_encryption/` with JNI functions.
+### ~~4.3 Rust JNI module: `backup/`~~
 
-### 4.4 Design decisions
+Implemented as `rust/src/backup/` (containing `decryption.rs` and `encryption.rs`)
+instead of the originally planned `rust/src/pk_encryption/`.
 
-- `PkMessage` could be a simple data class (3 base64 strings) or a JSON-serialized `String`
-  (consistent with `OlmMessage`). Data class is cleaner since it has 3 distinct fields.
-- `PkDecryption` needs pickle/unpickle/legacy pickle (same pattern as Account/Session).
+### ~~4.4 Design decisions~~
 
-### Estimated effort: ~10 JNI functions, 3 Java classes, 1 Rust module, 1 Cargo.toml change
+- `PkMessage` is a simple data class (3 base64 strings) — cleaner than JSON since it has
+  3 distinct fields.
+- `PkDecryption` only implements `unpickleLegacy` since vodozemac only provides libolm
+  pickle format for PkDecryption (no JSON-based pickle/unpickle).
+
+### ~~Estimated effort: ~10 JNI functions, 3 Java classes, 1 Rust module, 1 Cargo.toml change~~
 
 ---
 
@@ -308,7 +317,7 @@ All 4 `nativeFree` functions are identical except for the Rust type.
 | ~~1. InboundGroupSession management~~ | ~~High~~ | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | ~~2. SAS module~~                      | ~~High~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | ~~3. ECIES module~~                    | ~~High~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
-| 4. PK Encryption                   | High     | ~10           | 3            | New `pk_encryption/` + Cargo.toml |
+| ~~4. PK Encryption~~                 | ~~High~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | 5. Structured messages             | Medium   | ~8 changes    | 2-3          | Existing modules |
 | 6. Crypto key types                | Medium   | ~6            | 3            | New `types/`     |
 | 7. Missing methods                 | Medium   | ~4            | 1            | Existing modules |
@@ -319,7 +328,7 @@ All 4 `nativeFree` functions are identical except for the Rust type.
 | ~~12. Documentation overhaul~~     | ~~Medium~~ | ~~Done~~   | ~~Done~~     | ~~Done~~         |
 | ~~13. Security hardening~~         | ~~Medium~~ | ~~Done~~   | ~~Done~~     | ~~Done~~         |
 | 14. Refactoring & deduplication    | Low      | ~0            | ~3           | Existing `helpers.rs` |
-| **Remaining total**                |          | **~58**       | **~23**      | **4 new + helpers** |
+| **Remaining total**                |          | **~48**       | **~20**      | **3 new + helpers** |
 
 ### Code review findings coverage
 

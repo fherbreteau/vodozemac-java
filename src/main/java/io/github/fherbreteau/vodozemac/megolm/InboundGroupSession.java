@@ -2,6 +2,7 @@ package io.github.fherbreteau.vodozemac.megolm;
 
 import java.util.Optional;
 
+import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.exception.DecryptionException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
@@ -18,9 +19,7 @@ import io.github.fherbreteau.vodozemac.exception.PickleException;
  * This class implements {@link AutoCloseable} and should be used in a
  * try-with-resources block to ensure native resources are properly released.
  */
-public class InboundGroupSession implements AutoCloseable {
-
-    private long nativePtr;
+public class InboundGroupSession extends NativeHandle {
 
     /**
      * Creates a new inbound group session from a session key received over
@@ -42,11 +41,11 @@ public class InboundGroupSession implements AutoCloseable {
      * @throws io.github.fherbreteau.vodozemac.exception.VodozemacException if the session key is invalid
      */
     public InboundGroupSession(String sessionKey, MegolmSessionVersion version) {
-        nativePtr = nativeNew(sessionKey, version.getValue());
+        super(nativeNew(sessionKey, version.getValue()));
     }
 
     private InboundGroupSession(long nativePtr) {
-        this.nativePtr = nativePtr;
+        super(nativePtr);
     }
 
     /**
@@ -291,32 +290,7 @@ public class InboundGroupSession implements AutoCloseable {
         return new InboundGroupSession(nativePtr);
     }
 
-    private void checkNotClosed() {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("InboundGroupSession has been closed");
-        }
-    }
-
-    /* For test usage only */
-    boolean isClosed() {
-        return nativePtr == 0;
-    }
-
-    /**
-     * Closes the {@code InboundGroupSession} by releasing its associated
-     * native resources.
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() {
-        if (nativePtr != 0) {
-            nativeFree(nativePtr);
-            nativePtr = 0;
-        }
-    }
-
-    private native long nativeNew(String sessionKey, int version);
+    private static native long nativeNew(String sessionKey, int version);
 
     private native String nativeSessionId(long ptr);
 
@@ -338,7 +312,7 @@ public class InboundGroupSession implements AutoCloseable {
 
     private native Long nativeMerge(long ptr, long otherPtr);
 
-    private native void nativeFree(long ptr);
+    protected native void nativeFree(long ptr);
 
     private native String nativeEncryptedPickle(long ptr, byte[] key);
 

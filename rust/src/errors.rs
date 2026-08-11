@@ -31,6 +31,17 @@ pub(crate) fn throw_decryption_error<E: std::fmt::Display>(
     )
 }
 
+pub(crate) fn throw_encryption_error<E: std::fmt::Display>(
+    env: &mut Env,
+    error: E,
+) -> jni::errors::Error {
+    throw(
+        env,
+        jni_str!("io/github/fherbreteau/vodozemac/exception/EncryptionException"),
+        &error.to_string(),
+    )
+}
+
 pub(crate) fn throw_session_creation_error<E: std::fmt::Display>(
     env: &mut Env,
     error: E,

@@ -1,5 +1,6 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
+import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
@@ -18,12 +19,10 @@ import io.github.fherbreteau.vodozemac.exception.PickleException;
  * This class implements {@link AutoCloseable} and should be used in a
  * try-with-resources block to ensure native resources are properly released.
  */
-public class OutboundGroupSession implements AutoCloseable {
+public class OutboundGroupSession extends NativeHandle {
     static {
         NativeLibraryLoader.loadLibrary();
     }
-
-    private long nativePtr;
 
     /**
      * Constructs a new outbound group session with a random ratchet state
@@ -40,11 +39,11 @@ public class OutboundGroupSession implements AutoCloseable {
      * @param version the Megolm session protocol version to use
      */
     public OutboundGroupSession(MegolmSessionVersion version) {
-        nativePtr = nativeNew(version.getValue());
+        super(nativeNew(version.getValue()));
     }
 
     private OutboundGroupSession(long nativePtr) {
-        this.nativePtr = nativePtr;
+        super(nativePtr);
     }
 
     /**
@@ -182,32 +181,7 @@ public class OutboundGroupSession implements AutoCloseable {
         return new OutboundGroupSession(nativePtr);
     }
 
-    private void checkNotClosed() {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("OutboundGroupSession has been closed");
-        }
-    }
-
-    /* For test usage only */
-    boolean isClosed() {
-        return nativePtr == 0;
-    }
-
-    /**
-     * Closes the {@code OutboundGroupSession} by releasing its associated
-     * native resources.
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() {
-        if (nativePtr != 0) {
-            nativeFree(nativePtr);
-            nativePtr = 0;
-        }
-    }
-
-    private native long nativeNew(int version);
+    private static native long nativeNew(int version);
 
     private native String nativeSessionId(long ptr);
 
@@ -227,6 +201,6 @@ public class OutboundGroupSession implements AutoCloseable {
 
     private static native long nativeUnpickleLegacy(String pickleData, byte[] pickleKey);
 
-    private native void nativeFree(long ptr);
+    protected native void nativeFree(long ptr);
 
 }

@@ -1,4 +1,4 @@
-package io.github.fherbreteau;
+package io.github.fherbreteau.vodozemac;
 
 import java.util.Objects;
 

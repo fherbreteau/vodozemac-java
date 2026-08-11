@@ -2,6 +2,7 @@ package io.github.fherbreteau.vodozemac.ecies;
 
 import java.io.Closeable;
 
+import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
 import io.github.fherbreteau.vodozemac.exception.EciesException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
@@ -31,12 +32,10 @@ import io.github.fherbreteau.vodozemac.exception.KeyException;
  * {@link #establishInboundChannel}, this {@code Ecies} object is consumed and
  * can no longer be used.
  */
-public class Ecies implements Closeable {
+public class Ecies extends NativeHandle {
     static {
         NativeLibraryLoader.loadLibrary();
     }
-
-    private long nativePtr;
 
     /**
      * Creates a new, random, unestablished ECIES session.
@@ -46,11 +45,11 @@ public class Ecies implements Closeable {
      * {@link #withInfo(String)} instead.
      */
     public Ecies() {
-        nativePtr = nativeNew();
+        super(nativeNew());
     }
 
     private Ecies(long nativePtr) {
-        this.nativePtr = nativePtr;
+        super(nativePtr);
     }
 
     /**
@@ -146,44 +145,16 @@ public class Ecies implements Closeable {
         return result;
     }
 
-    private void checkNotClosed() {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("Ecies has been closed");
-        }
-    }
+    private static native long nativeNew();
 
-    /* For test usage only */
-    boolean isClosed() {
-        return nativePtr == 0;
-    }
+    private static native long nativeWithInfo(String info);
 
-    /**
-     * Closes the {@code Ecies} by releasing its associated native resources.
-     * <p>
-     * This is a no-op if the {@code Ecies} has already been closed or consumed
-     * by {@link #establishOutboundChannel(String, byte[])} or
-     * {@link #establishInboundChannel(String)}.
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() {
-        if (nativePtr != 0) {
-            nativeFree(nativePtr);
-            nativePtr = 0;
-        }
-    }
-
-    private native long nativeNew();
+    private native String nativePublicKey(long ptr);
 
     private native OutboundCreationResult nativeEstablishOutboundChannel(long ptr, String theirPublicKey, byte[] initialPlaintext);
 
     private native InboundCreationResult nativeEstablishInboundChannel(long ptr, String message);
 
-    private native String nativePublicKey(long ptr);
-
-    private native void nativeFree(long ptr);
-
-    private static native long nativeWithInfo(String info);
+    protected native void nativeFree(long ptr);
 
 }

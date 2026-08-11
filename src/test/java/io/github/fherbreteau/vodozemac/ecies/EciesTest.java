@@ -172,11 +172,10 @@ class EciesTest {
                 .doesNotHaveSameHashCodeAs(new Object());
 
         CheckCode same = new CheckCode(new byte[]{1, 2, 3}, 42);
-        assertThat(code).isEqualTo(same).hasSameHashCodeAs(same);
-
-        assertThat(code).isNotEqualTo(new CheckCode(new byte[]{4, 5, 6}, 42));
-        assertThat(code).isNotEqualTo(new CheckCode(new byte[]{1, 2, 3}, 99));
-        assertThat(code).isNotEqualTo("not a CheckCode");
+        assertThat(code).isEqualTo(same).hasSameHashCodeAs(same)
+                .isNotEqualTo(new CheckCode(new byte[]{4, 5, 6}, 42))
+                .isNotEqualTo(new CheckCode(new byte[]{1, 2, 3}, 99))
+                .isNotEqualTo("not a CheckCode");
         assertThat(code.equals(null)).isFalse();
         assertThat(code).isEqualTo(code);
 

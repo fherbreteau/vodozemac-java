@@ -3,6 +3,7 @@ package io.github.fherbreteau.vodozemac.account;
 import java.util.Map;
 import java.util.Optional;
 
+import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
@@ -23,22 +24,20 @@ import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
  *
  * @author François HERBRETEAU
  */
-public class Account implements AutoCloseable {
+public class Account extends NativeHandle {
     static {
         NativeLibraryLoader.loadLibrary();
     }
-
-    private long nativePtr;
 
     /**
      * Creates a new {@code Account} with new random identity keys.
      */
     public Account() {
-        this.nativePtr = nativeNew();
+        super(nativeNew());
     }
 
     private Account(long nativePtr) {
-        this.nativePtr = nativePtr;
+        super(nativePtr);
     }
 
     /**
@@ -385,32 +384,7 @@ public class Account implements AutoCloseable {
         return new Account(nativePtr);
     }
 
-    private void checkNotClosed() {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("Account has been closed");
-        }
-    }
-
-    /* For test usage only */
-    boolean isClosed() {
-        return nativePtr == 0;
-    }
-
-    /**
-     * Closes the {@code Account} by releasing its associated native
-     * resources.
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() {
-        if (nativePtr != 0) {
-            nativeFree(nativePtr);
-            nativePtr = 0;
-        }
-    }
-
-    private native long nativeNew();
+    private static native long nativeNew();
 
     private native IdentityKeys nativeIdentityKeys(long ptr);
 
@@ -456,5 +430,5 @@ public class Account implements AutoCloseable {
 
     private static native long nativeFromDehydratedDevice(String ciphertext, String nonce, byte[] key);
 
-    private native void nativeFree(long ptr);
+    protected native void nativeFree(long ptr);
 }

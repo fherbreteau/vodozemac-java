@@ -1,5 +1,6 @@
 package io.github.fherbreteau.vodozemac.olm;
 
+import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.exception.DecryptionException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
@@ -33,11 +34,10 @@ import io.github.fherbreteau.vodozemac.exception.PickleException;
  * This class implements {@link AutoCloseable} and should be used in a
  * try-with-resources block to ensure native resources are properly released.
  */
-public class OlmSession implements AutoCloseable {
-    private long nativePtr;
+public class OlmSession extends NativeHandle {
 
     OlmSession(long nativePtr) {
-        this.nativePtr = nativePtr;
+        super(nativePtr);
     }
 
     /**
@@ -170,31 +170,6 @@ public class OlmSession implements AutoCloseable {
         return new OlmSession(nativePtr);
     }
 
-    private void checkNotClosed() {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("OlmSession has been closed");
-        }
-    }
-
-    /* For test usage only */
-    boolean isClosed() {
-        return nativePtr == 0;
-    }
-
-    /**
-     * Closes the {@code OlmSession} by releasing its associated native
-     * resources.
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() {
-        if (nativePtr != 0) {
-            nativeFree(nativePtr);
-            nativePtr = 0;
-        }
-    }
-
     private native String nativeSessionId(long ptr);
 
     private native boolean nativeHasReceivedMessage(long ptr);
@@ -213,6 +188,6 @@ public class OlmSession implements AutoCloseable {
 
     private static native long nativeUnpickleLegacy(String pickleData, byte[] pickleKey);
 
-    private native void nativeFree(long ptr);
+    protected native void nativeFree(long ptr);
 
 }

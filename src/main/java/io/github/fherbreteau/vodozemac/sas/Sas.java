@@ -1,5 +1,6 @@
 package io.github.fherbreteau.vodozemac.sas;
 
+import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 
@@ -18,12 +19,10 @@ import io.github.fherbreteau.vodozemac.exception.KeyException;
  * This class implements {@link AutoCloseable} and should be used in a
  * try-with-resources block to ensure native resources are properly released.
  */
-public class Sas implements AutoCloseable {
+public class Sas extends NativeHandle {
     static {
         NativeLibraryLoader.loadLibrary();
     }
-
-    private long nativePtr;
 
     /**
      * Creates a new random verification object.
@@ -32,7 +31,7 @@ public class Sas implements AutoCloseable {
      * establish a shared secret.
      */
     public Sas() {
-        nativePtr = nativeNew();
+        super(nativeNew());
     }
 
     /**
@@ -70,38 +69,11 @@ public class Sas implements AutoCloseable {
         return nativeDiffieHellman(ptr, theirPublicKey);
     }
 
-    private void checkNotClosed() {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("Sas has been closed");
-        }
-    }
-
-    /* For test usage only */
-    boolean isClosed() {
-        return nativePtr == 0;
-    }
-
-    /**
-     * Closes the {@code Sas} by releasing its associated native resources.
-     * <p>
-     * This is a no-op if the {@code Sas} has already been closed or consumed
-     * by {@link #diffieHellman(String)}.
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() {
-        if (nativePtr != 0) {
-            nativeFree(nativePtr);
-            nativePtr = 0;
-        }
-    }
-
-    private native long nativeNew();
+    private static native long nativeNew();
 
     private native String nativePublicKey(long ptr);
 
     private native EstablishedSas nativeDiffieHellman(long ptr, String theirPublicKey);
 
-    private native void nativeFree(long ptr);
+    protected native void nativeFree(long ptr);
 }

@@ -1,5 +1,6 @@
 package io.github.fherbreteau.vodozemac.sas;
 
+import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.exception.SasException;
 
 /**
@@ -20,12 +21,10 @@ import io.github.fherbreteau.vodozemac.exception.SasException;
  * This class implements {@link AutoCloseable} and should be used in a
  * try-with-resources block to ensure native resources are properly released.
  */
-public class EstablishedSas implements AutoCloseable {
-
-    private long nativePtr;
+public class EstablishedSas extends NativeHandle {
 
     EstablishedSas(long nativePtr) {
-        this.nativePtr = nativePtr;
+        super(nativePtr);
     }
 
     /**
@@ -142,31 +141,6 @@ public class EstablishedSas implements AutoCloseable {
         return nativeTheirPublicKey(nativePtr);
     }
 
-    private void checkNotClosed() {
-        if (nativePtr == 0) {
-            throw new IllegalStateException("EstablishedSas has been closed");
-        }
-    }
-
-    /* For test usage only */
-    boolean isClosed() {
-        return nativePtr == 0;
-    }
-
-    /**
-     * Closes the {@code EstablishedSas} by releasing its associated native
-     * resources.
-     *
-     * {@inheritDoc}
-     */
-    @Override
-    public void close() {
-        if (nativePtr != 0) {
-            nativeFree(nativePtr);
-            nativePtr = 0;
-        }
-    }
-
     private native SasBytes nativeBytes(long ptr, String info);
 
     private native byte[] nativeBytesRaw(long ptr, String info, int count);
@@ -181,5 +155,5 @@ public class EstablishedSas implements AutoCloseable {
 
     private native String nativeTheirPublicKey(long ptr);
 
-    private native void nativeFree(long ptr);
+    protected native void nativeFree(long ptr);
 }
