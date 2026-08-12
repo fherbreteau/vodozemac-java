@@ -1,7 +1,9 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.github.fherbreteau.vodozemac.exception.VodozemacException;
 import org.junit.jupiter.api.Test;
 
 class MegolmSessionVersionTest {
@@ -42,5 +44,18 @@ class MegolmSessionVersionTest {
         assertThat(MegolmSessionVersion.valueOf("V2"))
                 .as("valueOf(\"V2\") should return V2")
                 .isEqualTo(MegolmSessionVersion.V2);
+    }
+
+    @Test
+    void testFromVersion() {
+        assertThat(MegolmSessionVersion.fromVersion(1))
+                .as("valueOf(\"V1\") should return V1")
+                .isEqualTo(MegolmSessionVersion.V1);
+        assertThat(MegolmSessionVersion.fromVersion(2))
+                .as("valueOf(\"V2\") should return V2")
+                .isEqualTo(MegolmSessionVersion.V2);
+        assertThatThrownBy(() -> MegolmSessionVersion.fromVersion(0))
+                .isInstanceOf(VodozemacException.class)
+                .hasMessage("unknown version 0");
     }
 }

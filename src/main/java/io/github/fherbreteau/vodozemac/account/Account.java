@@ -294,6 +294,23 @@ public class Account extends NativeHandle {
     }
 
     /**
+     * Encrypts the account using the given 32-byte key and returns the
+     * encrypted representation using the old Olm format.
+     *
+     * @param key a 256-bit (32-byte) key for encrypting the account
+     * @return an encrypted string representation of the account
+     * @throws IllegalStateException if this account has been closed
+     * @throws KeyException         if the key is not 32 bytes
+     */
+    public String pickleLegacy(byte[] key) {
+        checkNotClosed();
+        if (key.length != 32) {
+            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
+        }
+        return nativePickleLegacy(nativePtr, key);
+    }
+
+    /**
      * Restores an {@code Account} from a previously saved JSON string.
      *
      * @param pickleData the JSON string from {@link #pickle()}
@@ -419,6 +436,8 @@ public class Account extends NativeHandle {
     private native String nativePickle(long ptr);
 
     private native String nativeEncryptedPickle(long ptr, byte[] key);
+
+    private native String nativePickleLegacy(long ptr, byte[] key);
 
     private native DehydratedDeviceResult nativeToDehydratedDevice(long ptr, byte[] key);
 

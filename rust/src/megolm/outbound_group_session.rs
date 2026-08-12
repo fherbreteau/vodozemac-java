@@ -72,6 +72,21 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
 }
 
 #[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeSessionConfig(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) -> jint {
+    let outcome = env.with_env(|_env| -> Result<jint, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const GroupSession) };
+
+        let session_config = session.session_config();
+        Ok(session_config.version() as jint)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeEncrypt(
     mut env: EnvUnowned,
     _class: JClass,

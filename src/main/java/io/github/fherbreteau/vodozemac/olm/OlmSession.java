@@ -52,6 +52,28 @@ public class OlmSession extends NativeHandle {
     }
 
     /**
+     * Returns the gkeys associated with this session.
+     *
+     * @return the session keys
+     * @throws IllegalStateException if this session has been closed
+     */
+    public SessionKeys sessionKeys() {
+        checkNotClosed();
+        return nativeSessionKeys(nativePtr);
+    }
+
+    /**
+     * Returns the version of the session.
+     *
+     * @return the session version
+     * @throws IllegalStateException if this session has been closed
+     */
+    public OlmSessionVersion sessionConfig() {
+        checkNotClosed();
+        return OlmSessionVersion.fromVersion(nativeSessionConfig(nativePtr));
+    }
+
+    /**
      * Checks whether a message has ever been received and decrypted from
      * the other side.
      * <p>
@@ -171,6 +193,10 @@ public class OlmSession extends NativeHandle {
     }
 
     private native String nativeSessionId(long ptr);
+
+    private native SessionKeys nativeSessionKeys(long ptr);
+
+    private native int nativeSessionConfig(long ptr);
 
     private native boolean nativeHasReceivedMessage(long ptr);
 

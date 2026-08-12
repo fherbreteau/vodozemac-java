@@ -94,6 +94,17 @@ public class OutboundGroupSession extends NativeHandle {
     }
 
     /**
+     * Returns the version of the session.
+     *
+     * @return the session version
+     * @throws IllegalStateException if this session has been closed
+     */
+    public MegolmSessionVersion sessionConfig() {
+        checkNotClosed();
+        return MegolmSessionVersion.fromVersion(nativeSessionConfig(nativePtr));
+    }
+
+    /**
      * Encrypts the given plaintext with the group session.
      * <p>
      * The resulting ciphertext is MAC-ed, signed with the group session's
@@ -188,6 +199,8 @@ public class OutboundGroupSession extends NativeHandle {
     private native int nativeMessageIndex(long ptr);
 
     private native String nativeSessionKey(long ptr);
+
+    private native int nativeSessionConfig(long ptr);
 
     private native String nativeEncrypt(long ptr, byte[] plaintext);
 

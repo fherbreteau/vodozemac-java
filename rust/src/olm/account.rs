@@ -386,11 +386,31 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         let account = unsafe { &*(ptr as *const Account) };
+        let key = wrap(env.convert_byte_array(key)?)?;
 
         let pickle = account.pickle();
-        let key = wrap(env.convert_byte_array(key)?)?;
         let encrypted = pickle.encrypt(&key);
         let result = env.new_string(encrypted)?;
+        Ok(result.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativePickleLegacy(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    key: JByteArray,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        let account = unsafe { &*(ptr as *const Account) };
+        let key = wrap(env.convert_byte_array(key)?)?;
+
+        let pickle = account
+            .to_libolm_pickle(&key)
+            .map_err(|e| throw_pickle_error(env, e))?;
+        let result = env.new_string(pickle)?;
         Ok(result.into_raw())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

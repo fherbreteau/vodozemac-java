@@ -33,6 +33,10 @@ class OutboundGroupSessionTest {
                     .as("Session key should not be null or empty")
                     .isNotNull()
                     .isNotEmpty();
+            assertThat(session.sessionConfig())
+                    .as("Session version should be V2")
+                    .isEqualTo(MegolmSessionVersion.V2);
+
         }
     }
 

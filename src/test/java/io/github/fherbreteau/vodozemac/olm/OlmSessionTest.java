@@ -2,6 +2,7 @@ package io.github.fherbreteau.vodozemac.olm;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -34,10 +35,28 @@ class OlmSessionTest {
             try (OlmSession outboundSession = aliceAccount.createOutboundSession(
                     OlmSessionVersion.V2, bobCurve25519Key, bobOneTimeKey)) {
 
-                assertThat(outboundSession.sessionId())
+                String sessionId = outboundSession.sessionId();
+                assertThat(sessionId)
                         .as("Session ID should not be null")
                         .isNotNull()
                         .isNotEmpty();
+
+                SessionKeys sessionKeys = outboundSession.sessionKeys();
+                assertThat(sessionKeys)
+                        .extracting(SessionKeys::sessionId)
+                        .isEqualTo(sessionId);
+                assertThat(sessionKeys)
+                        .extracting(SessionKeys::identityKey)
+                        .isEqualTo(aliceAccount.curve25519Key());
+                assertThat(sessionKeys)
+                        .extracting(SessionKeys::oneTimeKey)
+                        .isEqualTo(bobOneTimeKey);
+                assertThat(sessionKeys)
+                        .extracting(SessionKeys::baseKey, STRING)
+                        .isNotEmpty();
+
+                assertThat(outboundSession.sessionConfig())
+                        .isEqualTo(OlmSessionVersion.V2);
 
                 assertThat(outboundSession.hasReceivedMessage())
                         .as("Outbound session should not have received a message")

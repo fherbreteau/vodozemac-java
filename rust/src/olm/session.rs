@@ -1,6 +1,6 @@
-use jni::EnvUnowned;
 use jni::objects::{JByteArray, JClass, JString};
-use jni::sys::{jboolean, jlong, jobject, jstring};
+use jni::sys::{jboolean, jint, jlong, jobject, jstring};
+use jni::{EnvUnowned, JValue, jni_sig, jni_str};
 use vodozemac::olm::{OlmMessage, Session, SessionPickle};
 
 use crate::errors::{throw_decryption_error, throw_generic_error, throw_pickle_error};
@@ -29,6 +29,47 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
         let session_id = session.session_id();
         let jni_string = env.new_string(session_id)?;
         Ok(jni_string.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativeSessionKeys(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) -> jobject {
+    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const Session) };
+
+        let session_keys = session.session_keys();
+        let session_id = env.new_string(session_keys.session_id())?;
+        let identity_key = env.new_string(session_keys.identity_key.to_base64())?;
+        let base_key = env.new_string(session_keys.base_key.to_base64())?;
+        let one_time_key = env.new_string(session_keys.one_time_key.to_base64())?;
+
+        let result = env.new_object(
+            jni_str!("io/github/fherbreteau/vodozemac/olm/SessionKeys"),
+            jni_sig!((sessionId: java.lang.String, identityKey: java.lang.String, baseKey: java.lang.String, oneTimeKey: java.lang.String) -> void),
+            &[JValue::Object(&session_id), JValue::Object(&identity_key), JValue::Object(&base_key), JValue::Object(&one_time_key)],
+        )?;
+
+        Ok(result.into_raw())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativeSessionConfig(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+) -> jint {
+    let outcome = env.with_env(|_env| -> Result<jint, jni::errors::Error> {
+        let session = unsafe { &*(ptr as *const Session) };
+
+        let session_config = session.session_config();
+        Ok(session_config.version() as jint)
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

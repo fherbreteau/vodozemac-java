@@ -489,6 +489,8 @@ class AccountTest {
                     .as("Legacy account should have a valid Curve25519 key")
                     .isNotNull()
                     .isNotEmpty();
+            assertThat(account.pickleLegacy(pickleKey))
+                .isEqualTo(pickleData);
         }
     }
 
