@@ -1,5 +1,7 @@
 package io.github.fherbreteau.vodozemac.account;
 
+import static io.github.fherbreteau.vodozemac.KeyValidator.validateEncryptionKey;
+
 import java.util.Map;
 import java.util.Optional;
 
@@ -287,27 +289,21 @@ public class Account extends NativeHandle {
      */
     public String pickle(byte[] key) {
         checkNotClosed();
-        if (key.length != 32) {
-            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
-        }
+        validateEncryptionKey(key);
         return nativeEncryptedPickle(nativePtr, key);
     }
 
     /**
      * Encrypts the account using the given 32-byte key and returns the
-     * encrypted representation using the old Olm format.
+     * encrypted representation using the libolm format.
      *
-     * @param key a 256-bit (32-byte) key for encrypting the account
-     * @return an encrypted string representation of the account
+     * @param pickleKey the key used to encrypt the pickle data
+     * @return a libolm representation of the {@code Account}
      * @throws IllegalStateException if this account has been closed
-     * @throws KeyException         if the key is not 32 bytes
      */
-    public String pickleLegacy(byte[] key) {
+    public String pickleLegacy(byte[] pickleKey) {
         checkNotClosed();
-        if (key.length != 32) {
-            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
-        }
-        return nativePickleLegacy(nativePtr, key);
+        return nativePickleLegacy(nativePtr, pickleKey);
     }
 
     /**
@@ -333,9 +329,7 @@ public class Account extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static Account unpickle(String pickleData, byte[] key) {
-        if (key.length != 32) {
-            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
-        }
+        validateEncryptionKey(key);
         long nativePtr = nativeEncryptedUnpickle(pickleData, key);
         return new Account(nativePtr);
     }
@@ -377,9 +371,7 @@ public class Account extends NativeHandle {
      */
     public DehydratedDeviceResult toDehydratedDevice(byte[] key) {
         checkNotClosed();
-        if (key.length != 32) {
-            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
-        }
+        validateEncryptionKey(key);
         return nativeToDehydratedDevice(nativePtr, key);
     }
 
@@ -394,9 +386,7 @@ public class Account extends NativeHandle {
      * @throws PickleException if the dehydrated device cannot be decrypted
      */
     public static Account fromDehydratedDevice(String ciphertext, String nonce, byte[] key) {
-        if (key.length != 32) {
-            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
-        }
+        validateEncryptionKey(key);
         long nativePtr = nativeFromDehydratedDevice(ciphertext, nonce, key);
         return new Account(nativePtr);
     }

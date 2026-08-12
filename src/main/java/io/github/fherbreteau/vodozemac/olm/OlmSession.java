@@ -1,5 +1,7 @@
 package io.github.fherbreteau.vodozemac.olm;
 
+import static io.github.fherbreteau.vodozemac.KeyValidator.validateEncryptionKey;
+
 import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.exception.DecryptionException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
@@ -142,9 +144,7 @@ public class OlmSession extends NativeHandle {
      */
     public String pickle(byte[] key) {
         checkNotClosed();
-        if (key.length != 32) {
-            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
-        }
+        validateEncryptionKey(key);
         return nativeEncryptedPickle(nativePtr, key);
     }
 
@@ -171,9 +171,7 @@ public class OlmSession extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static OlmSession unpickle(String pickleData, byte[] key) {
-        if (key.length != 32) {
-            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
-        }
+        validateEncryptionKey(key);
         long nativePtr = nativeEncryptedUnpickle(pickleData, key);
         return new OlmSession(nativePtr);
     }

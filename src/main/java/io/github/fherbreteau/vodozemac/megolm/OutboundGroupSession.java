@@ -1,5 +1,7 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
+import static io.github.fherbreteau.vodozemac.KeyValidator.validateEncryptionKey;
+
 import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
@@ -141,9 +143,7 @@ public class OutboundGroupSession extends NativeHandle {
      */
     public String pickle(byte[] key) {
         checkNotClosed();
-        if (key.length != 32) {
-            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
-        }
+        validateEncryptionKey(key);
         return nativeEncryptedPickle(nativePtr, key);
     }
 
@@ -165,16 +165,14 @@ public class OutboundGroupSession extends NativeHandle {
      * using a 32-byte key.
      *
      * @param pickleData the encrypted pickle data from {@link #pickle(byte[])}
-     * @param pickleKey  a 256-bit (32-byte) key for decrypting the session
+     * @param key  a 256-bit (32-byte) key for decrypting the session
      * @return a restored {@code OutboundGroupSession}
      * @throws KeyException   if the key is not 32 bytes
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
-    public static OutboundGroupSession unpickle(String pickleData, byte[] pickleKey) {
-        if (pickleKey.length != 32) {
-            throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
-        }
-        long nativePtr = nativeEncryptedUnpickle(pickleData, pickleKey);
+    public static OutboundGroupSession unpickle(String pickleData, byte[] key) {
+        validateEncryptionKey(key);
+        long nativePtr = nativeEncryptedUnpickle(pickleData, key);
         return new OutboundGroupSession(nativePtr);
     }
 
