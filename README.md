@@ -14,10 +14,14 @@ Vodozemac Java provides Java Native Interface (JNI) bindings for the [Vodozemac]
 ## ✨ Features
 
 - **🔐 Cryptographic Operations**: Curve25519 and Ed25519 key generation, message signing, Olm and Megolm sessions
+- **🔑 SAS Verification**: Short Authentication String (SAS) for key verification with emoji and decimal rendering
+- **🔗 ECIES Channels**: Elliptic Curve Integrated Encryption Scheme for QR-code-based device login (MSC3886)
+- **💾 PK Encryption**: Megolm key backup using Curve25519-AES-SHA2 hybrid encryption
+- **🔄 libolm Compatibility**: Legacy pickle support for migrating from libolm
 - **🌍 Cross-Platform**: Linux (x86_64, ARM64), macOS (Apple Silicon), Windows (x86_64)
 - **📦 Maven Integration**: Automatic Rust compilation and native library packaging
 - **🗑️ Memory Safety**: Proper resource management with Java's `AutoCloseable`
-- **🧪 Comprehensive Testing**: AssertJ-based test suite with 71 test cases
+- **🧪 Comprehensive Testing**: AssertJ-based test suite with 96 test cases
 - **🔧 GitHub CI/CD**: Multi-platform build and test pipeline
 
 ## 📋 Requirements
@@ -176,6 +180,105 @@ Megolm inbound group session for receiving encrypted group messages.
 | `static InboundGroupSession unpickle(...)` | Restore from pickle |
 | `static InboundGroupSession unpickleLegacy(...)` | Restore from libolm legacy pickle |
 
+### Sas
+
+Short Authentication String (SAS) verification for interactive key verification between devices.
+
+| Method | Description |
+|--------|-------------|
+| `String publicKey()` | Get the ephemeral Curve25519 public key |
+| `EstablishedSas diffieHellman(String theirPublicKey)` | Establish shared secret (consumes this `Sas`) |
+
+### EstablishedSas
+
+An established SAS channel with a shared secret, used for key verification and MAC exchange.
+
+| Method | Description |
+|--------|-------------|
+| `SasBytes bytes(String info)` | Generate SAS bytes for visual verification |
+| `byte[] bytesRaw(String info, int count)` | Generate raw bytes (max 8160) |
+| `String calculateMac(String input, String info)` | Calculate a MAC for the given input |
+| `String calculateMacInvalidBase64(String input, String info)` | Calculate a MAC with libolm-compatible invalid base64 encoding |
+| `void verifyMac(String input, String info, String mac)` | Verify a MAC from the other party |
+| `String ourPublicKey()` | Get our Curve25519 public key |
+| `String theirPublicKey()` | Get the other party's Curve25519 public key |
+
+### SasBytes
+
+Short authentication string bytes for visual key verification (emoji indices and decimal numbers).
+
+| Method | Description |
+|--------|-------------|
+| `int[] emojiIndices()` | Get 7 emoji indices for visual verification |
+| `String[] decimals()` | Get 3 decimal numbers for visual verification |
+| `byte[] bytes()` | Get the raw 6 bytes of the SAS |
+
+### Ecies
+
+Unestablished ECIES channel for QR-code-based device login (MSC3886).
+
+| Method | Description |
+|--------|-------------|
+| `Ecies()` | Create with default `MATRIX_QR_CODE_LOGIN` info |
+| `static Ecies withInfo(String info)` | Create with custom application info |
+| `String publicKey()` | Get the ephemeral Curve25519 public key |
+| `OutboundCreationResult establishOutboundChannel(String theirPublicKey, byte[] plaintext)` | Establish outbound channel (consumes this `Ecies`) |
+| `InboundCreationResult establishInboundChannel(String message)` | Establish inbound channel from initial message (consumes this `Ecies`) |
+
+### EstablishedEcies
+
+An established ECIES channel for encrypting and decrypting messages using ChaCha20-Poly1305.
+
+| Method | Description |
+|--------|-------------|
+| `String publicKey()` | Get our Curve25519 public key |
+| `CheckCode checkCode()` | Get the check code for out-of-band MITM verification |
+| `String encrypt(byte[] plaintext)` | Encrypt a message (base64-encoded) |
+| `byte[] decrypt(String message)` | Decrypt a base64-encoded message |
+
+### CheckCode
+
+A two-digit check code for out-of-band verification of an ECIES session.
+
+| Method | Description |
+|--------|-------------|
+| `byte[] asBytes()` | Get the raw 2-byte check code |
+| `int toDigit()` | Get the check code as a two-digit number (0–99) |
+
+### PkEncryption
+
+The encryption component of the PK Encryption module for Megolm key backup. Implements `m.megolm_backup.v1.curve25519-aes-sha2`.
+
+**Warning:** The algorithm contains a critical flaw — the MAC does not authenticate the ciphertext.
+
+| Method | Description |
+|--------|-------------|
+| `static PkEncryption fromKey(String publicKey)` | Create from a base64-encoded Curve25519 public key |
+| `PkMessage encrypt(byte[] plaintext)` | Encrypt plaintext and return a `PkMessage` |
+
+### PkDecryption
+
+The decryption component of the PK Encryption module, holding a Curve25519 secret key.
+
+| Method | Description |
+|--------|-------------|
+| `PkDecryption()` | Create with a fresh random Curve25519 key pair |
+| `static PkDecryption fromKey(String secretKey)` | Create from a base64-encoded Curve25519 secret key |
+| `String secretKey()` | Get the base64-encoded Curve25519 secret key |
+| `String publicKey()` | Get the base64-encoded Curve25519 public key |
+| `byte[] decrypt(PkMessage message)` | Decrypt a `PkMessage` |
+| `static PkDecryption unpickleLegacy(String pickleData, byte[] pickleKey)` | Restore from a libolm legacy pickle |
+
+### PkMessage
+
+An encrypted message produced by `PkEncryption`, consisting of three base64-encoded components.
+
+| Method | Description |
+|--------|-------------|
+| `String getCiphertext()` | Get the base64-encoded ciphertext |
+| `String getMac()` | Get the base64-encoded MAC (does not authenticate the ciphertext) |
+| `String getEphemeralKey()` | Get the base64-encoded ephemeral Curve25519 public key |
+
 ### Exceptions
 
 All exceptions extend `VodozemacException` (which extends `RuntimeException`):
@@ -187,6 +290,9 @@ All exceptions extend `VodozemacException` (which extends `RuntimeException`):
 | `SessionCreationException` | Inbound session creation errors |
 | `KeyException` | Key decoding or validation errors |
 | `SignatureException` | Signature verification failures |
+| `SasException` | SAS MAC verification failures or byte generation errors |
+| `EciesException` | ECIES channel establishment or decryption errors |
+| `EncryptionException` | PK encryption failures (e.g. non-contributory key) |
 
 ## 🏗️ Architecture
 
@@ -208,20 +314,28 @@ vodozemac-java/
 │       ├── olm/
 │       │   ├── account.rs      # Account JNI functions
 │       │   └── session.rs       # OlmSession JNI functions
-│       └── megolm/
-│           ├── inbound_group_session.rs   # InboundGroupSession JNI
-│           └── outbound_group_session.rs # OutboundGroupSession JNI
+│       ├── megolm/
+│       │   ├── inbound_group_session.rs   # InboundGroupSession JNI
+│       │   └── outbound_group_session.rs # OutboundGroupSession JNI
+│       ├── sas/
+│       │   ├── sas.rs          # Sas JNI functions
+│       │   └── established_sas.rs # EstablishedSas JNI functions
+│       ├── ecies/
+│       │   ├── ecies.rs        # Ecies JNI functions
+│       │   └── established_ecies.rs # EstablishedEcies JNI functions
+│       └── backup/
+│           ├── encryption.rs   # PkEncryption JNI functions
+│           └── decryption.rs   # PkDecryption JNI functions
 ├── src/
 │   ├── main/java/io/github/fherbreteau/vodozemac/
-│   │   ├── account/            # Account, IdentityKeys, etc.
-│   │   ├── olm/                # OlmSession, InboundCreationResult
-│   │   ├── megolm/             # InboundGroupSession, OutboundGroupSession
-│   │   ├── VodozemacException.java
-│   │   ├── PickleException.java
-│   │   ├── DecryptionException.java
-│   │   ├── SessionCreationException.java
-│   │   ├── KeyException.java
-│   │   ├── SignatureException.java
+│   │   ├── account/            # Account, IdentityKeys, OneTimeKeyGenerationResult, DehydratedDeviceResult
+│   │   ├── olm/                # OlmSession, OlmSessionVersion, InboundCreationResult
+│   │   ├── megolm/             # InboundGroupSession, OutboundGroupSession, MegolmSessionVersion, SessionOrdering, DecryptedMessage
+│   │   ├── sas/                # Sas, EstablishedSas, SasBytes
+│   │   ├── ecies/              # Ecies, EstablishedEcies, CheckCode, OutboundCreationResult, InboundCreationResult
+│   │   ├── backup/             # PkEncryption, PkDecryption, PkMessage
+│   │   ├── exception/          # VodozemacException, PickleException, DecryptionException, SessionCreationException, KeyException, SignatureException, SasException, EciesException, EncryptionException
+│   │   ├── NativeHandle.java   # Base class for native pointer lifecycle
 │   │   └── NativeLibraryLoader.java
 │   └── test/java/              # Test classes
 ├── pom.xml                     # Maven build configuration
@@ -313,7 +427,10 @@ mvn test
 - ✅ **OlmSession**: Full session lifecycle, encrypt/decrypt, pickle/unpickle, legacy pickle
 - ✅ **OutboundGroupSession**: Creation, encrypt, session key, pickle/unpickle
 - ✅ **InboundGroupSession**: Decrypt, export/import, advance, connected/compare/merge, pickle/unpickle
-- ✅ **Error Handling**: Typed exceptions (Pickle, Decryption, SessionCreation, Key, Signature)
+- ✅ **SAS**: Key establishment, emoji/decimal generation, MAC calculation and verification
+- ✅ **ECIES**: Outbound/inbound channel establishment, encrypt/decrypt, check code
+- ✅ **PK Encryption**: Encrypt/decrypt round-trip, secret key loading, legacy libolm unpickle
+- ✅ **Error Handling**: Typed exceptions (Pickle, Decryption, SessionCreation, Key, Signature, Sas, Ecies, Encryption)
 - ✅ **Key Validation**: Invalid key length, invalid base64, version mismatch
 
 ## 🤝 Contributing
