@@ -100,19 +100,19 @@ public class OlmSession extends NativeHandle {
     }
 
     /**
-     * Encrypts the plaintext and returns a JSON representation of an
-     * OlmMessage.
+     * Encrypts the plaintext and returns an {@link OlmMessage}.
      * <p>
-     * The message will either be a pre-key message or a normal message,
-     * depending on whether the session is fully established. A session is
-     * fully established once you receive (and decrypt) at least one message
-     * from the other side.
+     * The message will either be a {@link MessageType#PRE_KEY pre-key
+     * message} or a {@link MessageType#NORMAL normal message}, depending on
+     * whether the session is fully established. A session is fully
+     * established once you receive (and decrypt) at least one message from
+     * the other side.
      *
      * @param plaintext the plaintext to encrypt
-     * @return a JSON string representation of the OlmMessage
+     * @return the encrypted {@code OlmMessage}
      * @throws IllegalStateException if this session has been closed
      */
-    public String encrypt(byte[] plaintext) {
+    public OlmMessage encrypt(byte[] plaintext) {
         checkNotClosed();
         return nativeEncrypt(nativePtr, plaintext);
     }
@@ -120,14 +120,14 @@ public class OlmSession extends NativeHandle {
     /**
      * Decrypts an Olm message and returns the plaintext.
      *
-     * @param message a JSON string representation of an OlmMessage
+     * @param message the {@code OlmMessage} to decrypt
      * @return the decrypted plaintext bytes
-     * @throws IllegalStateException   if this session has been closed
-     * @throws DecryptionException    if decryption fails
+     * @throws IllegalStateException if this session has been closed
+     * @throws DecryptionException   if decryption fails
      */
-    public byte[] decrypt(String message) {
+    public byte[] decrypt(OlmMessage message) {
         checkNotClosed();
-        return nativeDecrypt(nativePtr, message);
+        return nativeDecrypt(nativePtr, message.toString());
     }
 
     /**
@@ -206,7 +206,7 @@ public class OlmSession extends NativeHandle {
 
     private native boolean nativeHasReceivedMessage(long ptr);
 
-    private native String nativeEncrypt(long ptr, byte[] plaintext);
+    private native OlmMessage nativeEncrypt(long ptr, byte[] plaintext);
 
     private native byte[] nativeDecrypt(long ptr, String message);
 

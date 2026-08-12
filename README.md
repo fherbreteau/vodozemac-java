@@ -21,7 +21,7 @@ Vodozemac Java provides Java Native Interface (JNI) bindings for the [Vodozemac]
 - **🌍 Cross-Platform**: Linux (x86_64, ARM64), macOS (Apple Silicon), Windows (x86_64)
 - **📦 Maven Integration**: Automatic Rust compilation and native library packaging
 - **🗑️ Memory Safety**: Proper resource management with Java's `AutoCloseable`
-- **🧪 Comprehensive Testing**: AssertJ-based test suite with 100 test cases
+- **🧪 Comprehensive Testing**: AssertJ-based test suite with 101 test cases
 - **🔧 GitHub CI/CD**: Multi-platform build and test pipeline
 
 ## 📋 Requirements
@@ -125,7 +125,7 @@ Main class for Olm account management — identity keys, one-time keys, fallback
 | `boolean forgetFallbackKey()` | Forget previously used fallback key |
 | `void markKeysAsPublished()` | Mark keys as published |
 | `OlmSession createOutboundSession(...)` | Create an outbound Olm session |
-| `InboundCreationResult createInboundSession(...)` | Create an inbound Olm session from a pre-key message |
+| `InboundCreationResult createInboundSession(...)` | Create an inbound Olm session from a pre-key `OlmMessage` |
 | `String pickle()` / `pickle(byte[] key)` | Serialize account (plain or encrypted) |
 | `String pickleLegacy(byte[] key)` | Serialize account to libolm pickle format |
 | `static Account unpickle(...)` | Restore account from pickle |
@@ -143,11 +143,32 @@ Represents an Olm session for 1-to-1 encrypted communication.
 | `SessionKeys sessionKeys()` | Get the keys used to establish this session |
 | `OlmSessionVersion sessionConfig()` | Get the session protocol version |
 | `boolean hasReceivedMessage()` | Check if a message has been received |
-| `String encrypt(byte[] plaintext)` | Encrypt a message (returns JSON) |
-| `byte[] decrypt(String message)` | Decrypt a message |
+| `OlmMessage encrypt(byte[] plaintext)` | Encrypt a message and return a typed `OlmMessage` |
+| `byte[] decrypt(OlmMessage message)` | Decrypt an `OlmMessage` |
 | `String pickle()` / `pickle(byte[] key)` | Serialize session |
 | `static OlmSession unpickle(...)` | Restore from pickle |
 | `static OlmSession unpickleLegacy(...)` | Restore from libolm legacy pickle |
+
+### OlmMessage
+
+A structured Olm message consisting of a `MessageType` and a base64-encoded ciphertext body.
+Produced by `OlmSession.encrypt()` and consumed by `OlmSession.decrypt()` and
+`Account.createInboundSession()`.
+
+| Method | Description |
+|--------|-------------|
+| `MessageType getType()` | Get the message type (pre-key or normal) |
+| `String getBody()` | Get the base64-encoded ciphertext body |
+| `String toString()` | Get the JSON representation for Matrix wire format |
+
+### MessageType
+
+Represents the type of an Olm message.
+
+| Value | Description |
+|-------|-------------|
+| `PRE_KEY` (0) | Pre-key message, used to establish a new Olm session |
+| `NORMAL` (1) | Normal message, sent over an already-established session |
 
 ### SessionKeys
 
@@ -356,7 +377,7 @@ vodozemac-java/
 ├── src/
 │   ├── main/java/io/github/fherbreteau/vodozemac/
 │   │   ├── account/            # Account, IdentityKeys, OneTimeKeyGenerationResult, DehydratedDeviceResult
-│   │   ├── olm/                # OlmSession, OlmSessionVersion, SessionKeys, InboundCreationResult
+│   │   ├── olm/                # OlmSession, OlmSessionVersion, OlmMessage, MessageType, SessionKeys, InboundCreationResult
 │   │   ├── megolm/             # InboundGroupSession, OutboundGroupSession, MegolmSessionVersion, SessionOrdering, DecryptedMessage
 │   │   ├── sas/                # Sas, EstablishedSas, SasBytes
 │   │   ├── ecies/              # Ecies, EstablishedEcies, CheckCode, OutboundCreationResult, InboundCreationResult
@@ -453,7 +474,7 @@ mvn test
 ### Test Coverage
 
 - ✅ **Account**: Creation, identity keys, one-time keys, fallback keys, signing, pickle/unpickle, dehydrated devices, legacy pickle
-- ✅ **OlmSession**: Full session lifecycle, encrypt/decrypt, pickle/unpickle, legacy pickle, session keys, session config
+- ✅ **OlmSession**: Full session lifecycle, encrypt/decrypt with typed `OlmMessage`, pickle/unpickle, legacy pickle, session keys, session config
 - ✅ **OutboundGroupSession**: Creation, encrypt, session key, session config, pickle/unpickle
 - ✅ **InboundGroupSession**: Decrypt, export/import, advance, connected/compare/merge, pickle/unpickle
 - ✅ **SAS**: Key establishment, emoji/decimal generation, MAC calculation and verification

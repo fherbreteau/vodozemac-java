@@ -45,7 +45,7 @@ vodozemac-java/
 │       ├── olm/
 │       │   ├── mod.rs
 │       │   ├── account.rs           # JNI: Account (new, keys, sign, sessions, pickle, dehydrate, pickleLegacy)
-│       │   └── session.rs           # JNI: OlmSession (encrypt, decrypt, pickle, sessionKeys, sessionConfig)
+│       │   └── session.rs           # JNI: OlmSession (encrypt->OlmMessage, decrypt, pickle, sessionKeys, sessionConfig)
 │       ├── megolm/
 │       │   ├── mod.rs
 │       │   ├── inbound_group_session.rs   # JNI: InboundGroupSession (decrypt, pickle, export/import, merge)
@@ -76,6 +76,8 @@ vodozemac-java/
 │   │       ├── olm/
 │   │       │   ├── OlmSession.java            # AutoCloseable Olm session
 │   │       │   ├── OlmSessionVersion.java     # Enum V1(1), V2(2)
+│   │       │   ├── OlmMessage.java            # Structured Olm message (type + body)
+│   │       │   ├── MessageType.java           # Enum PRE_KEY(0), NORMAL(1)
 │   │       │   ├── SessionKeys.java           # Session identity/base/one-time keys
 │   │       │   └── InboundCreationResult.java
 │   │       ├── megolm/
@@ -111,7 +113,7 @@ vodozemac-java/
 │   └── test/java/io/github/fherbreteau/vodozemac/
 │       ├── VodozemacTest.java                 # 2 tests
 │       ├── account/AccountTest.java            # 19 tests
-│       ├── olm/OlmSessionTest.java             # 8 tests
+│       ├── olm/OlmSessionTest.java             # 9 tests
 │       ├── olm/OlmSessionVersionTest.java      # 6 tests
 │       ├── megolm/OutboundGroupSessionTest.java # 9 tests
 │       ├── megolm/InboundGroupSessionTest.java  # 29 tests
@@ -166,14 +168,14 @@ cargo test
 
 ```
 mvn test
-→ 100 tests, 0 failures, 0 errors, 0 skipped — PASS
+→ 101 tests, 0 failures, 0 errors, 0 skipped — PASS
 ```
 
 | Test Class | Tests | Status |
 |---|---|---|
 | `VodozemacTest` | 2 | PASS |
 | `AccountTest` | 19 | PASS |
-| `OlmSessionTest` | 8 | PASS |
+| `OlmSessionTest` | 9 | PASS |
 | `OlmSessionVersionTest` | 6 | PASS |
 | `OutboundGroupSessionTest` | 9 | PASS |
 | `InboundGroupSessionTest` | 29 | PASS |
@@ -181,7 +183,7 @@ mvn test
 | `SasTest` | 4 | PASS |
 | `EciesTest` | 12 | PASS |
 | `PkEncryptionTest` | 5 | PASS |
-| **Total** | **100** | **ALL PASS** |
+| **Total** | **101** | **ALL PASS** |
 
 ### 3.6 Coverage
 
@@ -197,7 +199,7 @@ mvn test
 ## 4. Incomplete Tasks
 
 The following phases from `docs/IMPLEMENTATION-PLAN.md` remain unimplemented:
-Phases 5, 6, and 14 (partially — 14.2 is done) are still pending.
+Phase 5.2 (MegolmMessage structured type), Phase 6, and Phase 14 (partially — 14.2 is done) are still pending.
 
 ### ~~Phase 1: InboundGroupSession Session Management (High Priority)~~
 - [x] `InboundGroupSession.import(ExportedSessionKey, MegolmSessionVersion)` — constructor/static factory
@@ -222,11 +224,16 @@ Phases 5, 6, and 14 (partially — 14.2 is done) are still pending.
 - [x] Cargo.toml feature: `insecure-pk-encryption`
 - [x] Rust JNI module `rust/src/backup/`
 
-### Phase 5: Structured Message Types (Medium Priority)
-- [ ] `OlmMessage` Java class with `MessageType` enum (`PRE_KEY`, `NORMAL`)
+### ~~Phase 5.1: OlmMessage Structured Type (Medium Priority)~~
+- [x] `OlmMessage` Java class with `MessageType` enum (`PRE_KEY`, `NORMAL`)
+- [x] Update `OlmSession.encrypt()` to return `OlmMessage`
+- [x] Update `OlmSession.decrypt()` to accept `OlmMessage`
+- [x] Update `Account.createInboundSession()` to accept `OlmMessage`
+
+### Phase 5.2: MegolmMessage Structured Type (Medium Priority)
 - [ ] `MegolmMessage` Java class with ciphertext, messageIndex, mac, signature
-- [ ] Update `OlmSession.encrypt()`/`decrypt()` to use typed messages
-- [ ] Update `InboundGroupSession.decrypt()` to use typed messages
+- [ ] Update `OutboundGroupSession.encrypt()` to return `MegolmMessage`
+- [ ] Update `InboundGroupSession.decrypt()` to accept `MegolmMessage`
 
 ### Phase 6: Cryptographic Key Types (Medium Priority)
 - [ ] `Ed25519PublicKey` — `fromBase64()`, `toBase64()`, `verify()`

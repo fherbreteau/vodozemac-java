@@ -5,6 +5,7 @@ import java.nio.charset.StandardCharsets;
 import io.github.fherbreteau.vodozemac.account.Account;
 import io.github.fherbreteau.vodozemac.account.OneTimeKeyGenerationResult;
 import io.github.fherbreteau.vodozemac.olm.InboundCreationResult;
+import io.github.fherbreteau.vodozemac.olm.OlmMessage;
 import io.github.fherbreteau.vodozemac.olm.OlmSession;
 
 public final class SampleOlm {
@@ -32,7 +33,7 @@ public final class SampleOlm {
             bobAccount.markKeysAsPublished();
 
             // Create a Olm session between Alice and Bob
-            String encrypted;
+            OlmMessage encrypted;
             String alicePickleSession;
             try (OlmSession outboundOlmSession = aliceAccount.createOutboundSession(bobAccount.curve25519Key(), bobOneTimeKey)) {
                 System.out.println("Alice: Outbound olm session's session id: " + outboundOlmSession.sessionId());

@@ -11,6 +11,7 @@ import io.github.fherbreteau.vodozemac.account.Account;
 import io.github.fherbreteau.vodozemac.account.OneTimeKeyGenerationResult;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.SessionCreationException;
+import io.github.fherbreteau.vodozemac.exception.VodozemacException;
 import org.junit.jupiter.api.Test;
 
 class OlmSessionTest {
@@ -64,13 +65,18 @@ class OlmSessionTest {
 
                 // Alice encrypts a message
                 String plaintext = "Hello Bob";
-                String encrypted = outboundSession.encrypt(plaintext.getBytes(StandardCharsets.UTF_8));
+                OlmMessage encrypted = outboundSession.encrypt(plaintext.getBytes(StandardCharsets.UTF_8));
 
                 assertThat(encrypted)
-                        .as("Encrypted message should be JSON with type and body")
+                        .as("Encrypted message should be a Pre-Key Message")
                         .isNotNull()
-                        .startsWith("{")
-                        .endsWith("}");
+                        .extracting(OlmMessage::getType)
+                        .isEqualTo(MessageType.PRE_KEY);
+                assertThat(encrypted)
+                        .as("Encrypted message' body should not be null nor empty")
+                        .extracting(OlmMessage::getBody, STRING)
+                        .isNotEmpty()
+                        .isBase64();
 
                 // Bob creates an inbound session from the pre-key message
                 InboundCreationResult inboundResult = bobAccount.createInboundSession(
@@ -95,7 +101,17 @@ class OlmSessionTest {
 
                     // Bob encrypts a reply
                     String reply = "Hello Alice";
-                    String encryptedReply = inboundSession.encrypt(reply.getBytes(StandardCharsets.UTF_8));
+                    OlmMessage encryptedReply = inboundSession.encrypt(reply.getBytes(StandardCharsets.UTF_8));
+                    assertThat(encryptedReply)
+                            .as("Encrypted message should be a normal OlmMessage")
+                            .isNotNull()
+                            .extracting(OlmMessage::getType)
+                            .isEqualTo(MessageType.NORMAL);
+                    assertThat(encryptedReply)
+                            .as("Encrypted message' body should not be null nor empty")
+                            .extracting(OlmMessage::getBody, STRING)
+                            .isNotEmpty()
+                            .isBase64();
 
                     // Alice decrypts the reply
                     byte[] decryptedReply = outboundSession.decrypt(encryptedReply);
@@ -265,14 +281,21 @@ class OlmSessionTest {
 
             try (OlmSession outboundSession = aliceAccount.createOutboundSession(
                     OlmSessionVersion.V2, bobAccount.curve25519Key(), bobOneTimeKey)) {
-                String encrypted = outboundSession.encrypt("Hello Bob".getBytes(StandardCharsets.UTF_8));
+                OlmMessage encrypted = outboundSession.encrypt("Hello Bob".getBytes(StandardCharsets.UTF_8));
                 String aliceIdentityKey = aliceAccount.curve25519Key();
 
                 assertThatThrownBy(() -> bobAccount.createInboundSession(OlmSessionVersion.V1, aliceIdentityKey, encrypted))
                         .as("Creating inbound session with mismatched version should throw SessionCreationException")
                         .isInstanceOf(SessionCreationException.class)
-                        .isInstanceOf(io.github.fherbreteau.vodozemac.exception.VodozemacException.class);
+                        .hasMessage("The session config doesn't match the one used for the pre-key message: expected SessionConfig { version: V1 }, got Some(SessionConfig { version: V2 })");
             }
         }
+    }
+
+    @Test
+    void testInvalidMessageTypeThrowsVodozemacException() {
+        assertThatThrownBy(() -> MessageType.fromValue(-1))
+                .isInstanceOf(VodozemacException.class)
+                .hasMessage("unknown message type -1");
     }
 }

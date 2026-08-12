@@ -1,6 +1,7 @@
 use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jboolean, jint, jlong, jobject, jstring};
 use jni::{EnvUnowned, JValue, jni_sig, jni_str};
+use vodozemac::base64_encode;
 use vodozemac::olm::{OlmMessage, Session, SessionPickle};
 
 use crate::errors::{throw_decryption_error, throw_generic_error, throw_pickle_error};
@@ -102,9 +103,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
         let olm_message = session
             .encrypt(&plaintext_bytes)
             .map_err(|e| throw_generic_error(env, e))?;
-        let json_string =
-            serde_json::to_string(&olm_message).map_err(|e| throw_generic_error(env, e))?;
-        let result = env.new_string(json_string)?;
+        let (message_type, ciphertext) = olm_message.to_parts();
+        let body = env.new_string(base64_encode(ciphertext))?;
+        let result = env.new_object(
+            jni_str!("io/github/fherbreteau/vodozemac/olm/OlmMessage"),
+            jni_sig!((messageType: int, body: java.lang.String) -> void),
+            &[JValue::Int(message_type as i32), JValue::Object(&body)],
+        )?;
         Ok(result.into_raw())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

@@ -7,7 +7,7 @@ It is organized into phases by priority, with each phase being independently del
 Phases 3-7, 9 cover missing vodozemac features.
 Phase 14 covers code review fixes (refactoring and deduplication).
 
-**Completed phases:** Phase 1 (InboundGroupSession session management), Phase 2 (SAS module), Phase 3 (ECIES module), Phase 4 (PK Encryption module), Phase 7 (Missing methods on existing classes), Phase 8 (Granular error types), Phase 9 (Utility functions), Phase 10 (Code quality and duplication fixes), Phase 11 (Build and configuration fixes), Phase 12 (Documentation overhaul), Phase 13 (Security hardening), and Phase 14.2 (KeyValidator extraction) have been implemented. Phase 13.3 (cause chaining for VodozemacException) was implemented as part of Phase 8.
+**Completed phases:** Phase 1 (InboundGroupSession session management), Phase 2 (SAS module), Phase 3 (ECIES module), Phase 4 (PK Encryption module), Phase 5.1 (OlmMessage structured type), Phase 7 (Missing methods on existing classes), Phase 8 (Granular error types), Phase 9 (Utility functions), Phase 10 (Code quality and duplication fixes), Phase 11 (Build and configuration fixes), Phase 12 (Documentation overhaul), Phase 13 (Security hardening), and Phase 14.2 (KeyValidator extraction) have been implemented. Phase 13.3 (cause chaining for VodozemacException) was implemented as part of Phase 8. Phase 5.2 (MegolmMessage structured type) is still pending.
 
 ---
 
@@ -86,13 +86,22 @@ instead of the originally planned `rust/src/pk_encryption/`.
 
 Expose `OlmMessage`, `MegolmMessage` as proper Java types instead of opaque strings.
 
-### 5.1 `OlmMessage` Java class
+### ~~5.1 `OlmMessage` Java class~~
 
-- Fields: `MessageType type` (enum: `PRE_KEY(0)`, `NORMAL(1)`), `String body` (base64 ciphertext)
-- Methods: `getType()`, `getBody()`, `toBase64() -> String`, `static fromBase64(String) -> OlmMessage`
-- Update `OlmSession.encrypt()` to return `OlmMessage` instead of `String`
-- Update `OlmSession.decrypt()` to accept `OlmMessage` (or keep `String` overload for backward compat)
-- Update `Account.createInboundSession()` to accept `OlmMessage`
+- ~~Fields: `MessageType type` (enum: `PRE_KEY(0)`, `NORMAL(1)`), `String body` (base64 ciphertext)~~
+- ~~Methods: `getType()`, `getBody()`, `toString()` (JSON serialisation for JNI)~~
+- ~~Update `OlmSession.encrypt()` to return `OlmMessage` instead of `String`~~
+- ~~Update `OlmSession.decrypt()` to accept `OlmMessage`~~
+- ~~Update `Account.createInboundSession()` to accept `OlmMessage`~~
+
+Done. A clean break was made — `OlmSession.encrypt()` now returns `OlmMessage` and
+`OlmSession.decrypt()` takes `OlmMessage` (no `String` overloads kept). The
+`OlmMessage.toString()` method produces the JSON format `{"body":"<base64>","type":<int>}`
+that the native vodozemac layer expects for serialisation/deserialisation. The
+`MessageType` enum provides `PRE_KEY(0)` and `NORMAL(1)` values with `fromValue(int)`
+for conversion. The Rust JNI `nativeEncrypt` now constructs an `OlmMessage` Java
+object directly (using `to_parts()` and `base64_encode`) instead of returning a
+JSON string.
 
 ### 5.2 `MegolmMessage` Java class
 
@@ -101,11 +110,12 @@ Expose `OlmMessage`, `MegolmMessage` as proper Java types instead of opaque stri
 - Update `OutboundGroupSession.encrypt()` to return `MegolmMessage`
 - Update `InboundGroupSession.decrypt()` to accept `MegolmMessage`
 
-### 5.3 Design decisions
+### ~~5.3 Design decisions~~
 
-- **Backward compatibility**: Keep `String` overloads of `encrypt`/`decrypt` for migration,
-  or make a clean break.
-- **`MessageType` enum**: Already partially exists as `OlmMessage.java` (empty class) — fill it in.
+- ~~**Backward compatibility**: Keep `String` overloads of `encrypt`/`decrypt` for migration,
+  or make a clean break.~~ — **Clean break chosen**: no `String` overloads for Olm.
+- ~~**`MessageType` enum**: Already partially exists as `OlmMessage.java` (empty class) — fill it in.~~
+  — **Done**: `MessageType` is now a separate enum class with `PRE_KEY(0)` and `NORMAL(1)`.
 
 ### Estimated effort: ~8 JNI function signature changes, 2-3 Java classes, enum
 
@@ -324,7 +334,7 @@ All 4 `nativeFree` functions are identical except for the Rust type.
 | ~~2. SAS module~~                      | ~~High~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | ~~3. ECIES module~~                    | ~~High~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | ~~4. PK Encryption~~                 | ~~High~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
-| 5. Structured messages             | Medium   | ~8 changes    | 2-3          | Existing modules |
+| 5. Structured messages (5.1 done, 5.2 pending) | Medium | Partial (Olm done) | 2 done, 1 pending | Existing modules |
 | 6. Crypto key types                | Medium   | ~6            | 3            | New `types/`     |
 | ~~7. Missing methods~~              | ~~Medium~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | ~~8. Error types~~                    | ~~Low~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |

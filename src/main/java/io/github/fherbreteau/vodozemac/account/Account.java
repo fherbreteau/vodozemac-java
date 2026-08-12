@@ -11,6 +11,7 @@ import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
 import io.github.fherbreteau.vodozemac.exception.SessionCreationException;
 import io.github.fherbreteau.vodozemac.olm.InboundCreationResult;
+import io.github.fherbreteau.vodozemac.olm.OlmMessage;
 import io.github.fherbreteau.vodozemac.olm.OlmSession;
 import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
 
@@ -137,14 +138,15 @@ public class Account extends NativeHandle {
      * the default session version.
      *
      * @param theirIdentityKey the sender's Curve25519 identity key
-     * @param preKeyMessage    the pre-key message received from the sender
+     * @param preKeyMessage    the {@link OlmMessage} received from the sender;
+     *                         must be a {@link io.github.fherbreteau.vodozemac.olm.MessageType#PRE_KEY pre-key message}
      * @return an {@link InboundCreationResult} containing the new session
      *         and the decrypted plaintext of the pre-key message
      * @throws IllegalStateException      if this account has been closed
      * @throws KeyException              if the identity key cannot be decoded
      * @throws SessionCreationException  if session creation fails
      */
-    public InboundCreationResult createInboundSession(String theirIdentityKey, String preKeyMessage) {
+    public InboundCreationResult createInboundSession(String theirIdentityKey, OlmMessage preKeyMessage) {
         return createInboundSession(OlmSessionVersion.defaultVersion(), theirIdentityKey, preKeyMessage);
     }
 
@@ -153,7 +155,8 @@ public class Account extends NativeHandle {
      *
      * @param sessionVersion   the Olm session protocol version to use
      * @param theirIdentityKey the sender's Curve25519 identity key
-     * @param preKeyMessage    the pre-key message received from the sender
+     * @param preKeyMessage    the {@link OlmMessage} received from the sender;
+     *                         must be a {@link io.github.fherbreteau.vodozemac.olm.MessageType#PRE_KEY pre-key message}
      * @return an {@link InboundCreationResult} containing the new session
      *         and the decrypted plaintext of the pre-key message
      * @throws IllegalStateException      if this account has been closed
@@ -161,10 +164,10 @@ public class Account extends NativeHandle {
      * @throws SessionCreationException  if session creation fails
      */
     public InboundCreationResult createInboundSession(OlmSessionVersion sessionVersion, String theirIdentityKey,
-            String preKeyMessage) {
+            OlmMessage preKeyMessage) {
         checkNotClosed();
 
-        return nativeCreateInboundSession(nativePtr, sessionVersion.getValue(), theirIdentityKey, preKeyMessage);
+        return nativeCreateInboundSession(nativePtr, sessionVersion.getValue(), theirIdentityKey, preKeyMessage.toString());
     }
 
     /**

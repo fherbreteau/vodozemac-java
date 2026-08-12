@@ -51,7 +51,6 @@
         <sonar.projectKey>fherbreteau_vodozemac-java</sonar.projectKey>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.coverage.exclusions>
-            **/Sample*.java,
             **/NativeLibraryLoader.java
         </sonar.coverage.exclusions>
 
@@ -365,7 +364,6 @@
                 </executions>
                 <configuration>
                     <excludes>
-                        <exclude>io/github/fherbreteau/Sample*.class</exclude>
                         <exclude>io/github/fherbreteau/vodozemac/NativeLibraryLoader.class</exclude>
                     </excludes>
                 </configuration>

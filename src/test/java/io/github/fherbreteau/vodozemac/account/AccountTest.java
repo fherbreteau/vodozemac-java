@@ -1,5 +1,6 @@
 package io.github.fherbreteau.vodozemac.account;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
@@ -11,6 +12,7 @@ import java.util.Optional;
 
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.olm.InboundCreationResult;
+import io.github.fherbreteau.vodozemac.olm.OlmMessage;
 import io.github.fherbreteau.vodozemac.olm.OlmSession;
 import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
 import org.junit.jupiter.api.Test;
@@ -520,7 +522,7 @@ class AccountTest {
 
             try (OlmSession outboundSession = aliceAccount.createOutboundSession(bobCurve25519Key, bobOneTimeKey)) {
                 String plaintext = "Hello Bob";
-                String encrypted = outboundSession.encrypt(plaintext.getBytes(java.nio.charset.StandardCharsets.UTF_8));
+                OlmMessage encrypted = outboundSession.encrypt(plaintext.getBytes(UTF_8));
 
                 InboundCreationResult inboundResult = bobAccount.createInboundSession(
                         aliceAccount.curve25519Key(), encrypted);
