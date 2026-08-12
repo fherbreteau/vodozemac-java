@@ -54,9 +54,13 @@ public class OlmSession extends NativeHandle {
     }
 
     /**
-     * Returns the gkeys associated with this session.
+     * Returns the keys associated with this session.
+     * <p>
+     * The session keys contain the identity key, base key and one-time key
+     * that were used to establish the session, as well as the derived
+     * session ID.
      *
-     * @return the session keys
+     * @return the {@link SessionKeys} for this session
      * @throws IllegalStateException if this session has been closed
      */
     public SessionKeys sessionKeys() {
@@ -65,9 +69,13 @@ public class OlmSession extends NativeHandle {
     }
 
     /**
-     * Returns the version of the session.
+     * Returns the session configuration (protocol version) used by this
+     * session.
+     * <p>
+     * The version determines the MAC truncation behaviour used for
+     * encryption and authentication.
      *
-     * @return the session version
+     * @return the {@link OlmSessionVersion} of this session
      * @throws IllegalStateException if this session has been closed
      */
     public OlmSessionVersion sessionConfig() {

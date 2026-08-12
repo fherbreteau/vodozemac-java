@@ -96,9 +96,13 @@ public class OutboundGroupSession extends NativeHandle {
     }
 
     /**
-     * Returns the version of the session.
+     * Returns the session configuration (protocol version) used by this
+     * session.
+     * <p>
+     * The version determines the MAC truncation behaviour used for
+     * encryption and authentication.
      *
-     * @return the session version
+     * @return the {@link MegolmSessionVersion} of this session
      * @throws IllegalStateException if this session has been closed
      */
     public MegolmSessionVersion sessionConfig() {

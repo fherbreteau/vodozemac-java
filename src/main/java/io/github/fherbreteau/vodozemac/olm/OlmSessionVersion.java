@@ -41,9 +41,11 @@ public enum OlmSessionVersion {
     }
 
     /**
-     * Return the session version based on its version number.
-     * @param version the version number
+     * Returns the session version corresponding to the given numeric value.
+     *
+     * @param version the version number (1 for V1, 2 for V2)
      * @return the associated session version
+     * @throws io.github.fherbreteau.vodozemac.exception.VodozemacException if no version matches the given value
      */
     public static OlmSessionVersion fromVersion(int version) {
         return Stream.of(values())

@@ -20,8 +20,9 @@ public abstract class NativeHandle implements AutoCloseable {
     }
 
     /**
-     * Closes the {@code Account} by releasing its associated native
-     * resources.
+     * Closes this resource by releasing its associated native resources.
+     * <p>
+     * This method is idempotent: calling it more than once has no effect.
      *
      * {@inheritDoc}
      */

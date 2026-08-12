@@ -32,26 +32,41 @@ vodozemac-java/
 │       ├── build.yml               # Multi-platform native build + Maven package + test
 │       ├── test.yml                # PR quick-test: Rust tests, clippy, fmt, Java verify, coverage
 │       └── release.yml             # Tag-triggered publish to GitHub Packages
-├── docs/IMPLEMENTATION-PLAN.md     # Gap analysis: 9 phases of missing features
+├── docs/IMPLEMENTATION-PLAN.md     # Gap analysis: 14 phases of missing features
 ├── rust/
-│   ├── Cargo.toml                  # Rust crate: vodozemac 0.9.0, jni 0.22.4, serde_json 1.0
+│   ├── Cargo.toml                  # Rust crate: vodozemac 0.10.0, jni 0.22.4, serde_json 1.0
 │   ├── Cargo.lock
 │   └── src/
 │       ├── lib.rs                  # Module declarations
-│       ├── helpers.rs               # Shared helpers (wrap, session config, test JVM)
+│       ├── errors.rs               # JNI error mapping helpers
+│       ├── helpers.rs              # Shared helpers (wrap, session config, test JVM)
+│       ├── utils/
+│       │   └── mod.rs              # JNI: Vodozemac utility (base64, version)
 │       ├── olm/
 │       │   ├── mod.rs
-│       │   ├── account.rs           # JNI: Account (new, keys, sign, sessions, pickle, dehydrate)
-│       │   └── session.rs           # JNI: OlmSession (encrypt, decrypt, pickle)
-│       └── megolm/
-│           ├── mod.rs
-│           ├── inbound_group_session.rs   # JNI: InboundGroupSession (decrypt, pickle)
-│           └── outbound_group_session.rs # JNI: OutboundGroupSession (encrypt, pickle)
+│       │   ├── account.rs           # JNI: Account (new, keys, sign, sessions, pickle, dehydrate, pickleLegacy)
+│       │   └── session.rs           # JNI: OlmSession (encrypt, decrypt, pickle, sessionKeys, sessionConfig)
+│       ├── megolm/
+│       │   ├── mod.rs
+│       │   ├── inbound_group_session.rs   # JNI: InboundGroupSession (decrypt, pickle, export/import, merge)
+│       │   └── outbound_group_session.rs # JNI: OutboundGroupSession (encrypt, pickle, sessionConfig)
+│       ├── sas/
+│       │   ├── sas.rs              # JNI: Sas
+│       │   └── established_sas.rs  # JNI: EstablishedSas
+│       ├── ecies/
+│       │   ├── ecies.rs            # JNI: Ecies
+│       │   └── established_ecies.rs # JNI: EstablishedEcies
+│       └── backup/
+│           ├── encryption.rs       # JNI: PkEncryption
+│           └── decryption.rs       # JNI: PkDecryption
 ├── src/
 │   ├── main/java/io/github/fherbreteau/
 │   │   ├── Sample.java              # Demo application
 │   │   └── vodozemac/
 │   │       ├── NativeLibraryLoader.java  # Classpath extraction + System.load
+│   │       ├── NativeHandle.java          # Base class for native pointer lifecycle
+│   │       ├── KeyValidator.java         # 32-byte key validation utility
+│   │       ├── Vodozemac.java            # Utility class (base64, version)
 │   │       ├── VodozemacException.java     # RuntimeException wrapper
 │   │       ├── account/
 │   │       │   ├── Account.java              # AutoCloseable Olm account
@@ -61,23 +76,52 @@ vodozemac-java/
 │   │       ├── olm/
 │   │       │   ├── OlmSession.java            # AutoCloseable Olm session
 │   │       │   ├── OlmSessionVersion.java     # Enum V1(1), V2(2)
+│   │       │   ├── SessionKeys.java           # Session identity/base/one-time keys
 │   │       │   └── InboundCreationResult.java
-│   │       └── megolm/
-│   │           ├── OutboundGroupSession.java  # AutoCloseable Megolm outbound
-│   │           ├── InboundGroupSession.java   # AutoCloseable Megolm inbound
-│   │           ├── MegolmSessionVersion.java  # Enum V1(1), V2(2)
-│   │           └── DecryptedMessage.java
+│   │       ├── megolm/
+│   │       │   ├── OutboundGroupSession.java  # AutoCloseable Megolm outbound
+│   │       │   ├── InboundGroupSession.java   # AutoCloseable Megolm inbound
+│   │       │   ├── MegolmSessionVersion.java  # Enum V1(1), V2(2)
+│   │       │   ├── SessionOrdering.java       # Enum for session comparison
+│   │       │   └── DecryptedMessage.java
+│   │       ├── sas/
+│   │       │   ├── Sas.java                  # SAS verification
+│   │       │   ├── EstablishedSas.java        # Established SAS channel
+│   │       │   └── SasBytes.java             # SAS bytes (emoji/decimal)
+│   │       ├── ecies/
+│   │       │   ├── Ecies.java                # Unestablished ECIES channel
+│   │       │   ├── EstablishedEcies.java     # Established ECIES channel
+│   │       │   ├── CheckCode.java            # 2-digit check code
+│   │       │   ├── OutboundCreationResult.java
+│   │       │   └── InboundCreationResult.java
+│   │       ├── backup/
+│   │       │   ├── PkEncryption.java         # PK encryption
+│   │       │   ├── PkDecryption.java         # PK decryption
+│   │       │   └── PkMessage.java            # Encrypted PK message
+│   │       └── exception/
+│   │           ├── VodozemacException.java
+│   │           ├── PickleException.java
+│   │           ├── DecryptionException.java
+│   │           ├── SessionCreationException.java
+│   │           ├── KeyException.java
+│   │           ├── SignatureException.java
+│   │           ├── SasException.java
+│   │           ├── EciesException.java
+│   │           └── EncryptionException.java
 │   └── test/java/io/github/fherbreteau/vodozemac/
-│       ├── account/AccountTest.java            # 17 tests
-│       ├── olm/OlmSessionTest.java             # 7 tests
-│       ├── olm/OlmSessionVersionTest.java      # 4 tests
-│       ├── megolm/OutboundGroupSessionTest.java # 7 tests
-│       ├── megolm/InboundGroupSessionTest.java  # 7 tests
-│       └── megolm/MegolmSessionVersionTest.java # 4 tests
+│       ├── VodozemacTest.java                 # 2 tests
+│       ├── account/AccountTest.java            # 19 tests
+│       ├── olm/OlmSessionTest.java             # 8 tests
+│       ├── olm/OlmSessionVersionTest.java      # 6 tests
+│       ├── megolm/OutboundGroupSessionTest.java # 9 tests
+│       ├── megolm/InboundGroupSessionTest.java  # 29 tests
+│       ├── megolm/MegolmSessionVersionTest.java # 6 tests
+│       ├── sas/SasTest.java                    # 4 tests
+│       ├── ecies/EciesTest.java                # 12 tests
+│       └── backup/PkEncryptionTest.java        # 5 tests
 ├── checkstyle.xml                  # Checkstyle configuration
 ├── checkstyle.suppression.xml      # Empty suppressions
 ├── pom.xml                          # Maven build: Rust compile, JNI, JaCoCo, Checkstyle
-├── Cargo.lock                       # Root-level (stale — should not exist)
 ├── README.md
 ├── SECURITY.md
 ├── CONTRIBUTING.md
@@ -122,18 +166,22 @@ cargo test
 
 ```
 mvn test
-→ 46 tests, 0 failures, 0 errors, 0 skipped — PASS
+→ 100 tests, 0 failures, 0 errors, 0 skipped — PASS
 ```
 
 | Test Class | Tests | Status |
 |---|---|---|
-| `AccountTest` | 17 | PASS |
-| `OlmSessionTest` | 7 | PASS |
-| `OlmSessionVersionTest` | 4 | PASS |
-| `OutboundGroupSessionTest` | 7 | PASS |
-| `InboundGroupSessionTest` | 7 | PASS |
-| `MegolmSessionVersionTest` | 4 | PASS |
-| **Total** | **46** | **ALL PASS** |
+| `VodozemacTest` | 2 | PASS |
+| `AccountTest` | 19 | PASS |
+| `OlmSessionTest` | 8 | PASS |
+| `OlmSessionVersionTest` | 6 | PASS |
+| `OutboundGroupSessionTest` | 9 | PASS |
+| `InboundGroupSessionTest` | 29 | PASS |
+| `MegolmSessionVersionTest` | 6 | PASS |
+| `SasTest` | 4 | PASS |
+| `EciesTest` | 12 | PASS |
+| `PkEncryptionTest` | 5 | PASS |
+| **Total** | **100** | **ALL PASS** |
 
 ### 3.6 Coverage
 
@@ -149,7 +197,7 @@ mvn test
 ## 4. Incomplete Tasks
 
 The following phases from `docs/IMPLEMENTATION-PLAN.md` remain unimplemented:
-Phases 5, 6, 7 (partially), 9, and 14 are still pending.
+Phases 5, 6, and 14 (partially — 14.2 is done) are still pending.
 
 ### ~~Phase 1: InboundGroupSession Session Management (High Priority)~~
 - [x] `InboundGroupSession.import(ExportedSessionKey, MegolmSessionVersion)` — constructor/static factory
@@ -185,19 +233,19 @@ Phases 5, 6, 7 (partially), 9, and 14 are still pending.
 - [ ] `Ed25519Signature` — `fromBase64()`, `toBase64()`
 - [ ] `Curve25519PublicKey` — `fromBase64()`, `toBase64()`
 
-### Phase 7: Missing Methods on Existing Classes (Medium Priority)
-- [ ] `Account.toLibolmPickle(byte[] key)` method
-- [ ] `OlmSession.sessionKeys()` and `OlmSession.sessionConfig()`
-- [ ] `OutboundGroupSession.sessionConfig()`
+### ~~Phase 7: Missing Methods on Existing Classes (Medium Priority)~~
+- [x] `Account.pickleLegacy(byte[] key)` method
+- [x] `OlmSession.sessionKeys()` and `OlmSession.sessionConfig()`
+- [x] `OutboundGroupSession.sessionConfig()`
 - [x] ~~Fix typo: `createOutbpundSession` -> `createOutboundSession`~~
 
 ### ~~Phase 8: Granular Error Types (Low Priority)~~
 - [x] Typed exception hierarchy (PickleException, DecryptionException, SessionCreationException, KeyException, SignatureException, EncryptionException, EciesException, SasException)
 - [x] JNI error mapping changes
 
-### Phase 9: Utility Functions (Low Priority)
-- [ ] `base64Encode(byte[])` and `base64Decode(String)` utility methods
-- [ ] `Vodozemac.getVersion()` constant
+### ~~Phase 9: Utility Functions (Low Priority)~~
+- [x] `base64Encode(byte[])` and `base64Decode(String)` utility methods
+- [x] `Vodozemac.getVersion()` constant
 
 ---
 
@@ -231,7 +279,7 @@ if (key.length != 32) {
 }
 ```
 
-**Missing validation in `OutboundGroupSession` and `InboundGroupSession` has been fixed** (Phase 10, findings C4-C7/S2). The duplication itself remains — extraction to a `KeyValidator` utility is tracked as Phase 14.2.
+**Missing validation in `OutboundGroupSession` and `InboundGroupSession` has been fixed** (Phase 10, findings C4-C7/S2). The duplication itself has been resolved — extraction to a `KeyValidator` utility was completed in Phase 14.2. All call sites now use `KeyValidator.validateEncryptionKey(byte[])`.
 
 ### 5.5 Pickle/Unpickle Pattern (Rust JNI)
 
@@ -285,7 +333,7 @@ public enum XxxSessionVersion {
 
 ~~Consider extracting a common base class or utility:~~
 - ~~`NativeHandle` abstract class with `nativePtr`, `checkNotClosed()`, `isClosed()`, `close()`~~ — **Done (Phase 10)**
-- `KeyValidator.validateKey(byte[] key)` utility method — Pending (Phase 14.2)
+- ~~`KeyValidator.validateKey(byte[] key)` utility method~~ — **Done (Phase 14.2)**
 - A single `SessionVersion` enum shared between Olm and Megolm (or a generic parametrized version) — Pending (Phase 14.3)
 
 ---
@@ -345,7 +393,7 @@ public enum XxxSessionVersion {
 
 | Crate | Version | Purpose | Features |
 |---|---|---|---|
-| `vodozemac` | 0.9.0 | Core Matrix crypto (OLM, Megolm) | `libolm-compat` |
+| `vodozemac` | 0.10.0 | Core Matrix crypto (OLM, Megolm) | `libolm-compat`, `experimental-session-config`, `insecure-pk-encryption` |
 | `jni` | 0.22.4 | JNI bindings for Rust | (dev: `invocation`) |
 | `serde_json` | 1.0.141 | JSON serialization for pickle data | - |
 
@@ -446,7 +494,7 @@ public enum XxxSessionVersion {
 18. ~~Create `CODE_OF_CONDUCT.md` or remove reference from `CONTRIBUTING.md`~~ — **Done (Phase 12)**
 
 ### Pending (Phase 14)
-19. Extract `KeyValidator` utility to eliminate key validation duplication (5.4)
+~~19. Extract `KeyValidator` utility to eliminate key validation duplication (5.4)~~ — **Done (Phase 14.2)**
 20. Extract Rust JNI pickle/unpickle into generic helpers (5.5)
 21. Extract Rust JNI `nativeFree` into generic helper (5.6)
 22. Consolidate session version enums via common `SessionVersion` interface (5.7)

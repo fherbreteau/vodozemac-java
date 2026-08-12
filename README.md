@@ -13,7 +13,7 @@ Vodozemac Java provides Java Native Interface (JNI) bindings for the [Vodozemac]
 
 ## ✨ Features
 
-- **🔐 Cryptographic Operations**: Curve25519 and Ed25519 key generation, message signing, Olm and Megolm sessions
+- **🔐 Cryptographic Operations**: Curve25519 and Ed25519 key generation, message signing, Olm and Megolm sessions, session keys
 - **🔑 SAS Verification**: Short Authentication String (SAS) for key verification with emoji and decimal rendering
 - **🔗 ECIES Channels**: Elliptic Curve Integrated Encryption Scheme for QR-code-based device login (MSC3886)
 - **💾 PK Encryption**: Megolm key backup using Curve25519-AES-SHA2 hybrid encryption
@@ -21,7 +21,7 @@ Vodozemac Java provides Java Native Interface (JNI) bindings for the [Vodozemac]
 - **🌍 Cross-Platform**: Linux (x86_64, ARM64), macOS (Apple Silicon), Windows (x86_64)
 - **📦 Maven Integration**: Automatic Rust compilation and native library packaging
 - **🗑️ Memory Safety**: Proper resource management with Java's `AutoCloseable`
-- **🧪 Comprehensive Testing**: AssertJ-based test suite with 96 test cases
+- **🧪 Comprehensive Testing**: AssertJ-based test suite with 100 test cases
 - **🔧 GitHub CI/CD**: Multi-platform build and test pipeline
 
 ## 📋 Requirements
@@ -127,6 +127,7 @@ Main class for Olm account management — identity keys, one-time keys, fallback
 | `OlmSession createOutboundSession(...)` | Create an outbound Olm session |
 | `InboundCreationResult createInboundSession(...)` | Create an inbound Olm session from a pre-key message |
 | `String pickle()` / `pickle(byte[] key)` | Serialize account (plain or encrypted) |
+| `String pickleLegacy(byte[] key)` | Serialize account to libolm pickle format |
 | `static Account unpickle(...)` | Restore account from pickle |
 | `static Account unpickleLegacy(...)` | Restore from libolm legacy pickle |
 | `DehydratedDeviceResult toDehydratedDevice(byte[] key)` | Create a dehydrated device |
@@ -139,12 +140,25 @@ Represents an Olm session for 1-to-1 encrypted communication.
 | Method | Description |
 |--------|-------------|
 | `String sessionId()` | Get the session ID |
+| `SessionKeys sessionKeys()` | Get the keys used to establish this session |
+| `OlmSessionVersion sessionConfig()` | Get the session protocol version |
 | `boolean hasReceivedMessage()` | Check if a message has been received |
 | `String encrypt(byte[] plaintext)` | Encrypt a message (returns JSON) |
 | `byte[] decrypt(String message)` | Decrypt a message |
 | `String pickle()` / `pickle(byte[] key)` | Serialize session |
 | `static OlmSession unpickle(...)` | Restore from pickle |
 | `static OlmSession unpickleLegacy(...)` | Restore from libolm legacy pickle |
+
+### SessionKeys
+
+The set of Curve25519 public keys that were used to establish an Olm session.
+
+| Method | Description |
+|--------|-------------|
+| `String sessionId()` | Get the globally unique session ID (SHA-256 of the three keys) |
+| `String identityKey()` | Get the long-term Curve25519 identity key of the session initiator |
+| `String baseKey()` | Get the ephemeral Curve25519 base key created by the initiator |
+| `String oneTimeKey()` | Get the one-time Curve25519 key used to establish the session |
 
 ### OutboundGroupSession
 
@@ -155,6 +169,7 @@ Megolm outbound group session for multi-recipient encrypted communication.
 | `String sessionId()` | Get the session ID |
 | `int messageIndex()` | Get current message index |
 | `String sessionKey()` | Get the session key for sharing with recipients |
+| `MegolmSessionVersion sessionConfig()` | Get the session protocol version |
 | `String encrypt(byte[] plaintext)` | Encrypt a message (returns base64) |
 | `String pickle()` / `pickle(byte[] key)` | Serialize session |
 | `static OutboundGroupSession unpickle(...)` | Restore from pickle |
@@ -294,6 +309,16 @@ All exceptions extend `VodozemacException` (which extends `RuntimeException`):
 | `EciesException` | ECIES channel establishment or decryption errors |
 | `EncryptionException` | PK encryption failures (e.g. non-contributory key) |
 
+### Vodozemac
+
+Utility class providing base64 encoding/decoding and access to the vodozemac library version.
+
+| Method | Description |
+|--------|-------------|
+| `static String base64Encode(byte[] src)` | Encode bytes to unpadded base64 |
+| `static byte[] base64Decode(String src)` | Decode base64 (padded or unpadded) to bytes |
+| `static String getVersion()` | Get the vodozemac Rust crate version |
+
 ## 🏗️ Architecture
 
 ### Project Structure
@@ -311,6 +336,8 @@ vodozemac-java/
 │       ├── lib.rs              # Module declarations
 │       ├── errors.rs           # JNI error mapping helpers
 │       ├── helpers.rs          # Shared utilities (wrap, version config)
+│       ├── utils/
+│       │   └── mod.rs          # Vodozemac utility (base64, version) JNI
 │       ├── olm/
 │       │   ├── account.rs      # Account JNI functions
 │       │   └── session.rs       # OlmSession JNI functions
@@ -329,13 +356,15 @@ vodozemac-java/
 ├── src/
 │   ├── main/java/io/github/fherbreteau/vodozemac/
 │   │   ├── account/            # Account, IdentityKeys, OneTimeKeyGenerationResult, DehydratedDeviceResult
-│   │   ├── olm/                # OlmSession, OlmSessionVersion, InboundCreationResult
+│   │   ├── olm/                # OlmSession, OlmSessionVersion, SessionKeys, InboundCreationResult
 │   │   ├── megolm/             # InboundGroupSession, OutboundGroupSession, MegolmSessionVersion, SessionOrdering, DecryptedMessage
 │   │   ├── sas/                # Sas, EstablishedSas, SasBytes
 │   │   ├── ecies/              # Ecies, EstablishedEcies, CheckCode, OutboundCreationResult, InboundCreationResult
 │   │   ├── backup/             # PkEncryption, PkDecryption, PkMessage
 │   │   ├── exception/          # VodozemacException, PickleException, DecryptionException, SessionCreationException, KeyException, SignatureException, SasException, EciesException, EncryptionException
 │   │   ├── NativeHandle.java   # Base class for native pointer lifecycle
+│   │   ├── KeyValidator.java   # 32-byte key validation utility
+│   │   ├── Vodozemac.java      # Utility class (base64, version)
 │   │   └── NativeLibraryLoader.java
 │   └── test/java/              # Test classes
 ├── pom.xml                     # Maven build configuration
@@ -423,13 +452,14 @@ mvn test
 
 ### Test Coverage
 
-- ✅ **Account**: Creation, identity keys, one-time keys, fallback keys, signing, pickle/unpickle, dehydrated devices
-- ✅ **OlmSession**: Full session lifecycle, encrypt/decrypt, pickle/unpickle, legacy pickle
-- ✅ **OutboundGroupSession**: Creation, encrypt, session key, pickle/unpickle
+- ✅ **Account**: Creation, identity keys, one-time keys, fallback keys, signing, pickle/unpickle, dehydrated devices, legacy pickle
+- ✅ **OlmSession**: Full session lifecycle, encrypt/decrypt, pickle/unpickle, legacy pickle, session keys, session config
+- ✅ **OutboundGroupSession**: Creation, encrypt, session key, session config, pickle/unpickle
 - ✅ **InboundGroupSession**: Decrypt, export/import, advance, connected/compare/merge, pickle/unpickle
 - ✅ **SAS**: Key establishment, emoji/decimal generation, MAC calculation and verification
 - ✅ **ECIES**: Outbound/inbound channel establishment, encrypt/decrypt, check code
 - ✅ **PK Encryption**: Encrypt/decrypt round-trip, secret key loading, legacy libolm unpickle
+- ✅ **Utility Functions**: Base64 encode/decode, vodozemac version, session keys, session config
 - ✅ **Error Handling**: Typed exceptions (Pickle, Decryption, SessionCreation, Key, Signature, Sas, Ecies, Encryption)
 - ✅ **Key Validation**: Invalid key length, invalid base64, version mismatch
 

@@ -7,7 +7,7 @@ It is organized into phases by priority, with each phase being independently del
 Phases 3-7, 9 cover missing vodozemac features.
 Phase 14 covers code review fixes (refactoring and deduplication).
 
-**Completed phases:** Phase 1 (InboundGroupSession session management), Phase 2 (SAS module), Phase 3 (ECIES module), Phase 4 (PK Encryption module), Phase 8 (Granular error types), Phase 10 (Code quality and duplication fixes), Phase 11 (Build and configuration fixes), Phase 12 (Documentation overhaul), and Phase 13 (Security hardening) have been implemented. Phase 13.3 (cause chaining for VodozemacException) was implemented as part of Phase 8.
+**Completed phases:** Phase 1 (InboundGroupSession session management), Phase 2 (SAS module), Phase 3 (ECIES module), Phase 4 (PK Encryption module), Phase 7 (Missing methods on existing classes), Phase 8 (Granular error types), Phase 9 (Utility functions), Phase 10 (Code quality and duplication fixes), Phase 11 (Build and configuration fixes), Phase 12 (Documentation overhaul), Phase 13 (Security hardening), and Phase 14.2 (KeyValidator extraction) have been implemented. Phase 13.3 (cause chaining for VodozemacException) was implemented as part of Phase 8.
 
 ---
 
@@ -135,25 +135,33 @@ Expose `Ed25519PublicKey`, `Ed25519Signature`, `Curve25519PublicKey` as Java typ
 
 ---
 
-## Phase 7: Missing methods on existing classes (Medium priority)
+## ~~Phase 7: Missing methods on existing classes (Medium priority)~~
 
-### 7.1 `Account.toLibolmPickle(byte[] key)`
+### ~~7.1 `Account.toLibolmPickle(byte[] key)`~~
 
-- **Java**: `String toLibolmPickle(byte[] key)` (with key length validation)
-- **Rust**: `Java_..._Account_nativeToLibolmPickle(long, JByteArray) -> jstring` calling
-  `account.to_libolm_pickle(&key)`
+- ~~**Java**: `String pickleLegacy(byte[] key)` (with key length validation)~~
+- ~~**Rust**: `Java_..._Account_nativePickleLegacy(long, JByteArray) -> jstring` calling
+  `account.to_libolm_pickle(&key)`~~
 
-### 7.2 `OlmSession.sessionKeys()` and `sessionConfig()`
+Done. The method was named `pickleLegacy` to match the existing `unpickleLegacy` naming
+convention rather than `toLibolmPickle`.
 
-- **Java**: `SessionKeys sessionKeys()` returning a new `SessionKeys` class with
-  `sessionId()`, `identityKey()`, `baseKey()`, `oneTimeKey()`
-- **Java**: `OlmSessionVersion sessionConfig()` returning the version
-- **Rust**: 2 JNI functions returning a Java object / jint
+### ~~7.2 `OlmSession.sessionKeys()` and `sessionConfig()`~~
 
-### 7.3 `OutboundGroupSession.sessionConfig()`
+- ~~**Java**: `SessionKeys sessionKeys()` returning a new `SessionKeys` class with
+  `sessionId()`, `identityKey()`, `baseKey()`, `oneTimeKey()`~~
+- ~~**Java**: `OlmSessionVersion sessionConfig()` returning the version~~
+- ~~**Rust**: 2 JNI functions returning a Java object / jint~~
 
-- **Java**: `MegolmSessionVersion sessionConfig()`
-- **Rust**: 1 JNI function
+Done. `SessionKeys` is a simple immutable data class. `sessionConfig()` returns the
+`OlmSessionVersion` enum via `OlmSessionVersion.fromVersion(int)`.
+
+### ~~7.3 `OutboundGroupSession.sessionConfig()`~~
+
+- ~~**Java**: `MegolmSessionVersion sessionConfig()`~~
+- ~~**Rust**: 1 JNI function~~
+
+Done. Returns the `MegolmSessionVersion` enum via `MegolmSessionVersion.fromVersion(int)`.
 
 ### ~~7.4 Fix typo: `createOutbpundSession` -> `createOutboundSession`~~
 
@@ -165,16 +173,21 @@ Expose `Ed25519PublicKey`, `Ed25519Signature`, `Curve25519PublicKey` as Java typ
 
 ---
 
-## Phase 9: Utility functions (Low priority)
+## ~~Phase 9: Utility functions (Low priority)~~
 
-### 9.1 `base64Encode(byte[]) -> String` and `base64Decode(String) -> byte[]`
+### ~~9.1 `base64Encode(byte[]) -> String` and `base64Decode(String) -> byte[]`~~
 
-- Simple static methods on a `Vodozemac` utility class
-- Thin wrappers around `vodozemac::base64_encode` / `base64_decode`
+- ~~Static methods on a `Vodozemac` utility class~~
+- ~~Thin wrappers around `vodozemac::base64_encode` / `base64_decode`~~
 
-### 9.2 `VERSION` constant
+Done. The `Vodozemac` class uses the same unpadded base64 variant as the vodozemac crate.
+`base64Decode` accepts both padded and unpadded input.
 
-- `Vodozemac.getVersion() -> String` returning the vodozemac crate version
+### ~~9.2 `VERSION` constant~~
+
+- ~~`Vodozemac.getVersion() -> String` returning the vodozemac crate version~~
+
+Done. Returns the value of `vodozemac::VERSION` (e.g. `"0.10.0"`).
 
 ### Estimated effort: 3 JNI functions, 1 Java class
 
@@ -226,23 +239,16 @@ and `close()` patterns.
 - **Impact**: `Account`, `OlmSession`, `OutboundGroupSession`, `InboundGroupSession` extend
   `NativeHandle` and only implement `nativeFree()` + their specific methods
 
-### 14.2 Extract `KeyValidator` utility
+### ~~14.2 Extract `KeyValidator` utility~~
 
 The 32-byte key validation is duplicated in 6+ locations.
 
-- **Java**: Create `io.github.fherbreteau.vodozemac.KeyValidator`:
-  ```java
-  public final class KeyValidator {
-      private KeyValidator() {}
+- ~~**Java**: Create `io.github.fherbreteau.vodozemac.KeyValidator`~~
+- ~~**Impact**: Replace all `if (key.length != 32)` blocks with `KeyValidator.validateEncryptionKey(key)`~~
 
-      public static void validateEncryptionKey(byte[] key) {
-          if (key.length != 32) {
-              throw new VodozemacException("Encrypted Key must be 256-bit (32-byte)");
-          }
-      }
-  }
-  ```
-- **Impact**: Replace all `if (key.length != 32)` blocks with `KeyValidator.validateEncryptionKey(key)`
+Done. The `KeyValidator` class centralises 32-byte key validation. All call sites in
+`Account`, `OlmSession`, `OutboundGroupSession`, and `InboundGroupSession` now use
+`KeyValidator.validateEncryptionKey(byte[])`.
 
 ### 14.3 Consolidate session version enums
 
@@ -320,15 +326,15 @@ All 4 `nativeFree` functions are identical except for the Rust type.
 | ~~4. PK Encryption~~                 | ~~High~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | 5. Structured messages             | Medium   | ~8 changes    | 2-3          | Existing modules |
 | 6. Crypto key types                | Medium   | ~6            | 3            | New `types/`     |
-| 7. Missing methods                 | Medium   | ~4            | 1            | Existing modules |
+| ~~7. Missing methods~~              | ~~Medium~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | ~~8. Error types~~                    | ~~Low~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
-| 9. Utilities                       | Low      | ~3            | 1            | New `utils/`     |
+| ~~9. Utilities~~                       | ~~Low~~   | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | ~~10. Code quality & duplication~~ | ~~High~~ | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | ~~11. Build & configuration~~      | ~~High~~ | ~~Done~~    | ~~Done~~     | ~~Done~~         |
 | ~~12. Documentation overhaul~~     | ~~Medium~~ | ~~Done~~   | ~~Done~~     | ~~Done~~         |
 | ~~13. Security hardening~~         | ~~Medium~~ | ~~Done~~   | ~~Done~~     | ~~Done~~         |
-| 14. Refactoring & deduplication    | Low      | ~0            | ~3           | Existing `helpers.rs` |
-| **Remaining total**                |          | **~48**       | **~20**      | **3 new + helpers** |
+| 14. Refactoring & deduplication    | Low      | ~0            | Partial (14.2 done) | Existing `helpers.rs` |
+| **Remaining total**                |          | **~14**       | **~5**      | **1 new + helpers** |
 
 ### Code review findings coverage
 

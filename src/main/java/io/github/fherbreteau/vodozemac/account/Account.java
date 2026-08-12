@@ -294,12 +294,18 @@ public class Account extends NativeHandle {
     }
 
     /**
-     * Encrypts the account using the given 32-byte key and returns the
-     * encrypted representation using the libolm format.
+     * Converts the account into the libolm pickle format, encrypted with
+     * the given 32-byte key.
+     * <p>
+     * This produces a binary pickle compatible with the original libolm
+     * library, useful for migrating away from libolm. The counterpart is
+     * {@link #unpickleLegacy(String, byte[])}.
      *
-     * @param pickleKey the key used to encrypt the pickle data
-     * @return a libolm representation of the {@code Account}
+     * @param pickleKey a 256-bit (32-byte) key for encrypting the pickle
+     * @return the libolm-format pickle string of the {@code Account}
      * @throws IllegalStateException if this account has been closed
+     * @throws KeyException        if the key is not 32 bytes
+     * @throws PickleException     if the pickle could not be created
      */
     public String pickleLegacy(byte[] pickleKey) {
         checkNotClosed();
