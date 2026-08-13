@@ -64,9 +64,9 @@ public class Sas extends NativeHandle {
      */
     public EstablishedSas diffieHellman(String theirPublicKey) {
         checkNotClosed();
-        long ptr = nativePtr;
+        EstablishedSas result = nativeDiffieHellman(nativePtr, theirPublicKey);
         nativePtr = 0;
-        return nativeDiffieHellman(ptr, theirPublicKey);
+        return result;
     }
 
     private static native long nativeNew();
