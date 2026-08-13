@@ -1,6 +1,7 @@
 # Vodozemac Java Bindings
 
 [![Build Status](https://github.com/fherbreteau/vodozemac-java/actions/workflows/build.yml/badge.svg)](https://github.com/fherbreteau/vodozemac-java/actions/workflows/build.yml)
+[![Quality gate status](https://sonarcloud.io/api/project_badges/measure?project=fherbreteau_vodozemac-java&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=fherbreteau_vodozemac-java)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Java 25+](https://img.shields.io/badge/Java-25+-red.svg)](https://www.oracle.com/java/technologies/downloads/)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.fherbreteau/vodozemac-java.svg)](https://search.maven.org/artifact/io.github.fherbreteau/vodozemac-java)
