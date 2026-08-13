@@ -1,0 +1,67 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+env:
+  JAVA_VERSION: "25"
+
+jobs:
+  build-native:
+    # Réutilise le même job que build.yml (extraire dans un workflow réutilisable)
+    uses: ./.github/workflows/build.yml
+
+  publish:
+    name: Publish to GitHub Packages
+    needs: build-native
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+          server-id: github
+
+      - name: Download all native libraries
+        uses: actions/download-artifact@v4
+        with:
+          pattern: native-lib-*
+          path: downloaded-natives
+          merge-multiple: false
+
+      - name: Organize native libraries
+        run: |
+          mkdir -p src/main/resources/native/{linux-x86_64,linux-aarch64,darwin-aarch64,windows-x86_64}
+          cp downloaded-natives/native-lib-linux-x86_64/*.so src/main/resources/native/linux-x86_64/
+          cp downloaded-natives/native-lib-linux-aarch64/*.so src/main/resources/native/linux-aarch64/
+          cp downloaded-natives/native-lib-darwin-aarch64/*.dylib src/main/resources/native/darwin-aarch64/
+          cp downloaded-natives/native-lib-windows-x86_64/*.dll src/main/resources/native/windows-x86_64/
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+
+      - name: Update pom.xml version
+        run: mvn versions:set -DnewVersion=${{ steps.version.outputs.VERSION }}
+
+      - name: Build and publish
+        run: mvn clean deploy -DskipRustBuild=true -DskipTests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228
+        with:
+          files: target/*.jar
+          generate_release_notes: true
