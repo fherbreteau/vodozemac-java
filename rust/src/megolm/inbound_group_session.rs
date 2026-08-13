@@ -10,7 +10,7 @@ use crate::errors::{
     throw_decode_error, throw_generic_error, throw_megolm_decryption_error, throw_pickle_error,
     throw_session_key_decode_error,
 };
-use crate::helpers::{megolm_session_config_from_version, wrap};
+use crate::helpers::{check_ptr, megolm_session_config_from_version, wrap};
 
 // Megolm: InboundGroupSession (wraps vodozemac::megolm::InboundGroupSession)
 // ============================================================================
@@ -40,6 +40,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const InboundGroupSession) };
 
         let session_id = session.session_id();
@@ -55,7 +56,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     _class: JClass,
     ptr: jlong,
 ) -> jint {
-    let outcome = env.with_env(|_env| -> Result<jint, jni::errors::Error> {
+    let outcome = env.with_env(|env| -> Result<jint, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const InboundGroupSession) };
 
         Ok(session.first_known_index() as jint)
@@ -71,6 +73,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     message: JString,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
         let message_str: String = message.to_string();
         let megolm_message =
@@ -101,6 +104,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const InboundGroupSession) };
 
         let pickle_data = session.pickle();
@@ -120,6 +124,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     key: JByteArray,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const InboundGroupSession) };
         let pickle = session.pickle();
         let key = wrap(env.convert_byte_array(key)?)?;
@@ -139,6 +144,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     index: jint,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
 
         let result = session.export_at(index as u32);
@@ -160,6 +166,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
 
         let result = session.export_at_first_known_index();
@@ -176,13 +183,28 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     ptr: jlong,
     index: jint,
 ) -> jboolean {
-    let outcome = env.with_env(|_env| -> Result<jboolean, jni::errors::Error> {
+    let outcome = env.with_env(|env| -> Result<jboolean, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
 
         let result = session.advance_to(index as u32);
         Ok(result as jboolean)
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+fn check_self_pointer(
+    env: &mut Env,
+    ptr: jlong,
+    other_ptr: jlong,
+) -> Result<(), jni::errors::Error> {
+    if ptr == other_ptr {
+        return Err(throw_generic_error(
+            env,
+            "Cannot compare a session with itself",
+        ));
+    }
+    Ok(())
 }
 
 #[unsafe(no_mangle)]
@@ -192,8 +214,11 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     ptr: jlong,
     other_ptr: jlong,
 ) -> jboolean {
-    let outcome = env.with_env(|_env| -> Result<jboolean, jni::errors::Error> {
+    let outcome = env.with_env(|env| -> Result<jboolean, jni::errors::Error> {
+        check_self_pointer(env, ptr, other_ptr)?;
+        check_ptr(env, ptr)?;
         let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
+        check_ptr(env, other_ptr)?;
         let other_session = unsafe { &mut *(other_ptr as *mut InboundGroupSession) };
 
         let result = session.connected(other_session);
@@ -228,7 +253,10 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     other_ptr: jlong,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_self_pointer(env, ptr, other_ptr)?;
+        check_ptr(env, ptr)?;
         let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
+        check_ptr(env, other_ptr)?;
         let other_session = unsafe { &mut *(other_ptr as *mut InboundGroupSession) };
 
         let result = session.compare(other_session);
@@ -247,7 +275,10 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     other_ptr: jlong,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_self_pointer(env, ptr, other_ptr)?;
+        check_ptr(env, ptr)?;
         let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
+        check_ptr(env, other_ptr)?;
         let other_session = unsafe { &mut *(other_ptr as *mut InboundGroupSession) };
 
         let result = session.merge(other_session);
@@ -269,13 +300,16 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeFree(
-    _env: EnvUnowned,
+    mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
 ) {
-    unsafe {
-        let _ = Box::from_raw(ptr as *mut InboundGroupSession);
-    }
+    let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
+        check_ptr(env, ptr)?;
+        let _ = unsafe { Box::from_raw(ptr as *mut InboundGroupSession) };
+        Ok(())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
 #[unsafe(no_mangle)]

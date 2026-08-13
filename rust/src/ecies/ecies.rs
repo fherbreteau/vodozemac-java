@@ -5,6 +5,7 @@ use vodozemac::Curve25519PublicKey;
 use vodozemac::ecies::{Ecies, InitialMessage};
 
 use crate::errors::{throw_ecies_error, throw_key_error};
+use crate::helpers::check_ptr;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeNew(
@@ -40,6 +41,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativePu
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let ecies = unsafe { &*(ptr as *const Ecies) };
 
         let public_key = ecies.public_key().to_base64();
@@ -58,11 +60,12 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeEs
     initial_plaintext: JByteArray,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        let ecies = unsafe { Box::from_raw(ptr as *mut Ecies) };
         let their_public_key_str = their_public_key.to_string();
         let their_public_key = Curve25519PublicKey::from_base64(&their_public_key_str)
             .map_err(|e| throw_key_error(env, e))?;
         let initial_plaintext = env.convert_byte_array(initial_plaintext)?;
+        check_ptr(env, ptr)?;
+        let ecies = unsafe { Box::from_raw(ptr as *mut Ecies) };
 
         let creation_result = ecies
             .establish_outbound_channel(their_public_key, &initial_plaintext)
@@ -92,9 +95,10 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeEs
     message: JString,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        let ecies = unsafe { Box::from_raw(ptr as *mut Ecies) };
         let message =
             InitialMessage::decode(&message.to_string()).map_err(|e| throw_ecies_error(env, e))?;
+        check_ptr(env, ptr)?;
+        let ecies = unsafe { Box::from_raw(ptr as *mut Ecies) };
 
         let creation_result = ecies
             .establish_inbound_channel(&message)
@@ -117,11 +121,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeEs
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeFree(
-    _env: EnvUnowned,
+    mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
 ) {
-    unsafe {
-        let _ = Box::from_raw(ptr as *mut Ecies);
-    }
+    let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
+        check_ptr(env, ptr)?;
+        let _ = unsafe { Box::from_raw(ptr as *mut Ecies) };
+        Ok(())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

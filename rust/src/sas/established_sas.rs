@@ -4,6 +4,7 @@ use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};
 use vodozemac::sas::{EstablishedSas, Mac, SasBytes};
 
 use crate::errors::{throw_generic_error, throw_invalid_count_error, throw_sas_error};
+use crate::helpers::check_ptr;
 
 fn to_decimal_array<'local>(
     env: &mut Env<'local>,
@@ -49,6 +50,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
     info: JString,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
         let info = info.to_string();
 
@@ -87,6 +89,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
     count: jint,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
         let info = info.to_string();
         let count = usize::try_from(count).map_err(|e| throw_generic_error(env, e))?;
@@ -110,6 +113,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
     info: JString,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
         let input = input.to_string();
         let info = info.to_string();
@@ -130,6 +134,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
     info: JString,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
         let input = input.to_string();
         let info = info.to_string();
@@ -151,6 +156,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
     mac: JString,
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
         let input = input.to_string();
         let info = info.to_string();
@@ -171,6 +177,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
 
         let our_public_key = established_sas.our_public_key().to_base64();
@@ -187,6 +194,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
 
         let their_public_key = established_sas.their_public_key().to_base64();
@@ -198,11 +206,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_nativeFree(
-    _env: EnvUnowned,
+    mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
 ) {
-    unsafe {
-        let _ = Box::from_raw(ptr as *mut EstablishedSas);
-    }
+    let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
+        check_ptr(env, ptr)?;
+        let _ = unsafe { Box::from_raw(ptr as *mut EstablishedSas) };
+        Ok(())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
