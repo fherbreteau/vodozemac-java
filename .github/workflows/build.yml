@@ -202,3 +202,31 @@ jobs:
       - name: Run tests
         run: mvn test -DskipRustBuild=true
         shell: bash
+
+  # ============================================
+  # JOB 4: Sonar code Analysis
+  # ============================================
+  quality:
+    if: ${{ github.repository == 'fherbreteau/vodozemac-java' }}
+    name: Sonar code analysis
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Run tests
+        run: mvn verify
+        shell: bash
+
+      - name: Sonar check with Maven
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
