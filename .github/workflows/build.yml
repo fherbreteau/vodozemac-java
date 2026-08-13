@@ -122,7 +122,7 @@ jobs:
 
       # Télécharge tous les artefacts natifs générés précédemment
       - name: Download all native libraries
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           pattern: native-lib-*
           path: downloaded-natives
@@ -194,7 +194,7 @@ jobs:
           cache: 'maven'
 
       - name: Download native library for this platform
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: ${{ matrix.native_artifact }}
           path: target/classes
