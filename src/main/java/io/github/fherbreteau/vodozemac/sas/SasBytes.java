@@ -37,7 +37,7 @@ public class SasBytes {
      * @return an array of 7 emoji indices
      */
     public int[] emojiIndices() {
-        return emojiIndices;
+        return emojiIndices.clone();
     }
 
     /**
@@ -47,7 +47,7 @@ public class SasBytes {
      * @return an array of three decimal strings
      */
     public String[] decimals() {
-        return decimals;
+        return decimals.clone();
     }
 
     /**
@@ -57,7 +57,7 @@ public class SasBytes {
      * @return an array of 6 raw bytes
      */
     public byte[] bytes() {
-        return rawBytes;
+        return rawBytes.clone();
     }
 
     @Override
