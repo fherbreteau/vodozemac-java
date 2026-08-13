@@ -34,7 +34,7 @@
         <resource-plugin.version>3.3.1</resource-plugin.version>
         <compiler-plugin.version>3.13.0</compiler-plugin.version>
         <surefire-plugin.version>3.2.5</surefire-plugin.version>
-        <jacoco.version>0.8.14</jacoco.version>
+        <jacoco.version>0.8.15</jacoco.version>
         <checkstyle-maven.version>3.6.0</checkstyle-maven.version>
         <checkstyle.version>13.4.2</checkstyle.version>
         <jar-plugin.version>3.4.1</jar-plugin.version>
