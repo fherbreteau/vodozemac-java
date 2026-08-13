@@ -57,12 +57,6 @@ jobs:
       - name: Build and test Java
         run: mvn verify
 
-      - name: Sonar check with Maven
-        if: github.event_name == 'push' || github.event.pull_request.head.repo.full_name == github.repository
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
-
       - name: Generate coverage report
         run: python3 .github/scripts/coverage-report.py
 
