@@ -11,6 +11,7 @@ import java.util.Objects;
  * visual key verification, as described in the
  * <a href="https://spec.matrix.org/unstable/client-server-api/#sas-method-emoji">Matrix spec</a>.
  *
+ * @author François HERBRETEAU
  * @see EstablishedSas#bytes(String)
  */
 public class SasBytes {

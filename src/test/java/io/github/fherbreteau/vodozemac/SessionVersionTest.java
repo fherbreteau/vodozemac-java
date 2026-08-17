@@ -46,7 +46,7 @@ class SessionVersionTest {
     @ParameterizedTest
     @MethodSource("testNumericValues")
     void testNumericValue(SessionVersion version, int expectedValue) {
-        assertThat(version.getValue())
+        assertThat(version.value())
                 .isEqualTo(expectedValue);
     }
 

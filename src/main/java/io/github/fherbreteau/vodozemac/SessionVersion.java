@@ -10,11 +10,11 @@ public interface SessionVersion {
      *
      * @return the version number (1 for V1, 2 for V2)
      */
-    int getValue();
+    int value();
 
     static <E extends Enum<E> & SessionVersion> E fromVersion(E[] values, int version, String label) {
         return Stream.of(values)
-            .filter(v -> version == v.getValue())
+            .filter(v -> version == v.value())
             .findFirst()
             .orElseThrow(() -> new ConversionException("unknown " + label + " " + version));
     }

@@ -28,7 +28,7 @@ public final class SampleOlm {
 
             // Generate 1 one-time key for Bob
             OneTimeKeyGenerationResult bobOneTimeKeys = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = bobOneTimeKeys.getCreated().iterator().next();
+            String bobOneTimeKey = bobOneTimeKeys.created().iterator().next();
 
             bobAccount.markKeysAsPublished();
 
@@ -46,10 +46,10 @@ public final class SampleOlm {
             }
 
             InboundCreationResult result = bobAccount.createInboundSession(aliceAccount.curve25519Key(), encrypted);
-            try (OlmSession inboundOlmSession = result.getSession()) {
+            try (OlmSession inboundOlmSession = result.session()) {
                 System.out.println("Bob  : Inbound olm session's session id: " + inboundOlmSession.sessionId());
 
-                System.out.println("Bob  : Received message: " + new String(result.getPlaintext(), StandardCharsets.UTF_8));
+                System.out.println("Bob  : Received message: " + new String(result.plaintext(), StandardCharsets.UTF_8));
 
                 String message = "Hello Alice";
 

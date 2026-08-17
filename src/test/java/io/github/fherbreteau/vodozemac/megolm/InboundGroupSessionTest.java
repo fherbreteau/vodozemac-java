@@ -665,4 +665,21 @@ class InboundGroupSessionTest {
                 .isInstanceOf(KeyException.class)
                 .hasMessageContaining("256-bit (32-byte)");
     }
+
+    @Test
+    void testDecryptedMessageEqualsHashCodeToString() {
+        DecryptedMessage msg = new DecryptedMessage(new byte[]{1, 2, 3}, 5);
+        DecryptedMessage same = new DecryptedMessage(new byte[]{1, 2, 3}, 5);
+        DecryptedMessage different = new DecryptedMessage(new byte[]{1, 2, 3}, 6);
+        DecryptedMessage different2 = new DecryptedMessage(new byte[]{4, 5, 6}, 5);
+
+        assertThat(msg).isEqualTo(msg)
+                .isEqualTo(same)
+                .hasSameHashCodeAs(same)
+                .isNotEqualTo(different)
+                .isNotEqualTo(different2)
+                .isNotEqualTo("not a message")
+                .isNotEqualTo(null);
+        assertThat(msg.toString()).contains("plaintext", "messageIndex");
+    }
 }

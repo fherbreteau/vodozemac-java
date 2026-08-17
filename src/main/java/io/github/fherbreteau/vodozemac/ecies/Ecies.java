@@ -1,7 +1,5 @@
 package io.github.fherbreteau.vodozemac.ecies;
 
-import java.io.Closeable;
-
 import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
 import io.github.fherbreteau.vodozemac.exception.EciesException;
@@ -26,11 +24,13 @@ import io.github.fherbreteau.vodozemac.exception.KeyException;
  * (MITM) attacks, an out-of-band confirmation is required after channel
  * establishment using the {@link CheckCode} facility.
  * <p>
- * This class implements {@link Closeable} and should be used in a
+ * This class implements {@link AutoCloseable} and should be used in a
  * try-with-resources block to ensure native resources are properly released.
  * Once a channel is established via {@link #establishOutboundChannel} or
  * {@link #establishInboundChannel}, this {@code Ecies} object is consumed and
  * can no longer be used.
+ *
+ * @author François HERBRETEAU
  */
 public final class Ecies extends NativeHandle {
     static {
@@ -120,7 +120,7 @@ public final class Ecies extends NativeHandle {
      * by the other side.
      * <p>
      * The initial message is obtained from
-     * {@link OutboundCreationResult#getInitialMessage()} and contains the
+     * {@link OutboundCreationResult#initialMessage()} and contains the
      * sender's ephemeral public key along with the ciphertext. After the
      * channel has been established, the returned {@link EstablishedEcies} can
      * be used to encrypt and decrypt further messages.
@@ -130,7 +130,7 @@ public final class Ecies extends NativeHandle {
      * resources are transferred to the returned {@code InboundCreationResult}.
      *
      * @param message the initial message received from the initiator,
-     *        as produced by {@link OutboundCreationResult#getInitialMessage()}
+     *        as produced by {@link OutboundCreationResult#initialMessage()}
      * @return an {@link InboundCreationResult} containing the established
      *         channel and the decrypted plaintext
      * @throws IllegalStateException if this {@code Ecies} has been closed or

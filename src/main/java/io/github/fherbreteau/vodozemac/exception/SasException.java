@@ -9,6 +9,8 @@ package io.github.fherbreteau.vodozemac.exception;
  *   <li>An invalid byte count requested during
  *       {@link io.github.fherbreteau.vodozemac.sas.EstablishedSas#bytesRaw}</li>
  * </ul>
+ *
+ * @author François HERBRETEAU
  */
 public class SasException extends VodozemacException {
 

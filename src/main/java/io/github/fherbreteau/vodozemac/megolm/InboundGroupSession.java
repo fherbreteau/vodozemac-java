@@ -20,6 +20,8 @@ import io.github.fherbreteau.vodozemac.exception.PickleException;
  * <p>
  * This class implements {@link AutoCloseable} and should be used in a
  * try-with-resources block to ensure native resources are properly released.
+ *
+ * @author François HERBRETEAU
  */
 public final class InboundGroupSession extends NativeHandle {
 
@@ -43,7 +45,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws io.github.fherbreteau.vodozemac.exception.VodozemacException if the session key is invalid
      */
     public InboundGroupSession(String sessionKey, MegolmSessionVersion version) {
-        super(nativeNew(sessionKey, version.getValue()));
+        super(nativeNew(sessionKey, version.value()));
     }
 
     private InboundGroupSession(long nativePtr) {
@@ -303,7 +305,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws io.github.fherbreteau.vodozemac.exception.KeyException if the session key is invalid
      */
     public static InboundGroupSession importSession(String sessionKey, MegolmSessionVersion version) {
-        long nativePtr = nativeImport(sessionKey, version.getValue());
+        long nativePtr = nativeImport(sessionKey, version.value());
         return new InboundGroupSession(nativePtr);
     }
 

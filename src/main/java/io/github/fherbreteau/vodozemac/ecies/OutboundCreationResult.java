@@ -1,5 +1,7 @@
 package io.github.fherbreteau.vodozemac.ecies;
 
+import java.util.Objects;
+
 /**
  * The result of an outbound ECIES channel establishment.
  * <p>
@@ -7,6 +9,7 @@ package io.github.fherbreteau.vodozemac.ecies;
  * and contains both the established channel and the initial message to send
  * to the recipient.
  *
+ * @author François HERBRETEAU
  * @see Ecies#establishOutboundChannel(String, byte[])
  */
 public class OutboundCreationResult implements AutoCloseable {
@@ -28,7 +31,7 @@ public class OutboundCreationResult implements AutoCloseable {
      *
      * @return the established ECIES channel
      */
-    public EstablishedEcies getEstablishedEcies() {
+    public EstablishedEcies establishedEcies() {
         return ecies;
     }
 
@@ -46,7 +49,7 @@ public class OutboundCreationResult implements AutoCloseable {
      *
      * @return the initial message string
      */
-    public String getInitialMessage() {
+    public String initialMessage() {
         return initialMessage;
     }
 
@@ -60,5 +63,25 @@ public class OutboundCreationResult implements AutoCloseable {
     @Override
     public void close() {
         ecies.close();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof OutboundCreationResult that)) {
+            return false;
+        }
+        return Objects.equals(initialMessage, that.initialMessage);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(initialMessage);
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+            " initialMessage='" + initialMessage + "'" +
+            "}";
     }
 }

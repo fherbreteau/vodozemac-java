@@ -37,7 +37,7 @@ public enum MessageType implements SessionVersion {
      * @return the type number (0 for {@link #PRE_KEY}, 1 for {@link #NORMAL})
      */
     @Override
-    public int getValue() {
+    public int value() {
         return value;
     }
 

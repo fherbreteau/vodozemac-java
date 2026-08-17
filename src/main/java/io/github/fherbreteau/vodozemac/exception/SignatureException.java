@@ -7,6 +7,8 @@ package io.github.fherbreteau.vodozemac.exception;
  * happen if the message was tampered with, or if the message is decrypted
  * with an inbound group session that does not match the outbound group
  * session that created it.
+ *
+ * @author François HERBRETEAU
  */
 public class SignatureException extends VodozemacException {
 

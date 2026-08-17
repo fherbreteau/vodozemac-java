@@ -6,6 +6,8 @@ package io.github.fherbreteau.vodozemac.exception;
  * This includes failures due to invalid MAC, invalid padding, or attempting
  * to decrypt a message whose index is before the session's first known index
  * (the message key has been discarded).
+ *
+ * @author François HERBRETEAU
  */
 public class DecryptionException extends VodozemacException {
 

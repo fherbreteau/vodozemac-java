@@ -14,6 +14,7 @@ package io.github.fherbreteau.vodozemac.exception;
  *       message, or a key mismatch</li>
  * </ul>
  *
+ * @author François HERBRETEAU
  * @see io.github.fherbreteau.vodozemac.ecies.Ecies
  * @see io.github.fherbreteau.vodozemac.ecies.EstablishedEcies
  */

@@ -31,9 +31,9 @@ class PkEncryptionTest {
             PkMessage encrypted = encryptor.encrypt(message.getBytes(UTF_8));
 
             assertThat(encrypted).isNotNull();
-            assertThat(encrypted).extracting(PkMessage::getCiphertext, STRING).isNotEmpty();
-            assertThat(encrypted).extracting(PkMessage::getMac, STRING).isNotEmpty();
-            assertThat(encrypted).extracting(PkMessage::getEphemeralKey, STRING).isNotEmpty();
+            assertThat(encrypted).extracting(PkMessage::ciphertext, STRING).isNotEmpty();
+            assertThat(encrypted).extracting(PkMessage::mac, STRING).isNotEmpty();
+            assertThat(encrypted).extracting(PkMessage::ephemeralKey, STRING).isNotEmpty();
 
             byte[] plaintext = decryptor.decrypt(encrypted);
             assertThat(plaintext).asString(UTF_8).isEqualTo(message);
@@ -91,5 +91,20 @@ class PkEncryptionTest {
                 .as("EncryptionException should be a VodozemacException")
                 .isInstanceOf(VodozemacException.class)
                 .hasMessage("encryption failed");
+    }
+
+    @Test
+    void testPkMessageEqualsHashCodeToString() {
+        PkMessage msg = new PkMessage("ct", "mac", "ek");
+        PkMessage same = new PkMessage("ct", "mac", "ek");
+        PkMessage different = new PkMessage("ct2", "mac", "ek");
+
+        assertThat(msg).isEqualTo(msg)
+                .isEqualTo(same)
+                .hasSameHashCodeAs(same)
+                .isNotEqualTo(different)
+                .isNotEqualTo("not a PkMessage")
+                .isNotEqualTo(null);
+        assertThat(msg.toString()).contains("ciphertext", "mac", "ephemeralKey");
     }
 }

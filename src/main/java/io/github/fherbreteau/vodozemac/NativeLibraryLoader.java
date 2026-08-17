@@ -20,6 +20,8 @@ import java.util.Set;
  * <p>
  * This class is used internally by the vodozemac bindings and should not be
  * called directly by application code.
+ *
+ * @author François HERBRETEAU
  */
 public final class NativeLibraryLoader {
 

@@ -1,5 +1,8 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 /**
  * A message successfully decrypted by an {@link InboundGroupSession}.
  * <p>
@@ -8,6 +11,7 @@ package io.github.fherbreteau.vodozemac.megolm;
  * index can be used to detect replay attacks — each plaintext message
  * should be encrypted with a unique message index per session.
  *
+ * @author François HERBRETEAU
  * @see InboundGroupSession#decrypt(String)
  */
 public class DecryptedMessage {
@@ -46,4 +50,25 @@ public class DecryptedMessage {
         return messageIndex;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof DecryptedMessage that)) {
+            return false;
+        }
+        return messageIndex == that.messageIndex
+                && Objects.deepEquals(plaintext, that.plaintext);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(Arrays.hashCode(plaintext), messageIndex);
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+            " plaintext='" + Arrays.toString(plaintext) + "'" +
+            ", messageIndex=" + messageIndex +
+            "}";
+    }
 }

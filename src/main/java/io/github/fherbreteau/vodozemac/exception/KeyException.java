@@ -10,6 +10,8 @@ package io.github.fherbreteau.vodozemac.exception;
  *   <li>Invalid Curve25519 or Ed25519 public key data</li>
  *   <li>Session key or exported session key decoding failures</li>
  * </ul>
+ *
+ * @author François HERBRETEAU
  */
 public class KeyException extends VodozemacException {
 

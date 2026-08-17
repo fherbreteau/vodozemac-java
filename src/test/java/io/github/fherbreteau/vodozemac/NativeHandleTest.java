@@ -31,7 +31,7 @@ class NativeHandleTest {
         try (Account aliceAccount = new Account();
                 Account bobAccount = new Account()) {
             OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = result.getCreated().iterator().next();
+            String bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             NativeHandle handle = aliceAccount.createOutboundSession(
@@ -107,7 +107,7 @@ class NativeHandleTest {
         Ecies bob = new Ecies();
         OutboundCreationResult result = alice.establishOutboundChannel(
                 bob.publicKey(), "plaintext".getBytes(UTF_8));
-        NativeHandle handle = result.getEstablishedEcies();
+        NativeHandle handle = result.establishedEcies();
         assertThat(handle.isClosed()).isFalse();
         handle.close();
         assertThat(handle.isClosed()).isTrue();

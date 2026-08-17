@@ -23,6 +23,10 @@ import io.github.fherbreteau.vodozemac.exception.KeyException;
  * A {@code PkEncryption} instance is created from the Curve25519 public key
  * of a {@link PkDecryption} object and can be used to encrypt messages that
  * only the corresponding {@code PkDecryption} can decrypt.
+ * <p>
+ * This class does not extend {@link io.github.fherbreteau.vodozemac.NativeHandle}
+ * because it holds no persistent native resource — it only stores the public
+ * key string and delegates each encryption call to the native layer.
  *
  * @author François HERBRETEAU
  * @see PkDecryption

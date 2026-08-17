@@ -1,6 +1,7 @@
 package io.github.fherbreteau.vodozemac.account;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Result of generating one-time keys on an {@link Account}.
@@ -13,6 +14,7 @@ import java.util.List;
  * This result contains both the newly created keys and the keys that were
  * discarded to make room.
  *
+ * @author François HERBRETEAU
  * @see Account#generateOneTimeKeys(long)
  */
 public class OneTimeKeyGenerationResult {
@@ -37,7 +39,7 @@ public class OneTimeKeyGenerationResult {
      *
      * @return a list of newly created one-time key strings
      */
-    public List<String> getCreated() {
+    public List<String> created() {
         return created;
     }
 
@@ -49,7 +51,29 @@ public class OneTimeKeyGenerationResult {
      *
      * @return a list of discarded one-time key strings
      */
-    public List<String> getRemoved() {
+    public List<String> removed() {
         return removed;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof OneTimeKeyGenerationResult that)) {
+            return false;
+        }
+        return Objects.equals(created, that.created)
+                && Objects.equals(removed, that.removed);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(created, removed);
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+            " created='" + created + "'" +
+            ", removed='" + removed + "'" +
+            "}";
     }
 }

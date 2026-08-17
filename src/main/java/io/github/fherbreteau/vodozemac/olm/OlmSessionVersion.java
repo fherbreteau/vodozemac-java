@@ -7,6 +7,8 @@ import io.github.fherbreteau.vodozemac.SessionVersion;
  * <p>
  * The session version determines the cryptographic configuration used
  * for encryption and MAC operations.
+ *
+ * @author François HERBRETEAU
  */
 public enum OlmSessionVersion implements SessionVersion {
     /** Version 1 — uses truncated MAC, compatible with the original libolm. */
@@ -26,7 +28,7 @@ public enum OlmSessionVersion implements SessionVersion {
      * @return the version number (1 for V1, 2 for V2)
      */
     @Override
-    public int getValue() {
+    public int value() {
         return value;
     }
 

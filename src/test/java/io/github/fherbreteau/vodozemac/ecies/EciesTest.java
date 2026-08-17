@@ -33,14 +33,14 @@ class EciesTest {
 
             OutboundCreationResult aliceResult = alice.establishOutboundChannel(bobPublicKey, PLAINTEXT);
             assertThat(aliceResult).isNotNull();
-            assertThat(aliceResult.getInitialMessage()).isNotNull().isNotEmpty();
+            assertThat(aliceResult.initialMessage()).isNotNull().isNotEmpty();
 
-            InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.getInitialMessage());
+            InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.initialMessage());
             assertThat(bobResult).isNotNull();
-            assertThat(bobResult.getPlaintext()).isEqualTo(PLAINTEXT);
+            assertThat(bobResult.plaintext()).isEqualTo(PLAINTEXT);
 
-            EstablishedEcies aliceEcies = aliceResult.getEstablishedEcies();
-            EstablishedEcies bobEcies = bobResult.getEstablishedEcies();
+            EstablishedEcies aliceEcies = aliceResult.establishedEcies();
+            EstablishedEcies bobEcies = bobResult.establishedEcies();
             assertThat(aliceEcies).isNotNull();
             assertThat(bobEcies).isNotNull();
         }
@@ -50,10 +50,10 @@ class EciesTest {
     void testEstablishedEciesEncryptDecrypt() {
         try (Ecies alice = new Ecies(); Ecies bob = new Ecies()) {
             try (OutboundCreationResult aliceResult = alice.establishOutboundChannel(bob.publicKey(), PLAINTEXT);
-                InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.getInitialMessage())) {
+                InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.initialMessage())) {
 
-                EstablishedEcies aliceEcies = aliceResult.getEstablishedEcies();
-                EstablishedEcies bobEcies = bobResult.getEstablishedEcies();
+                EstablishedEcies aliceEcies = aliceResult.establishedEcies();
+                EstablishedEcies bobEcies = bobResult.establishedEcies();
 
                 byte[] message = "Hello from Bob".getBytes(UTF_8);
                 String encrypted = bobEcies.encrypt(message);
@@ -74,10 +74,10 @@ class EciesTest {
     void testCheckCode() {
         try (Ecies alice = new Ecies(); Ecies bob = new Ecies()) {
             try (OutboundCreationResult aliceResult = alice.establishOutboundChannel(bob.publicKey(), PLAINTEXT);
-                InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.getInitialMessage())) {
+                InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.initialMessage())) {
 
-                EstablishedEcies aliceEcies = aliceResult.getEstablishedEcies();
-                EstablishedEcies bobEcies = bobResult.getEstablishedEcies();
+                EstablishedEcies aliceEcies = aliceResult.establishedEcies();
+                EstablishedEcies bobEcies = bobResult.establishedEcies();
 
                 CheckCode aliceCode = aliceEcies.checkCode();
                 CheckCode bobCode = bobEcies.checkCode();
@@ -99,11 +99,11 @@ class EciesTest {
             assertThat(bob.publicKey()).isNotNull().isNotEmpty();
 
             try (OutboundCreationResult aliceResult = alice.establishOutboundChannel(bob.publicKey(), PLAINTEXT);
-                InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.getInitialMessage())) {
-                assertThat(bobResult.getPlaintext()).isEqualTo(PLAINTEXT);
+                InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.initialMessage())) {
+                assertThat(bobResult.plaintext()).isEqualTo(PLAINTEXT);
 
-                EstablishedEcies aliceEcies = aliceResult.getEstablishedEcies();
-                EstablishedEcies bobEcies = bobResult.getEstablishedEcies();
+                EstablishedEcies aliceEcies = aliceResult.establishedEcies();
+                EstablishedEcies bobEcies = bobResult.establishedEcies();
 
                 CheckCode aliceCode = aliceEcies.checkCode();
                 CheckCode bobCode = bobEcies.checkCode();
@@ -123,10 +123,10 @@ class EciesTest {
             String bobPublicKey = bob.publicKey();
 
             try (OutboundCreationResult aliceResult = alice.establishOutboundChannel(bobPublicKey, PLAINTEXT);
-                InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.getInitialMessage())) {
+                InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.initialMessage())) {
 
-                EstablishedEcies aliceEcies = aliceResult.getEstablishedEcies();
-                EstablishedEcies bobEcies = bobResult.getEstablishedEcies();
+                EstablishedEcies aliceEcies = aliceResult.establishedEcies();
+                EstablishedEcies bobEcies = bobResult.establishedEcies();
 
                 assertThat(aliceEcies.publicKey()).isNotNull().isNotEmpty();
                 assertThat(bobEcies.publicKey()).isNotNull().isNotEmpty().isEqualTo(bobPublicKey);
@@ -153,12 +153,12 @@ class EciesTest {
     void testResultGettersReturnCorrectValues() {
         try (Ecies alice = new Ecies(); Ecies bob = new Ecies()) {
             OutboundCreationResult result = alice.establishOutboundChannel(bob.publicKey(), PLAINTEXT);
-            assertThat(result.getInitialMessage()).isNotNull().isNotEmpty();
-            assertThat(result.getEstablishedEcies()).isNotNull();
+            assertThat(result.initialMessage()).isNotNull().isNotEmpty();
+            assertThat(result.establishedEcies()).isNotNull();
 
-            try (InboundCreationResult inboundResult = bob.establishInboundChannel(result.getInitialMessage())) {
-                assertThat(inboundResult.getPlaintext()).isEqualTo(PLAINTEXT);
-                assertThat(inboundResult.getEstablishedEcies()).isNotNull();
+            try (InboundCreationResult inboundResult = bob.establishInboundChannel(result.initialMessage())) {
+                assertThat(inboundResult.plaintext()).isEqualTo(PLAINTEXT);
+                assertThat(inboundResult.establishedEcies()).isNotNull();
             }
         }
     }
@@ -194,10 +194,10 @@ class EciesTest {
     void testEstablishedEciesClose() {
         try (Ecies alice = new Ecies(); Ecies bob = new Ecies()) {
             try (OutboundCreationResult aliceResult = alice.establishOutboundChannel(bob.publicKey(), PLAINTEXT);
-                InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.getInitialMessage())) {
+                InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.initialMessage())) {
 
-                EstablishedEcies aliceEcies = aliceResult.getEstablishedEcies();
-                EstablishedEcies bobEcies = bobResult.getEstablishedEcies();
+                EstablishedEcies aliceEcies = aliceResult.establishedEcies();
+                EstablishedEcies bobEcies = bobResult.establishedEcies();
 
                 aliceEcies.close();
 
@@ -216,13 +216,43 @@ class EciesTest {
     void testEstablishedEciesUseAfterClose() {
         try (Ecies alice = new Ecies(); Ecies bob = new Ecies()) {
             OutboundCreationResult aliceResult = alice.establishOutboundChannel(bob.publicKey(), PLAINTEXT);
-            bob.establishInboundChannel(aliceResult.getInitialMessage());
+            bob.establishInboundChannel(aliceResult.initialMessage());
 
-            EstablishedEcies aliceEcies = aliceResult.getEstablishedEcies();
+            EstablishedEcies aliceEcies = aliceResult.establishedEcies();
             aliceEcies.close();
             assertThatThrownBy(aliceEcies::publicKey)
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("EstablishedEcies has been closed");
         }
+    }
+
+    @Test
+    void testInboundCreationResultEqualsHashCodeToString() {
+        InboundCreationResult result = new InboundCreationResult(0L, PLAINTEXT);
+        InboundCreationResult same = new InboundCreationResult(0L, PLAINTEXT);
+        InboundCreationResult different = new InboundCreationResult(0L, "different".getBytes(UTF_8));
+
+        assertThat(result).isEqualTo(result)
+                .isEqualTo(same)
+                .hasSameHashCodeAs(same)
+                .isNotEqualTo(different)
+                .isNotEqualTo("not a result")
+                .isNotEqualTo(null);
+        assertThat(result.toString()).contains("plaintext");
+    }
+
+    @Test
+    void testOutboundCreationResultEqualsHashCodeToString() {
+        OutboundCreationResult result = new OutboundCreationResult(0L, "msg");
+        OutboundCreationResult same = new OutboundCreationResult(0L, "msg");
+        OutboundCreationResult different = new OutboundCreationResult(0L, "other");
+
+        assertThat(result).isEqualTo(result)
+                .isEqualTo(same)
+                .hasSameHashCodeAs(same)
+                .isNotEqualTo(different)
+                .isNotEqualTo("not a result")
+                .isNotEqualTo(null);
+        assertThat(result.toString()).contains("initialMessage");
     }
 }

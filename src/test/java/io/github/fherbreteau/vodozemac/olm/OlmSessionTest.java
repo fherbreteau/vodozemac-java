@@ -25,10 +25,10 @@ class OlmSessionTest {
 
             // Bob generates a one-time key
             OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            assertThat(result.getCreated())
+            assertThat(result.created())
                     .as("Bob should generate one-time keys")
                     .isNotEmpty();
-            String bobOneTimeKey = result.getCreated().iterator().next();
+            String bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             // Alice creates an outbound session with Bob
@@ -70,11 +70,11 @@ class OlmSessionTest {
                 assertThat(encrypted)
                         .as("Encrypted message should be a Pre-Key Message")
                         .isNotNull()
-                        .extracting(OlmMessage::getType)
+                        .extracting(OlmMessage::type)
                         .isEqualTo(MessageType.PRE_KEY);
                 assertThat(encrypted)
                         .as("Encrypted message' body should not be null nor empty")
-                        .extracting(OlmMessage::getBody, STRING)
+                        .extracting(OlmMessage::body, STRING)
                         .isNotEmpty()
                         .isBase64();
 
@@ -86,11 +86,11 @@ class OlmSessionTest {
                         .as("Inbound creation result should not be null")
                         .isNotNull();
 
-                assertThat(new String(inboundResult.getPlaintext(), StandardCharsets.UTF_8))
+                assertThat(new String(inboundResult.plaintext(), StandardCharsets.UTF_8))
                         .as("Bob should decrypt the original message")
                         .isEqualTo(plaintext);
 
-                try (OlmSession inboundSession = inboundResult.getSession()) {
+                try (OlmSession inboundSession = inboundResult.session()) {
                     assertThat(inboundSession.sessionId())
                             .as("Inbound and outbound session IDs should match")
                             .isEqualTo(outboundSession.sessionId());
@@ -105,11 +105,11 @@ class OlmSessionTest {
                     assertThat(encryptedReply)
                             .as("Encrypted message should be a normal OlmMessage")
                             .isNotNull()
-                            .extracting(OlmMessage::getType)
+                            .extracting(OlmMessage::type)
                             .isEqualTo(MessageType.NORMAL);
                     assertThat(encryptedReply)
                             .as("Encrypted message' body should not be null nor empty")
-                            .extracting(OlmMessage::getBody, STRING)
+                            .extracting(OlmMessage::body, STRING)
                             .isNotEmpty()
                             .isBase64();
 
@@ -133,7 +133,7 @@ class OlmSessionTest {
                 Account bobAccount = new Account()) {
 
             OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = result.getCreated().iterator().next();
+            String bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             String pickleData;
@@ -165,7 +165,7 @@ class OlmSessionTest {
                 Account bobAccount = new Account()) {
 
             OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = result.getCreated().iterator().next();
+            String bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             byte[] key = new byte[32];
@@ -198,7 +198,7 @@ class OlmSessionTest {
                 Account bobAccount = new Account()) {
 
             OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = result.getCreated().iterator().next();
+            String bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             try (OlmSession session = aliceAccount.createOutboundSession(
@@ -228,7 +228,7 @@ class OlmSessionTest {
                 Account bobAccount = new Account()) {
 
             OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = result.getCreated().iterator().next();
+            String bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             OlmSession session = aliceAccount.createOutboundSession(
@@ -273,7 +273,7 @@ class OlmSessionTest {
                 Account bobAccount = new Account()) {
 
             OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = result.getCreated().iterator().next();
+            String bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             try (OlmSession outboundSession = aliceAccount.createOutboundSession(
@@ -294,5 +294,43 @@ class OlmSessionTest {
         assertThatThrownBy(() -> MessageType.fromValue(-1))
                 .isInstanceOf(VodozemacException.class)
                 .hasMessage("unknown message type -1");
+    }
+
+    @Test
+    void testSessionKeysEqualsHashCodeToString() {
+        SessionKeys keys = new SessionKeys("sid", "ik", "bk", "ok");
+        SessionKeys same = new SessionKeys("sid", "ik", "bk", "ok");
+        SessionKeys different = new SessionKeys("sid2", "ik", "bk", "ok");
+
+        assertThat(keys).isEqualTo(keys)
+                .isEqualTo(same)
+                .hasSameHashCodeAs(same)
+                .isNotEqualTo(different)
+                .isNotEqualTo("not SessionKeys")
+                .isNotEqualTo(null);
+        assertThat(keys.toString()).contains("sessionId", "identityKey", "baseKey", "oneTimeKey");
+    }
+
+    @Test
+    void testInboundCreationResultEqualsHashCodeToString() {
+        try (Account aliceAccount = new Account();
+                Account bobAccount = new Account()) {
+            OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
+            String bobOneTimeKey = result.created().iterator().next();
+            bobAccount.markKeysAsPublished();
+
+            try (OlmSession session = aliceAccount.createOutboundSession(
+                    bobAccount.curve25519Key(), bobOneTimeKey)) {
+                OlmMessage encrypted = session.encrypt("Hello".getBytes(StandardCharsets.UTF_8));
+                InboundCreationResult inbound = bobAccount.createInboundSession(
+                        aliceAccount.curve25519Key(), encrypted);
+
+                assertThat(inbound).isEqualTo(inbound)
+                        .isNotEqualTo("not a result")
+                        .isNotEqualTo(null);
+                assertThat(inbound.toString()).contains("plaintext");
+                assertThat(inbound.hashCode()).isNotZero();
+            }
+        }
     }
 }
