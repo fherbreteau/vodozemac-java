@@ -1,6 +1,8 @@
 use jni::EnvUnowned;
 use jni::objects::{JByteArray, JClass, JString};
-use jni::sys::{jint, jlong, jstring};
+use jni::sys::{jint, jlong, jobject, jstring};
+use jni::{JValue, jni_sig, jni_str};
+use vodozemac::base64_encode;
 use vodozemac::megolm::{GroupSession, GroupSessionPickle};
 
 use crate::errors::throw_pickle_error;
@@ -96,14 +98,30 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     _class: JClass,
     ptr: jlong,
     plaintext: JByteArray,
-) -> jstring {
-    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+) -> jobject {
+    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         check_ptr(env, ptr)?;
         let session = unsafe { &mut *(ptr as *mut GroupSession) };
         let plaintext_bytes = env.convert_byte_array(&plaintext)?;
 
-        let message = session.encrypt(&plaintext_bytes).to_base64();
-        let result = env.new_string(message)?;
+        let message = session.encrypt(&plaintext_bytes);
+        let base64 = message.to_base64();
+        let ciphertext = env.new_string(base64_encode(message.ciphertext()))?;
+        let mac = env.new_string(base64_encode(message.mac()))?;
+        let signature = env.new_string(message.signature().to_base64())?;
+        let wire_base64 = env.new_string(base64)?;
+
+        let result = env.new_object(
+            jni_str!("io/github/fherbreteau/vodozemac/megolm/MegolmMessage"),
+            jni_sig!((base64: java.lang.String, ciphertext: java.lang.String, messageIndex: int, mac: java.lang.String, signature: java.lang.String) -> void),
+            &[
+                JValue::Object(&wire_base64.into()),
+                JValue::Object(&ciphertext.into()),
+                JValue::Int(message.message_index() as jint),
+                JValue::Object(&mac.into()),
+                JValue::Object(&signature.into()),
+            ],
+        )?;
         Ok(result.into_raw())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
