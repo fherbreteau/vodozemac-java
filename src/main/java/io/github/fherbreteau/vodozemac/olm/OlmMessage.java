@@ -65,6 +65,6 @@ public class OlmMessage {
         String pattern = """
                 {"body":"%s","type":%d}
                 """;
-        return String.format(pattern, body, type.value());
+        return String.format(pattern, body, type.getValue());
     }
 }

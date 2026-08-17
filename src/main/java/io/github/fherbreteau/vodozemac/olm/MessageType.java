@@ -1,8 +1,6 @@
 package io.github.fherbreteau.vodozemac.olm;
 
-import java.util.stream.Stream;
-
-import io.github.fherbreteau.vodozemac.exception.ConversionException;
+import io.github.fherbreteau.vodozemac.SessionVersion;
 
 /**
  * Represents the type of an Olm message.
@@ -21,7 +19,7 @@ import io.github.fherbreteau.vodozemac.exception.ConversionException;
  * @author François HERBRETEAU
  * @see OlmMessage
  */
-public enum MessageType {
+public enum MessageType implements SessionVersion {
     /** A pre-key message (type 0), used to establish a new Olm session. */
     PRE_KEY(0),
     /** A normal message (type 1), sent over an already-established Olm session. */
@@ -38,7 +36,8 @@ public enum MessageType {
      *
      * @return the type number (0 for {@link #PRE_KEY}, 1 for {@link #NORMAL})
      */
-    public int value() {
+    @Override
+    public int getValue() {
         return value;
     }
 
@@ -47,12 +46,9 @@ public enum MessageType {
      *
      * @param type the numeric message type (0 for pre-key, 1 for normal)
      * @return the associated {@code MessageType}
-     * @throws VodozemacException if no message type matches the given value
+     * @throws io.github.fherbreteau.vodozemac.exception.VodozemacException if no message type matches the given value
      */
     public static MessageType fromValue(int type) {
-        return Stream.of(values())
-            .filter(t -> t.value == type)
-            .findFirst()
-            .orElseThrow(() -> new ConversionException("unknown message type " + type));
+        return SessionVersion.fromVersion(values(), type, "message type");
     }
 }

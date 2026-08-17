@@ -1,8 +1,6 @@
 package io.github.fherbreteau.vodozemac.olm;
 
-import java.util.stream.Stream;
-
-import io.github.fherbreteau.vodozemac.exception.ConversionException;
+import io.github.fherbreteau.vodozemac.SessionVersion;
 
 /**
  * Represents the version of the Olm session protocol to use.
@@ -10,7 +8,7 @@ import io.github.fherbreteau.vodozemac.exception.ConversionException;
  * The session version determines the cryptographic configuration used
  * for encryption and MAC operations.
  */
-public enum OlmSessionVersion {
+public enum OlmSessionVersion implements SessionVersion {
     /** Version 1 — uses truncated MAC, compatible with the original libolm. */
     V1(1),
     /** Version 2 — uses full-length MAC for stronger integrity protection. */
@@ -27,6 +25,7 @@ public enum OlmSessionVersion {
      *
      * @return the version number (1 for V1, 2 for V2)
      */
+    @Override
     public int getValue() {
         return value;
     }
@@ -48,9 +47,6 @@ public enum OlmSessionVersion {
      * @throws io.github.fherbreteau.vodozemac.exception.VodozemacException if no version matches the given value
      */
     public static OlmSessionVersion fromVersion(int version) {
-        return Stream.of(values())
-            .filter(v -> version == v.value)
-            .findFirst()
-            .orElseThrow(() -> new ConversionException("unknown version " + version));
+        return SessionVersion.fromVersion(values(), version, "version");
     }
 }
