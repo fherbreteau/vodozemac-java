@@ -179,7 +179,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @return {@code true} if the sessions are connected, {@code false} otherwise
      * @throws IllegalStateException if either session has been closed
      */
-    boolean connected(InboundGroupSession other) {
+    public boolean connected(InboundGroupSession other) {
         checkNotClosed();
         other.checkNotClosed();
         return nativeConnected(nativePtr, other.nativePtr);
@@ -196,7 +196,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @return the ordering relationship between the two sessions
      * @throws IllegalStateException if either session has been closed
      */
-    SessionOrdering compare(InboundGroupSession other) {
+    public SessionOrdering compare(InboundGroupSession other) {
         checkNotClosed();
         other.checkNotClosed();
         return nativeCompare(nativePtr, other.nativePtr);
@@ -217,7 +217,7 @@ public final class InboundGroupSession extends NativeHandle {
      *         are not connected
      * @throws IllegalStateException if either session has been closed
      */
-    Optional<InboundGroupSession> merge(InboundGroupSession other) {
+    public Optional<InboundGroupSession> merge(InboundGroupSession other) {
         checkNotClosed();
         other.checkNotClosed();
         Long result = nativeMerge(nativePtr, other.nativePtr);
@@ -265,6 +265,25 @@ public final class InboundGroupSession extends NativeHandle {
     public static InboundGroupSession unpickleLegacy(String pickleData, byte[] pickleKey) {
         long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
         return new InboundGroupSession(nativePtr);
+    }
+
+    /**
+     * Creates a new {@code InboundGroupSession} from an exported session key with the default version.
+     * <p>
+     * An exported session key can be obtained from another recipient's
+     * {@link InboundGroupSession} using {@link #exportAt(int)} or
+     * {@link #exportAtFirstKnownIndex()}.
+     * <p>
+     * <b>Warning</b>: Extra care is required to ensure the authenticity of
+     * the session, because an exported session key does not include the
+     * signature of the original outbound group session creator.
+     *
+     * @param sessionKey the base64-encoded exported session key
+     * @return a new {@code InboundGroupSession}
+     * @throws io.github.fherbreteau.vodozemac.exception.KeyException if the session key is invalid
+     */
+    public static InboundGroupSession importSession(String sessionKey) {
+        return importSession(sessionKey, MegolmSessionVersion.defaultVersion());
     }
 
     /**
