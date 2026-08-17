@@ -116,13 +116,13 @@ public final class OutboundGroupSession extends NativeHandle {
      * Encrypts the given plaintext with the group session.
      * <p>
      * The resulting ciphertext is MAC-ed, signed with the group session's
-     * Ed25519 key pair, and base64-encoded.
+     * Ed25519 key pair, and returned as a structured {@link MegolmMessage}.
      *
      * @param plainText the plaintext to encrypt
-     * @return the encrypted message as a base64 string
+     * @return the encrypted message as a {@link MegolmMessage}
      * @throws IllegalStateException if this session has been closed
      */
-    public String encrypt(byte[] plainText) {
+    public MegolmMessage encrypt(byte[] plainText) {
         checkNotClosed();
         return nativeEncrypt(nativePtr, plainText);
     }
@@ -206,7 +206,7 @@ public final class OutboundGroupSession extends NativeHandle {
 
     private native int nativeSessionConfig(long ptr);
 
-    private native String nativeEncrypt(long ptr, byte[] plaintext);
+    private native MegolmMessage nativeEncrypt(long ptr, byte[] plaintext);
 
     private native String nativePickle(long ptr);
 
