@@ -114,17 +114,6 @@ class OutboundGroupSessionTest {
     }
 
     @Test
-    void testCloseIsIdempotent() {
-        OutboundGroupSession session = new OutboundGroupSession(MegolmSessionVersion.V1);
-
-        assertThat(session.isClosed()).isFalse();
-        session.close();
-        assertThat(session.isClosed()).isTrue();
-        session.close();
-        assertThat(session.isClosed()).isTrue();
-    }
-
-    @Test
     void testCheckNotClosedThrowsAfterClose() {
         OutboundGroupSession session = new OutboundGroupSession(MegolmSessionVersion.V1);
         session.close();

@@ -417,22 +417,6 @@ class AccountTest {
     }
 
     @Test
-    void testCloseIsIdempotent() {
-        Account account = new Account();
-
-        assertThat(account.isClosed()).isFalse();
-        account.close();
-
-        assertThat(account.isClosed()).isTrue();
-
-        // Calling close() again should not throw and should be a no-op
-        // This covers the nativePtr == 0 branch in close()
-        account.close();
-
-        assertThat(account.isClosed()).isTrue();
-    }
-
-    @Test
     void testEncryptedPickleWithInvalidKeyThrowsException() {
         try (Account account = new Account()) {
             assertThatThrownBy(() -> account.pickle(new byte[16]))

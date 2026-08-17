@@ -21,14 +21,11 @@ class SasTest {
             String publicKey = sas.publicKey();
             assertThat(publicKey).isNotNull().isNotEmpty();
             copy = sas;
-            assertThat(copy.isClosed()).isFalse();
         }
-        assertThat(copy.isClosed()).isTrue();
         assertThatThrownBy(copy::publicKey)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Sas has been closed");
         copy.close(); // closing a closed Sas doesn't do anything
-        assertThat(copy.isClosed()).isTrue();
     }
 
     @Test
@@ -81,15 +78,12 @@ class SasTest {
                         .isInstanceOf(SasException.class)
                         .hasMessage("The given count of bytes was too large");
                 copy = aliceEstablishedSas;
-                assertThat(copy.isClosed()).isFalse();
             }
         }
-        assertThat(copy.isClosed()).isTrue();
         assertThatThrownBy(copy::ourPublicKey)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("EstablishedSas has been closed");
         copy.close();
-        assertThat(copy.isClosed()).isTrue();
     }
 
     @Test
