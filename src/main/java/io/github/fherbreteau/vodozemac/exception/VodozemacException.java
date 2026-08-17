@@ -16,7 +16,17 @@ public class VodozemacException extends RuntimeException {
      *
      * @param message the detail message
      */
-    public VodozemacException(String message) {
+    protected VodozemacException(String message) {
         super(message);
+    }
+
+    /**
+     * Constructs a new {@code VodozemacException} with the specified detail message and a cause.
+     *
+     * @param message the detail message
+     * @param cause the cause
+     */
+    protected VodozemacException(String message, Throwable cause) {
+        super(message, cause);
     }
 }

@@ -17,4 +17,14 @@ public class EncryptionException extends VodozemacException {
     public EncryptionException(String message) {
         super(message);
     }
+
+    /**
+     * Constructs a new {@code EncryptionException} with the specified detail message and a cause.
+     *
+     * @param message the detail message
+     * @param cause the cause
+     */
+    public EncryptionException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

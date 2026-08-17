@@ -8,7 +8,6 @@ import io.github.fherbreteau.vodozemac.ecies.Ecies;
 import io.github.fherbreteau.vodozemac.ecies.EstablishedEcies;
 import io.github.fherbreteau.vodozemac.ecies.InboundCreationResult;
 import io.github.fherbreteau.vodozemac.ecies.OutboundCreationResult;
-import io.github.fherbreteau.vodozemac.exception.VodozemacException;
 
 public final class SampleEcies {
 
@@ -36,7 +35,7 @@ public final class SampleEcies {
             EstablishedEcies bobEcies = bobResult.getEstablishedEcies();
 
             if (!aliceEcies.checkCode().equals(bobEcies.checkCode())) {
-                throw new VodozemacException("The check code must match; possible active MITM attack in progress");
+                throw new IllegalStateException("The check code must match; possible active MITM attack in progress");
             }
 
             plaintext = "Another plaintext".getBytes(UTF_8);

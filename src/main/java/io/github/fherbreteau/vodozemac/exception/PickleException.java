@@ -21,4 +21,14 @@ public class PickleException extends VodozemacException {
     public PickleException(String message) {
         super(message);
     }
+
+    /**
+     * Constructs a new {@code PickleException} with the specified detail message and a cause.
+     *
+     * @param message the detail message
+     * @param cause the cause
+     */
+    public PickleException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }
