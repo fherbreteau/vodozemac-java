@@ -37,7 +37,7 @@
         <jacoco.version>0.8.15</jacoco.version>
         <checkstyle-maven.version>3.6.0</checkstyle-maven.version>
         <checkstyle.version>13.10.0</checkstyle.version>
-        <jar-plugin.version>3.4.1</jar-plugin.version>
+        <jar-plugin.version>3.5.1</jar-plugin.version>
         <clean-plugin.version>3.5.0</clean-plugin.version>
         <sonar.version>5.7.0.6970</sonar.version>
         <git-commit-id.version>10.0.0</git-commit-id.version>
