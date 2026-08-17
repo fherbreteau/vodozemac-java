@@ -8,6 +8,7 @@ import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.exception.DecryptionException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
+import io.github.fherbreteau.vodozemac.exception.SignatureException;
 
 /**
  * A Megolm inbound group session represents a single receiving participant
