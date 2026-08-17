@@ -36,7 +36,7 @@ import io.github.fherbreteau.vodozemac.exception.PickleException;
  * This class implements {@link AutoCloseable} and should be used in a
  * try-with-resources block to ensure native resources are properly released.
  */
-public class OlmSession extends NativeHandle {
+public final class OlmSession extends NativeHandle {
 
     OlmSession(long nativePtr) {
         super(nativePtr);

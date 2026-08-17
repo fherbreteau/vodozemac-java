@@ -19,7 +19,7 @@ public class DehydratedDeviceResult {
      * @param ciphertext the encrypted dehydrated device, as a base64-encoded string
      * @param nonce      the nonce used for encryption, as a base64-encoded string
      */
-    public DehydratedDeviceResult(String ciphertext, String nonce) {
+    DehydratedDeviceResult(String ciphertext, String nonce) {
         this.ciphertext = ciphertext;
         this.nonce = nonce;
     }

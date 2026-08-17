@@ -27,7 +27,7 @@ import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
  *
  * @author François HERBRETEAU
  */
-public class Account extends NativeHandle {
+public final class Account extends NativeHandle {
     static {
         NativeLibraryLoader.loadLibrary();
     }

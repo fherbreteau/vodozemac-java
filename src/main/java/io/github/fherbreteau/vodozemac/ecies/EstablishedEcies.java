@@ -26,7 +26,7 @@ import io.github.fherbreteau.vodozemac.exception.EciesException;
  * This class implements {@link AutoCloseable} and should be used in a
  * try-with-resources block to ensure native resources are properly released.
  */
-public class EstablishedEcies extends NativeHandle {
+public final class EstablishedEcies extends NativeHandle {
 
     EstablishedEcies(long nativePtr) {
         super(nativePtr);

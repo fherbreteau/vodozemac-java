@@ -21,7 +21,7 @@ import io.github.fherbreteau.vodozemac.exception.PickleException;
  * This class implements {@link AutoCloseable} and should be used in a
  * try-with-resources block to ensure native resources are properly released.
  */
-public class InboundGroupSession extends NativeHandle {
+public final class InboundGroupSession extends NativeHandle {
 
     /**
      * Creates a new inbound group session from a session key received over
