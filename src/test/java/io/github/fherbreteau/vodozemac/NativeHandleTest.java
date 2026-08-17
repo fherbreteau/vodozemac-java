@@ -7,13 +7,10 @@ import io.github.fherbreteau.vodozemac.account.Account;
 import io.github.fherbreteau.vodozemac.account.OneTimeKeyGenerationResult;
 import io.github.fherbreteau.vodozemac.backup.PkDecryption;
 import io.github.fherbreteau.vodozemac.ecies.Ecies;
-import io.github.fherbreteau.vodozemac.ecies.EstablishedEcies;
 import io.github.fherbreteau.vodozemac.ecies.OutboundCreationResult;
 import io.github.fherbreteau.vodozemac.megolm.InboundGroupSession;
 import io.github.fherbreteau.vodozemac.megolm.OutboundGroupSession;
-import io.github.fherbreteau.vodozemac.olm.OlmSession;
 import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
-import io.github.fherbreteau.vodozemac.sas.EstablishedSas;
 import io.github.fherbreteau.vodozemac.sas.Sas;
 import org.junit.jupiter.api.Test;
 
@@ -116,6 +113,8 @@ class NativeHandleTest {
         assertThat(handle.isClosed()).isTrue();
         handle.close();
         assertThat(handle.isClosed()).isTrue();
+        alice.close();
+        bob.close();
     }
 
     @Test
