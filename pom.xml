@@ -54,6 +54,9 @@
             **/NativeLibraryLoader.java
         </sonar.coverage.exclusions>
 
+        <!-- Reproducible Builds configuration-->
+        <project.build.outputTimestamp>${git.commit.time}</project.build.outputTimestamp>
+
     </properties>
 
     <!-- Profils pour gérer les différentes plateformes -->
@@ -241,6 +244,22 @@
             </plugins>
         </pluginManagement>
         <plugins>
+            <plugin>
+                <groupId>io.github.git-commit-id</groupId>
+                <artifactId>git-commit-id-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>get-the-git-infos</id>
+                        <goals>
+                            <goal>revision</goal>
+                        </goals>
+                        <phase>initialize</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <dateFormatTimeZone>UTC</dateFormatTimeZone>
+                </configuration>
+            </plugin>
             <!-- Plugin pour compiler Rust via Cargo -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
