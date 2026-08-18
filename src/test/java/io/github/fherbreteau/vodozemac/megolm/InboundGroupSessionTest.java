@@ -127,22 +127,6 @@ class InboundGroupSessionTest {
     }
 
     @Test
-    void testCloseIsIdempotent() {
-        String sessionKey;
-        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V1)) {
-            sessionKey = outbound.sessionKey();
-        }
-
-        InboundGroupSession inbound = new InboundGroupSession(sessionKey, MegolmSessionVersion.V1);
-
-        assertThat(inbound.isClosed()).isFalse();
-        inbound.close();
-        assertThat(inbound.isClosed()).isTrue();
-        inbound.close();
-        assertThat(inbound.isClosed()).isTrue();
-    }
-
-    @Test
     void testCheckNotClosedThrowsAfterClose() {
         String sessionKey;
         try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V1)) {
@@ -255,15 +239,15 @@ class InboundGroupSessionTest {
     void testImportSession() {
         String sessionKey;
         String sessionId;
-        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+        try (OutboundGroupSession outbound = new OutboundGroupSession()) {
             sessionKey = outbound.sessionKey();
             sessionId = outbound.sessionId();
         }
 
-        try (InboundGroupSession inbound = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+        try (InboundGroupSession inbound = new InboundGroupSession(sessionKey)) {
             String exportedKey = inbound.exportAt(10);
 
-            try (InboundGroupSession imported = InboundGroupSession.importSession(exportedKey, MegolmSessionVersion.V2)) {
+            try (InboundGroupSession imported = InboundGroupSession.importSession(exportedKey)) {
                 assertThat(imported)
                         .as("Imported session should be created")
                         .isNotNull();

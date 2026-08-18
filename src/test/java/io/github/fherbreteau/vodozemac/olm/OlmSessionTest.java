@@ -233,11 +233,8 @@ class OlmSessionTest {
 
             OlmSession session = aliceAccount.createOutboundSession(
                     OlmSessionVersion.V2, bobAccount.curve25519Key(), bobOneTimeKey);
-            assertThat(session.isClosed()).isFalse();
 
             session.close();
-
-            assertThat(session.isClosed()).isTrue();
 
             assertThatThrownBy(session::sessionId)
                     .as("Using closed session should throw IllegalStateException")

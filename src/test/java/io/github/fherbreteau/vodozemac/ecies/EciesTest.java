@@ -2,6 +2,7 @@ package io.github.fherbreteau.vodozemac.ecies;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.fherbreteau.vodozemac.exception.EciesException;
@@ -17,15 +18,12 @@ class EciesTest {
         try (Ecies ecies = new Ecies()) {
             String publicKey = ecies.publicKey();
             assertThat(publicKey).isNotNull().isNotEmpty();
-            assertThat(ecies.isClosed()).isFalse();
             copy = ecies;
         }
-        assertThat(copy.isClosed()).isTrue();
         assertThatThrownBy(copy::publicKey)
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessage("Ecies has been closed");
         copy.close();
-        assertThat(copy.isClosed()).isTrue();
     }
 
     @Test
@@ -45,8 +43,6 @@ class EciesTest {
             EstablishedEcies bobEcies = bobResult.getEstablishedEcies();
             assertThat(aliceEcies).isNotNull();
             assertThat(bobEcies).isNotNull();
-            assertThat(aliceEcies.isClosed()).isFalse();
-            assertThat(bobEcies.isClosed()).isFalse();
         }
     }
 
@@ -144,7 +140,6 @@ class EciesTest {
             String bobPublicKey = bob.publicKey();
 
             alice.establishOutboundChannel(bobPublicKey, PLAINTEXT);
-            assertThat(alice.isClosed()).isTrue();
             assertThatThrownBy(() -> alice.establishOutboundChannel(bobPublicKey, PLAINTEXT))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Ecies has been closed");
@@ -205,12 +200,14 @@ class EciesTest {
                 EstablishedEcies bobEcies = bobResult.getEstablishedEcies();
 
                 aliceEcies.close();
-                assertThat(aliceEcies.isClosed()).isTrue();
+
+                assertThatCode(aliceEcies::publicKey)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("EstablishedEcies has been closed");
 
                 aliceEcies.close(); // EstablishedEcies closure must be indempotent
 
                 bobEcies.close();
-                assertThat(bobEcies.isClosed()).isTrue();
             }
         }
     }

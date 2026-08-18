@@ -32,7 +32,7 @@ import io.github.fherbreteau.vodozemac.exception.KeyException;
  * {@link #establishInboundChannel}, this {@code Ecies} object is consumed and
  * can no longer be used.
  */
-public class Ecies extends NativeHandle {
+public final class Ecies extends NativeHandle {
     static {
         NativeLibraryLoader.loadLibrary();
     }

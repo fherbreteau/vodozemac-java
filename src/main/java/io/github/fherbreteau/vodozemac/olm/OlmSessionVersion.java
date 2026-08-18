@@ -2,7 +2,7 @@ package io.github.fherbreteau.vodozemac.olm;
 
 import java.util.stream.Stream;
 
-import io.github.fherbreteau.vodozemac.exception.VodozemacException;
+import io.github.fherbreteau.vodozemac.exception.ConversionException;
 
 /**
  * Represents the version of the Olm session protocol to use.
@@ -51,6 +51,6 @@ public enum OlmSessionVersion {
         return Stream.of(values())
             .filter(v -> version == v.value)
             .findFirst()
-            .orElseThrow(() -> new VodozemacException("unknown version " + version));
+            .orElseThrow(() -> new ConversionException("unknown version " + version));
     }
 }

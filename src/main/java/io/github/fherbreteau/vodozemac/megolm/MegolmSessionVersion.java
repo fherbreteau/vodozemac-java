@@ -2,7 +2,7 @@ package io.github.fherbreteau.vodozemac.megolm;
 
 import java.util.stream.Stream;
 
-import io.github.fherbreteau.vodozemac.exception.VodozemacException;
+import io.github.fherbreteau.vodozemac.exception.ConversionException;
 
 /**
  * Represents the version of the Megolm session protocol to use.
@@ -51,6 +51,6 @@ public enum MegolmSessionVersion {
         return Stream.of(values())
             .filter(v -> version == v.value)
             .findFirst()
-            .orElseThrow(() -> new VodozemacException("unknown version " + version));
+            .orElseThrow(() -> new ConversionException("unknown version " + version));
     }
 }

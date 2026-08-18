@@ -28,4 +28,13 @@ public class EciesException extends VodozemacException {
         super(message);
     }
 
+    /**
+     * Constructs a new {@code EciesException} with the specified detail message and a cause.
+     *
+     * @param message the detail message
+     * @param cause the cause
+     */
+    public EciesException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

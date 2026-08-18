@@ -2,7 +2,7 @@ package io.github.fherbreteau.vodozemac.olm;
 
 import java.util.stream.Stream;
 
-import io.github.fherbreteau.vodozemac.exception.VodozemacException;
+import io.github.fherbreteau.vodozemac.exception.ConversionException;
 
 /**
  * Represents the type of an Olm message.
@@ -53,6 +53,6 @@ public enum MessageType {
         return Stream.of(values())
             .filter(t -> t.value == type)
             .findFirst()
-            .orElseThrow(() -> new VodozemacException("unknown message type " + type));
+            .orElseThrow(() -> new ConversionException("unknown message type " + type));
     }
 }

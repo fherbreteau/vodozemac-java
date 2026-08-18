@@ -18,4 +18,14 @@ public class SignatureException extends VodozemacException {
     public SignatureException(String message) {
         super(message);
     }
+
+    /**
+     * Constructs a new {@code SignatureException} with the specified detail message and a cause.
+     *
+     * @param message the detail message
+     * @param cause the cause
+     */
+    public SignatureException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

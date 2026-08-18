@@ -14,8 +14,7 @@ public abstract class NativeHandle implements AutoCloseable {
         }
     }
 
-    /* For test usage only */
-    public final boolean isClosed() {
+    final boolean isClosed() {
         return nativePtr == 0;
     }
 

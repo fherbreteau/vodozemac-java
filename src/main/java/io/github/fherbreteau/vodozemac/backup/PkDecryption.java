@@ -34,7 +34,7 @@ import io.github.fherbreteau.vodozemac.exception.PickleException;
  * @see PkEncryption
  * @see PkMessage
  */
-public class PkDecryption extends NativeHandle {
+public final class PkDecryption extends NativeHandle {
     static {
         NativeLibraryLoader.loadLibrary();
     }

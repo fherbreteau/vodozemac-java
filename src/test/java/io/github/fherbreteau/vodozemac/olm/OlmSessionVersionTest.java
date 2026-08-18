@@ -3,7 +3,7 @@ package io.github.fherbreteau.vodozemac.olm;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.github.fherbreteau.vodozemac.exception.VodozemacException;
+import io.github.fherbreteau.vodozemac.exception.ConversionException;
 import org.junit.jupiter.api.Test;
 
 class OlmSessionVersionTest {
@@ -55,7 +55,7 @@ class OlmSessionVersionTest {
                 .as("valueOf(\"V2\") should return V2")
                 .isEqualTo(OlmSessionVersion.V2);
         assertThatThrownBy(() -> OlmSessionVersion.fromVersion(0))
-                .isInstanceOf(VodozemacException.class)
+                .isInstanceOf(ConversionException.class)
                 .hasMessage("unknown version 0");
     }
 }
