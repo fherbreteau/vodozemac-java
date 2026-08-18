@@ -24,6 +24,10 @@ public final class SampleMegolm {
             MegolmMessage encrypted = outbound.encrypt(message.getBytes(UTF_8));
             System.out.println("Outbound: Encrypted message: " + encrypted);
             System.out.println("Inbound: Message index: " + outbound.messageIndex());
+            System.out.println("Message: Message index: " + encrypted.messageIndex());
+            System.out.println("Message: Ciphertext:    " + encrypted.ciphertext());
+            System.out.println("Message: Mac:           " + encrypted.mac());
+            System.out.println("Message: Signature:     " + encrypted.signature());
 
             outbound.encrypt(message.getBytes(UTF_8));
             outbound.encrypt(message.getBytes(UTF_8));
