@@ -24,7 +24,7 @@ public final class KeyValidator {
      * @throws KeyException if the key is not 32 bytes long
      */
     public static void validateEncryptionKey(byte[] key) {
-        if (key.length != 32) {
+        if (key == null || key.length != 32) {
             throw new KeyException("Encrypted Key must be 256-bit (32-byte)");
         }
     }
