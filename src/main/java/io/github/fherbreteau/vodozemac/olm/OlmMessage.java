@@ -15,7 +15,7 @@ package io.github.fherbreteau.vodozemac.olm;
  * message has been received and decrypted from the other side.
  * <p>
  * The {@link #toString()} method produces a JSON representation compatible with
- * the Matrix Olm message format ({@code {"type":<int>,"body":"<base64>"}}),
+ * the Matrix Olm message format ({@code {"body":"<base64>","type":<int>}}),
  * which is what the native vodozemac layer expects for serialisation and
  * deserialisation.
  *
@@ -25,21 +25,12 @@ package io.github.fherbreteau.vodozemac.olm;
  * @see MessageType
  */
 public class OlmMessage {
-    private final MessageType type;
     private final String body;
+    private final MessageType type;
 
     OlmMessage(int messageType, String body) {
-        this.type = MessageType.fromValue(messageType);
         this.body = body;
-    }
-
-    /**
-     * Returns the type of this message.
-     *
-     * @return the {@link MessageType} (pre-key or normal)
-     */
-    public MessageType getType() {
-        return type;
+        this.type = MessageType.fromValue(messageType);
     }
 
     /**
@@ -47,8 +38,17 @@ public class OlmMessage {
      *
      * @return the ciphertext body as a base64 string
      */
-    public String getBody() {
+    public String body() {
         return body;
+    }
+
+    /**
+     * Returns the type of this message.
+     *
+     * @return the {@link MessageType} (pre-key or normal)
+     */
+    public MessageType type() {
+        return type;
     }
 
     /**
@@ -62,9 +62,6 @@ public class OlmMessage {
      */
     @Override
     public String toString() {
-        String pattern = """
-                {"body":"%s","type":%d}
-                """;
-        return String.format(pattern, body, type.value());
+        return String.format("{\"body\":\"%s\",\"type\":%d}", body, type.value());
     }
 }

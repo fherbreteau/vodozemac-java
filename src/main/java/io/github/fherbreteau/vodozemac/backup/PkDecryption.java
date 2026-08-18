@@ -113,7 +113,7 @@ public final class PkDecryption extends NativeHandle {
      */
     public byte[] decrypt(PkMessage message) {
         checkNotClosed();
-        return nativeDecrypt(nativePtr, message.getCiphertext(), message.getMac(), message.getEphemeralKey());
+        return nativeDecrypt(nativePtr, message.ciphertext(), message.mac(), message.ephemeralKey());
     }
 
     /**

@@ -10,6 +10,8 @@ package io.github.fherbreteau.vodozemac.exception;
  *   <li>The session config (version) not matching the one used to encrypt the pre-key message</li>
  *   <li>Receiving a normal message instead of a pre-key message</li>
  * </ul>
+ *
+ * @author François HERBRETEAU
  */
 public class SessionCreationException extends VodozemacException {
 

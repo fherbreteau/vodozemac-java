@@ -130,7 +130,7 @@ public final class Account extends NativeHandle {
     public OlmSession createOutboundSession(OlmSessionVersion sessionVersion, String identityKey, String oneTimeKey) {
         checkNotClosed();
 
-        return nativeCreateOutboundSession(nativePtr, sessionVersion.getValue(), identityKey, oneTimeKey);
+        return nativeCreateOutboundSession(nativePtr, sessionVersion.value(), identityKey, oneTimeKey);
     }
 
     /**
@@ -167,7 +167,7 @@ public final class Account extends NativeHandle {
             OlmMessage preKeyMessage) {
         checkNotClosed();
 
-        return nativeCreateInboundSession(nativePtr, sessionVersion.getValue(), theirIdentityKey, preKeyMessage.toString());
+        return nativeCreateInboundSession(nativePtr, sessionVersion.value(), theirIdentityKey, preKeyMessage.toString());
     }
 
     /**

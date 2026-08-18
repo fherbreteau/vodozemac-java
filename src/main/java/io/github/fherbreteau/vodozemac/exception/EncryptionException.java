@@ -6,6 +6,8 @@ package io.github.fherbreteau.vodozemac.exception;
  * This includes failures due to non-contributory keys in the Diffie-Hellman
  * operation, where the shared secret does not provide sufficient security
  * guarantees.
+ *
+ * @author François HERBRETEAU
  */
 public class EncryptionException extends VodozemacException {
 

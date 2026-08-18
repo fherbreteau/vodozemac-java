@@ -20,6 +20,8 @@ import io.github.fherbreteau.vodozemac.exception.SasException;
  * <p>
  * This class implements {@link AutoCloseable} and should be used in a
  * try-with-resources block to ensure native resources are properly released.
+ *
+ * @author François HERBRETEAU
  */
 public final class EstablishedSas extends NativeHandle {
 

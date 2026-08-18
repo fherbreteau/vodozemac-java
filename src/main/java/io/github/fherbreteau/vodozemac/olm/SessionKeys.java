@@ -1,5 +1,7 @@
 package io.github.fherbreteau.vodozemac.olm;
 
+import java.util.Objects;
+
 /**
  * The set of Curve25519 public keys that were used to establish an Olm
  * session.
@@ -73,5 +75,31 @@ public class SessionKeys {
      */
     public String oneTimeKey() {
         return oneTimeKey;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof SessionKeys sessionKeys)) {
+            return false;
+        }
+        return Objects.equals(sessionId, sessionKeys.sessionId)
+                && Objects.equals(identityKey, sessionKeys.identityKey)
+                && Objects.equals(baseKey, sessionKeys.baseKey)
+                && Objects.equals(oneTimeKey, sessionKeys.oneTimeKey);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(sessionId, identityKey, baseKey, oneTimeKey);
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+            " sessionId='" + sessionId + "'" +
+            ", identityKey='" + identityKey + "'" +
+            ", baseKey='" + baseKey + "'" +
+            ", oneTimeKey='" + oneTimeKey + "'" +
+            "}";
     }
 }

@@ -1,11 +1,14 @@
 package io.github.fherbreteau.vodozemac.account;
 
+import java.util.Objects;
+
 /**
  * Result of creating a dehydrated device from an {@link Account}.
  * <p>
  * A dehydrated device is a device that is stored encrypted on the server
  * and can receive messages when the user has no other active devices.
  *
+ * @author François HERBRETEAU
  * @see Account#toDehydratedDevice(byte[])
  * @see Account#fromDehydratedDevice(String, String, byte[])
  */
@@ -29,7 +32,7 @@ public class DehydratedDeviceResult {
      *
      * @return the ciphertext as a base64-encoded string
      */
-    public String getCiphertext() {
+    public String ciphertext() {
         return ciphertext;
     }
 
@@ -38,7 +41,29 @@ public class DehydratedDeviceResult {
      *
      * @return the nonce as a base64-encoded string
      */
-    public String getNonce() {
+    public String nonce() {
         return nonce;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof DehydratedDeviceResult that)) {
+            return false;
+        }
+        return Objects.equals(ciphertext, that.ciphertext)
+                && Objects.equals(nonce, that.nonce);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(ciphertext, nonce);
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+            " ciphertext='" + ciphertext + "'" +
+            ", nonce='" + nonce + "'" +
+            "}";
     }
 }

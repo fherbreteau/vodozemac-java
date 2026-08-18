@@ -1,5 +1,8 @@
 package io.github.fherbreteau.vodozemac.ecies;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 /**
  * The result of an inbound ECIES channel establishment.
  * <p>
@@ -7,6 +10,7 @@ package io.github.fherbreteau.vodozemac.ecies;
  * contains both the established channel and the decrypted plaintext of the
  * initial message sent by the initiator.
  *
+ * @author François HERBRETEAU
  * @see Ecies#establishInboundChannel(String)
  */
 public class InboundCreationResult implements AutoCloseable {
@@ -28,7 +32,7 @@ public class InboundCreationResult implements AutoCloseable {
      *
      * @return the established ECIES channel
      */
-    public EstablishedEcies getEstablishedEcies() {
+    public EstablishedEcies establishedEcies() {
         return ecies;
     }
 
@@ -40,7 +44,7 @@ public class InboundCreationResult implements AutoCloseable {
      *
      * @return the decrypted plaintext bytes
      */
-    public byte[] getPlaintext() {
+    public byte[] plaintext() {
         return plaintext.clone();
     }
 
@@ -54,5 +58,25 @@ public class InboundCreationResult implements AutoCloseable {
     @Override
     public void close() {
         ecies.close();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof InboundCreationResult that)) {
+            return false;
+        }
+        return Objects.deepEquals(plaintext, that.plaintext);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(plaintext);
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+            " plaintext='" + Arrays.toString(plaintext) + "'" +
+            "}";
     }
 }

@@ -7,6 +7,7 @@ import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
 
 import java.security.SecureRandom;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
@@ -293,21 +294,21 @@ class AccountTest {
             assertThat(dehydratexDevice)
                     .as("Dehydrated device should not be null")
                     .isNotNull()
-                    .extracting(DehydratedDeviceResult::getCiphertext, STRING)
+                    .extracting(DehydratedDeviceResult::ciphertext, STRING)
                     .as("Dehydrated device ciphertext should not be null or empty")
                     .isNotNull()
                     .isNotEmpty();
             assertThat(dehydratexDevice)
                     .as("Dehydrated device should not be null")
                     .isNotNull()
-                    .extracting(DehydratedDeviceResult::getNonce, STRING)
+                    .extracting(DehydratedDeviceResult::nonce, STRING)
                     .as("Dehydrated device nonce should not be null or empty")
                     .isNotNull()
                     .isNotEmpty();
         }
 
-        try (Account rehydratedDevice = Account.fromDehydratedDevice(dehydratexDevice.getCiphertext(),
-                dehydratexDevice.getNonce(), key)) {
+        try (Account rehydratedDevice = Account.fromDehydratedDevice(dehydratexDevice.ciphertext(),
+                dehydratexDevice.nonce(), key)) {
             String rehydratedCurve25519Key = rehydratedDevice.curve25519Key();
             String rehydratedEd25519Key = rehydratedDevice.ed25519Key();
 
@@ -343,11 +344,11 @@ class AccountTest {
             assertThat(result)
                     .as("Should generate at least 1 one-time key")
                     .isNotNull()
-                    .extracting(OneTimeKeyGenerationResult::getCreated, list(String.class))
+                    .extracting(OneTimeKeyGenerationResult::created, list(String.class))
                     .isNotEmpty()
                     .singleElement(STRING)
                     .isNotEmpty();
-            assertThat(result.getRemoved())
+            assertThat(result.removed())
                     .as("No one-time key should be removed on first generation")
                     .isEmpty();
             Map<String, String> oneTimeKeys = account.getUnpublishedOneTimeKeys();
@@ -393,7 +394,7 @@ class AccountTest {
             assertThat(result)
                     .as("Bob should generate one-time keys")
                     .isNotNull()
-                    .extracting(OneTimeKeyGenerationResult::getCreated, list(String.class))
+                    .extracting(OneTimeKeyGenerationResult::created, list(String.class))
                     .singleElement()
                     .isNotNull();
 
@@ -511,9 +512,54 @@ class AccountTest {
                 InboundCreationResult inboundResult = bobAccount.createInboundSession(
                         aliceAccount.curve25519Key(), encrypted);
                 assertThat(inboundResult).as("Inbound session with default version should be created").isNotNull();
-                assertThat(new String(inboundResult.getPlaintext(), java.nio.charset.StandardCharsets.UTF_8))
+                assertThat(new String(inboundResult.plaintext(), java.nio.charset.StandardCharsets.UTF_8))
                         .isEqualTo(plaintext);
             }
         }
+    }
+
+    @Test
+    void testIdentityKeysEqualsHashCodeToString() {
+        IdentityKeys keys = new IdentityKeys("ed", "cv");
+        IdentityKeys same = new IdentityKeys("ed", "cv");
+        IdentityKeys different = new IdentityKeys("ed2", "cv");
+
+        assertThat(keys).isEqualTo(keys)
+                .isEqualTo(same)
+                .hasSameHashCodeAs(same)
+                .isNotEqualTo(different)
+                .isNotEqualTo("not IdentityKeys")
+                .isNotEqualTo(null);
+        assertThat(keys.toString()).contains("ed25519", "curve25519");
+    }
+
+    @Test
+    void testOneTimeKeyGenerationResultEqualsHashCodeToString() {
+        OneTimeKeyGenerationResult result = new OneTimeKeyGenerationResult(List.of("k1"), List.of());
+        OneTimeKeyGenerationResult same = new OneTimeKeyGenerationResult(List.of("k1"), List.of());
+        OneTimeKeyGenerationResult different = new OneTimeKeyGenerationResult(List.of("k2"), List.of());
+
+        assertThat(result).isEqualTo(result)
+                .isEqualTo(same)
+                .hasSameHashCodeAs(same)
+                .isNotEqualTo(different)
+                .isNotEqualTo("not a result")
+                .isNotEqualTo(null);
+        assertThat(result.toString()).contains("created", "removed");
+    }
+
+    @Test
+    void testDehydratedDeviceResultEqualsHashCodeToString() {
+        DehydratedDeviceResult result = new DehydratedDeviceResult("ct", "nonce");
+        DehydratedDeviceResult same = new DehydratedDeviceResult("ct", "nonce");
+        DehydratedDeviceResult different = new DehydratedDeviceResult("ct2", "nonce");
+
+        assertThat(result).isEqualTo(result)
+                .isEqualTo(same)
+                .hasSameHashCodeAs(same)
+                .isNotEqualTo(different)
+                .isNotEqualTo("not a result")
+                .isNotEqualTo(null);
+        assertThat(result.toString()).contains("ciphertext", "nonce");
     }
 }

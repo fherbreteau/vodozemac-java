@@ -20,6 +20,8 @@ import java.util.Set;
  * <p>
  * This class is used internally by the vodozemac bindings and should not be
  * called directly by application code.
+ *
+ * @author François HERBRETEAU
  */
 public final class NativeLibraryLoader {
 
@@ -60,15 +62,15 @@ public final class NativeLibraryLoader {
         try {
             loadFromResources(resourcePath, libName, platform);
             loaded = true;
-        } catch (Exception _) {
+        } catch (Exception firstException) {
             // If that fails, try the platform-specific directory
             resourcePath = String.format("/native/%s/%s", platform, libName);
             try {
                 loadFromResources(resourcePath, libName, platform);
                 loaded = true;
             } catch (Exception e2) {
-                throw new RuntimeException(
-                        "Failed to load native library for " + platform + ". Tried: " + resourcePath, e2);
+                e2.addSuppressed(firstException);
+                throw new RuntimeException("Failed to load native library for " + platform, e2);
             }
         }
     }
@@ -109,24 +111,29 @@ public final class NativeLibraryLoader {
     }
 
     private static void loadFromResources(String resourcePath, String libName, String platform) throws IOException {
-        InputStream in = NativeLibraryLoader.class.getResourceAsStream(resourcePath);
-        if (in == null) {
-            throw new FileNotFoundException("Native resource not found: " + resourcePath);
-        }
-
-        // Create a temp file to extract the library
         Path tempDir;
-        if (!platform.startsWith(OS_WINDOWS)) {
-            Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwx------");
-            FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(perms);
-            tempDir = Files.createTempDirectory("vodozemac-native", attr);
-        } else {
-            tempDir = Files.createTempDirectory("vodozemac-native");
-        }
-        Path tempLib = tempDir.resolve(libName);
+        Path tempLib;
+        try (InputStream in = NativeLibraryLoader.class.getResourceAsStream(resourcePath)) {
+            if (in == null) {
+                throw new FileNotFoundException("Native resource not found: " + resourcePath);
+            }
 
-        Files.copy(in, tempLib, StandardCopyOption.REPLACE_EXISTING);
-        in.close();
+            // Create a temp file to extract the library
+            if (!platform.startsWith(OS_WINDOWS)) {
+                Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwx------");
+                FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(perms);
+                tempDir = Files.createTempDirectory("vodozemac-native", attr);
+            } else {
+                tempDir = Files.createTempDirectory("vodozemac-native");
+            }
+            tempLib = tempDir.resolve(libName);
+
+            Files.copy(in, tempLib, StandardCopyOption.REPLACE_EXISTING);
+            if (!platform.startsWith(OS_WINDOWS)) {
+                Set<PosixFilePermission> perms = PosixFilePermissions.fromString("rwx------");
+                Files.setPosixFilePermissions(tempLib, perms);
+            }
+        }
 
         // Mark for deletion on JVM exit
         tempLib.toFile().deleteOnExit();

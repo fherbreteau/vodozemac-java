@@ -8,6 +8,8 @@ package io.github.fherbreteau.vodozemac.exception;
  * {@link SasException})
  * extend this class, allowing callers to catch all vodozemac errors with a single
  * catch clause if desired.
+ *
+ * @author François HERBRETEAU
  */
 public class VodozemacException extends RuntimeException {
 

@@ -1,5 +1,8 @@
 package io.github.fherbreteau.vodozemac.olm;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 /**
  * Return type for the creation of an inbound {@link OlmSession}.
  * <p>
@@ -8,7 +11,8 @@ package io.github.fherbreteau.vodozemac.olm;
  * creation process. This result contains both the newly created session
  * and the decrypted plaintext of that first message.
  *
- * @see io.github.fherbreteau.vodozemac.account.Account#createInboundSession(io.github.fherbreteau.vodozemac.olm.OlmSessionVersion, String, String)
+ * @author François HERBRETEAU
+ * @see io.github.fherbreteau.vodozemac.account.Account#createInboundSession(io.github.fherbreteau.vodozemac.olm.OlmSessionVersion, String, io.github.fherbreteau.vodozemac.olm.OlmMessage)
  */
 public class InboundCreationResult {
     private final OlmSession session;
@@ -24,7 +28,7 @@ public class InboundCreationResult {
      *
      * @return the newly created session
      */
-    public OlmSession getSession() {
+    public OlmSession session() {
         return session;
     }
 
@@ -34,7 +38,27 @@ public class InboundCreationResult {
      *
      * @return the decrypted plaintext bytes
      */
-    public byte[] getPlaintext() {
+    public byte[] plaintext() {
         return plaintext.clone();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof InboundCreationResult that)) {
+            return false;
+        }
+        return Objects.deepEquals(plaintext, that.plaintext);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(plaintext);
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+            " plaintext='" + Arrays.toString(plaintext) + "'" +
+            "}";
     }
 }

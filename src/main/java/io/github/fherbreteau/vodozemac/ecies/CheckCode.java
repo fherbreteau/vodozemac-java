@@ -20,6 +20,8 @@ import java.util.Objects;
  * expanding this single bit into a deterministic two-digit check code, the
  * user is forced to pay more attention by having to enter it instead of just
  * clicking through a dialogue.
+ *
+ * @author François HERBRETEAU
  */
 public class CheckCode {
 

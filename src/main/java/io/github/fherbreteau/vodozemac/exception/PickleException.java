@@ -10,6 +10,8 @@ package io.github.fherbreteau.vodozemac.exception;
  *   <li>Legacy libolm pickle format decoding</li>
  *   <li>Dehydrated device creation or restoration</li>
  * </ul>
+ *
+ * @author François HERBRETEAU
  */
 public class PickleException extends VodozemacException {
 

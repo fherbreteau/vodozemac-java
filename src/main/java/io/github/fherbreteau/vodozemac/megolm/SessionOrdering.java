@@ -7,6 +7,7 @@ package io.github.fherbreteau.vodozemac.megolm;
  * This is used when multiple sessions with the same session ID are received
  * with varying degrees of trust and first known message indices.
  *
+ * @author François HERBRETEAU
  * @see InboundGroupSession#compare(InboundGroupSession)
  */
 public enum SessionOrdering {

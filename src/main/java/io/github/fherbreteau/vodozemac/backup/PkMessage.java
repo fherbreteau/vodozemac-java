@@ -1,5 +1,7 @@
 package io.github.fherbreteau.vodozemac.backup;
 
+import java.util.Objects;
+
 /**
  * A message that was encrypted using a {@link PkEncryption} object.
  * <p>
@@ -38,7 +40,7 @@ public class PkMessage {
      *
      * @return the ciphertext as a base64 string
      */
-    public String getCiphertext() {
+    public String ciphertext() {
         return ciphertext;
     }
 
@@ -51,7 +53,7 @@ public class PkMessage {
      *
      * @return the MAC as a base64 string
      */
-    public String getMac() {
+    public String mac() {
         return mac;
     }
 
@@ -61,7 +63,31 @@ public class PkMessage {
      *
      * @return the ephemeral key as a base64 string
      */
-    public String getEphemeralKey() {
+    public String ephemeralKey() {
         return ephemeralKey;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof PkMessage pkMessage)) {
+            return false;
+        }
+        return Objects.equals(ciphertext, pkMessage.ciphertext)
+                && Objects.equals(mac, pkMessage.mac)
+                && Objects.equals(ephemeralKey, pkMessage.ephemeralKey);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(ciphertext, mac, ephemeralKey);
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+            " ciphertext='" + ciphertext + "'" +
+            ", mac='" + mac + "'" +
+            ", ephemeralKey='" + ephemeralKey + "'" +
+            "}";
     }
 }

@@ -23,16 +23,16 @@ public final class SampleEcies {
             System.out.println("Bob  : Ecies public Key: " + bob.publicKey());
 
             OutboundCreationResult aliceResult = alice.establishOutboundChannel(bob.publicKey(), plaintext);
-            System.out.println("Alice: Initial message.   : " + aliceResult.getInitialMessage());
+            System.out.println("Alice: Initial message.   : " + aliceResult.initialMessage());
 
-            InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.getInitialMessage());
+            InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.initialMessage());
 
-            assert Objects.deepEquals(plaintext, bobResult.getPlaintext());
+            assert Objects.deepEquals(plaintext, bobResult.plaintext());
             System.out.println("Alice: Sent message.   : " + new String(plaintext));
-            System.out.println("Bob. : Recieved message: " + new String(bobResult.getPlaintext()));
+            System.out.println("Bob. : Recieved message: " + new String(bobResult.plaintext()));
 
-            EstablishedEcies aliceEcies = aliceResult.getEstablishedEcies();
-            EstablishedEcies bobEcies = bobResult.getEstablishedEcies();
+            EstablishedEcies aliceEcies = aliceResult.establishedEcies();
+            EstablishedEcies bobEcies = bobResult.establishedEcies();
 
             if (!aliceEcies.checkCode().equals(bobEcies.checkCode())) {
                 throw new IllegalStateException("The check code must match; possible active MITM attack in progress");

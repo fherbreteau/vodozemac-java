@@ -1,16 +1,16 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
-import java.util.stream.Stream;
-
-import io.github.fherbreteau.vodozemac.exception.ConversionException;
+import io.github.fherbreteau.vodozemac.SessionVersion;
 
 /**
  * Represents the version of the Megolm session protocol to use.
  * <p>
  * The session version determines the cryptographic configuration used
  * for encryption and MAC operations.
+ *
+ * @author François HERBRETEAU
  */
-public enum MegolmSessionVersion {
+public enum MegolmSessionVersion implements SessionVersion {
     /** Version 1 — uses truncated MAC, compatible with the original libolm. */
     V1(1),
     /** Version 2 — uses full-length MAC for stronger integrity protection. */
@@ -27,7 +27,8 @@ public enum MegolmSessionVersion {
      *
      * @return the version number (1 for V1, 2 for V2)
      */
-    public int getValue() {
+    @Override
+    public int value() {
         return value;
     }
 
@@ -48,9 +49,6 @@ public enum MegolmSessionVersion {
      * @throws io.github.fherbreteau.vodozemac.exception.VodozemacException if no version matches the given value
      */
     public static MegolmSessionVersion fromVersion(int version) {
-        return Stream.of(values())
-            .filter(v -> version == v.value)
-            .findFirst()
-            .orElseThrow(() -> new ConversionException("unknown version " + version));
+        return SessionVersion.fromVersion(values(), version, "version");
     }
 }
