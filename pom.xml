@@ -56,9 +56,6 @@
         <sonar.coverage.exclusions>
             **/NativeLibraryLoader.java
         </sonar.coverage.exclusions>
-        <sonar.cpd.exclusions>
-            **/InboundCreationResult.java
-        </sonar.cpd.exclusions>
 
         <!-- Reproducible Builds configuration-->
         <project.build.outputTimestamp>${git.commit.time}</project.build.outputTimestamp>
