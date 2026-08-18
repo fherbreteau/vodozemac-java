@@ -1,6 +1,9 @@
-use jni::sys::jint;
+use jni::Env;
+use jni::sys::{jint, jlong};
 use vodozemac::megolm::SessionConfig as MegolmSessionConfig;
 use vodozemac::olm::SessionConfig as OlmSessionConfig;
+
+use crate::errors::throw_generic_error;
 
 pub(crate) fn wrap<T>(v: Vec<T>) -> Result<[T; 32], jni::errors::Error> {
     v.try_into().map_err(|_v| jni::errors::Error::JavaException)
@@ -24,6 +27,13 @@ pub(crate) fn megolm_session_config_from_version(
         2 => Ok(MegolmSessionConfig::version_2()),
         _ => Err(jni::errors::Error::JavaException),
     }
+}
+
+pub(crate) fn check_ptr(env: &mut Env, ptr: jlong) -> Result<(), jni::errors::Error> {
+    if ptr == 0 {
+        return Err(throw_generic_error(env, "Null native pointer"));
+    }
+    Ok(())
 }
 
 #[cfg(test)]

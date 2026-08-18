@@ -4,7 +4,7 @@ use jni::sys::{jint, jlong, jstring};
 use vodozemac::megolm::{GroupSession, GroupSessionPickle};
 
 use crate::errors::throw_pickle_error;
-use crate::helpers::{megolm_session_config_from_version, wrap};
+use crate::helpers::{check_ptr, megolm_session_config_from_version, wrap};
 
 // ============================================================================
 // Megolm: OutboundGroupSession (wraps vodozemac::megolm::GroupSession)
@@ -32,6 +32,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const GroupSession) };
 
         let session_id = session.session_id();
@@ -47,7 +48,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     _class: JClass,
     ptr: jlong,
 ) -> jint {
-    let outcome = env.with_env(|_env| -> Result<jint, jni::errors::Error> {
+    let outcome = env.with_env(|env| -> Result<jint, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const GroupSession) };
 
         Ok(session.message_index() as jint)
@@ -62,6 +64,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const GroupSession) };
 
         let session_key = session.session_key().to_base64();
@@ -77,7 +80,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     _class: JClass,
     ptr: jlong,
 ) -> jint {
-    let outcome = env.with_env(|_env| -> Result<jint, jni::errors::Error> {
+    let outcome = env.with_env(|env| -> Result<jint, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const GroupSession) };
 
         let session_config = session.session_config();
@@ -94,6 +98,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     plaintext: JByteArray,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &mut *(ptr as *mut GroupSession) };
         let plaintext_bytes = env.convert_byte_array(&plaintext)?;
 
@@ -111,6 +116,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const GroupSession) };
 
         let pickle_data = session.pickle();
@@ -130,6 +136,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     key: JByteArray,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const GroupSession) };
         let key = wrap(env.convert_byte_array(key)?)?;
 
@@ -197,13 +204,16 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeFree(
-    _env: EnvUnowned,
+    mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
 ) {
-    unsafe {
-        let _ = Box::from_raw(ptr as *mut GroupSession);
-    }
+    let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
+        check_ptr(env, ptr)?;
+        let _ = unsafe { Box::from_raw(ptr as *mut GroupSession) };
+        Ok(())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
 #[cfg(test)]

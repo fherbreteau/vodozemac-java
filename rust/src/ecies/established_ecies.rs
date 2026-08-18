@@ -4,6 +4,7 @@ use jni::{EnvUnowned, JValue, jni_sig, jni_str};
 use vodozemac::ecies::{EstablishedEcies, Message};
 
 use crate::errors::throw_ecies_error;
+use crate::helpers::check_ptr;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEcies_nativePublicKey(
@@ -12,6 +13,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEci
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let ecies = unsafe { &*(ptr as *const EstablishedEcies) };
 
         let public_key = ecies.public_key().to_base64();
@@ -28,6 +30,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEci
     ptr: jlong,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let ecies = unsafe { &*(ptr as *const EstablishedEcies) };
 
         let check_code = ecies.check_code();
@@ -51,6 +54,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEci
     plaintext: JByteArray,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let ecies = unsafe { &mut *(ptr as *mut EstablishedEcies) };
         let plaintext = env.convert_byte_array(&plaintext)?;
 
@@ -69,6 +73,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEci
     message: JString,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let ecies = unsafe { &mut *(ptr as *mut EstablishedEcies) };
         let message =
             Message::decode(&message.to_string()).map_err(|e| throw_ecies_error(env, e))?;
@@ -84,11 +89,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEci
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEcies_nativeFree(
-    _env: EnvUnowned,
+    mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
 ) {
-    unsafe {
-        let _ = Box::from_raw(ptr as *mut EstablishedEcies);
-    }
+    let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
+        check_ptr(env, ptr)?;
+        let _ = unsafe { Box::from_raw(ptr as *mut EstablishedEcies) };
+        Ok(())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
