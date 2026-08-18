@@ -38,7 +38,7 @@ public class CheckCode {
      * @return a 2-byte array representing the check code
      */
     public byte[] asBytes() {
-        return bytes;
+        return bytes.clone();
     }
 
     /**

@@ -35,6 +35,6 @@ public class InboundCreationResult {
      * @return the decrypted plaintext bytes
      */
     public byte[] getPlaintext() {
-        return plaintext;
+        return plaintext.clone();
     }
 }

@@ -31,7 +31,7 @@ public class DecryptedMessage {
      * @return the plaintext bytes
      */
     public byte[] plaintext() {
-        return plaintext;
+        return plaintext.clone();
     }
 
     /**

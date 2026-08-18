@@ -5,6 +5,7 @@ use vodozemac::Curve25519PublicKey;
 use vodozemac::sas::Sas;
 
 use crate::errors::throw_key_error;
+use crate::helpers::check_ptr;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeNew(
@@ -26,6 +27,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_Sas_nativePublic
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let sas = unsafe { &*(ptr as *const Sas) };
 
         let public_key = sas.public_key().to_base64();
@@ -43,10 +45,11 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeDiffie
     their_public_key: JString,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        let sas = unsafe { Box::from_raw(ptr as *mut Sas) };
+        check_ptr(env, ptr)?;
         let their_public_key_str = their_public_key.to_string();
         let their_public_key = Curve25519PublicKey::from_base64(&their_public_key_str)
             .map_err(|e| throw_key_error(env, e))?;
+        let sas = unsafe { Box::from_raw(ptr as *mut Sas) };
 
         let established_sas = sas
             .diffie_hellman(their_public_key)
@@ -64,11 +67,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeDiffie
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeFree(
-    _env: EnvUnowned,
+    mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
 ) {
-    unsafe {
-        let _ = Box::from_raw(ptr as *mut Sas);
-    }
+    let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
+        check_ptr(env, ptr)?;
+        let _ = unsafe { Box::from_raw(ptr as *mut Sas) };
+        Ok(())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

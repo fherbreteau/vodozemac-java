@@ -9,14 +9,14 @@ package io.github.fherbreteau.vodozemac.ecies;
  *
  * @see Ecies#establishInboundChannel(String)
  */
-public class InboundCreationResult {
+public class InboundCreationResult implements AutoCloseable {
 
-    private final long nativePtr;
+    private final EstablishedEcies ecies;
 
     private final byte[] plaintext;
 
     InboundCreationResult(long nativePtr, byte[] plaintext) {
-        this.nativePtr = nativePtr;
+        this.ecies = new EstablishedEcies(nativePtr);
         this.plaintext = plaintext;
     }
 
@@ -29,7 +29,7 @@ public class InboundCreationResult {
      * @return the established ECIES channel
      */
     public EstablishedEcies getEstablishedEcies() {
-        return new EstablishedEcies(nativePtr);
+        return ecies;
     }
 
     /**
@@ -41,6 +41,18 @@ public class InboundCreationResult {
      * @return the decrypted plaintext bytes
      */
     public byte[] getPlaintext() {
-        return plaintext;
+        return plaintext.clone();
+    }
+
+    /**
+     * Closes this resource by releasing its associated native resources.
+     * <p>
+     * This method is idempotent: calling it more than once has no effect.
+     *
+     * {@inheritDoc}
+     */
+    @Override
+    public void close() {
+        ecies.close();
     }
 }

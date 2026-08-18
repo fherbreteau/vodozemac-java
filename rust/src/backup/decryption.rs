@@ -7,7 +7,7 @@ use vodozemac::{Curve25519PublicKey, Curve25519SecretKey, base64_decode, base64_
 use crate::errors::{
     throw_decryption_error, throw_generic_error, throw_key_error, throw_pickle_error,
 };
-use crate::helpers::wrap;
+use crate::helpers::{check_ptr, wrap};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_nativeNew(
@@ -47,6 +47,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
 
         let secret_key = pk_decryption.secret_key().to_bytes().to_vec();
@@ -63,6 +64,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
 
         let public_key = pk_decryption.public_key().to_base64();
@@ -82,6 +84,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
     ephemeral_key: JString,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
         let ciphertext =
             base64_decode(ciphertext.to_string()).map_err(|e| throw_generic_error(env, e))?;
@@ -125,11 +128,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_nativeFree(
-    _env: EnvUnowned,
+    mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
 ) {
-    unsafe {
-        let _ = Box::from_raw(ptr as *mut PkDecryption);
-    }
+    let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
+        check_ptr(env, ptr)?;
+        let _ = unsafe { Box::from_raw(ptr as *mut PkDecryption) };
+        Ok(())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
