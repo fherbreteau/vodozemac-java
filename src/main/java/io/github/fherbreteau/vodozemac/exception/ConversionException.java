@@ -2,6 +2,8 @@ package io.github.fherbreteau.vodozemac.exception;
 
 /**
  * Thrown when a type from rust could not be parsed in Java.
+ *
+ * @author François HERBRETEAU
  */
 public class ConversionException extends VodozemacException {
 
