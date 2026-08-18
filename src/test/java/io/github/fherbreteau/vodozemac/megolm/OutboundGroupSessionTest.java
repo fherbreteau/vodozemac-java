@@ -56,8 +56,8 @@ class OutboundGroupSessionTest {
                     .as("Encrypted message wire format should be base64")
                     .isNotNull()
                     .isNotEmpty()
-                    .matches("[A-Za-z0-9+/=]+");
-            assertThat(encrypted.getMessageIndex())
+                    .isBase64();
+            assertThat(encrypted.messageIndex())
                     .as("Message index should be 0 for the first message")
                     .isZero();
 

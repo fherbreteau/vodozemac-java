@@ -150,11 +150,11 @@ class AccountTest {
             // Test that keys are valid base64 strings
             assertThat(curve25519Key)
                     .as("Curve25519 key should be valid base64")
-                    .matches("[A-Za-z0-9+/=]+");
+                    .isBase64();
 
             assertThat(ed25519Key)
                     .as("Ed25519 key should be valid base64")
-                    .matches("[A-Za-z0-9+/=]+");
+                    .isBase64();
 
             // Test that keys have reasonable lengths for cryptographic keys
             assertThat(curve25519Key.length())

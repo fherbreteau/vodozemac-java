@@ -105,21 +105,20 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
         let plaintext_bytes = env.convert_byte_array(plaintext)?;
 
         let message = session.encrypt(&plaintext_bytes);
-        let base64 = message.to_base64();
         let ciphertext = env.new_string(base64_encode(message.ciphertext()))?;
         let mac = env.new_string(base64_encode(message.mac()))?;
         let signature = env.new_string(message.signature().to_base64())?;
-        let wire_base64 = env.new_string(base64)?;
+        let base64 = env.new_string(message.to_base64())?;
 
         let result = env.new_object(
             jni_str!("io/github/fherbreteau/vodozemac/megolm/MegolmMessage"),
             jni_sig!((base64: java.lang.String, ciphertext: java.lang.String, messageIndex: int, mac: java.lang.String, signature: java.lang.String) -> void),
             &[
-                JValue::Object(&wire_base64.into()),
-                JValue::Object(&ciphertext.into()),
+                JValue::Object(&base64),
+                JValue::Object(&ciphertext),
                 JValue::Int(message.message_index() as jint),
-                JValue::Object(&mac.into()),
-                JValue::Object(&signature.into()),
+                JValue::Object(&mac),
+                JValue::Object(&signature),
             ],
         )?;
         Ok(result.into_raw())

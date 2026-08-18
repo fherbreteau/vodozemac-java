@@ -687,11 +687,11 @@ class InboundGroupSessionTest {
             encrypted = outbound.encrypt(plaintext.getBytes(StandardCharsets.UTF_8));
         }
 
-        assertThat(encrypted.getCiphertext()).as("ciphertext should not be null").isNotNull().isNotEmpty();
-        assertThat(encrypted.getMac()).as("mac should not be null").isNotNull().isNotEmpty();
-        assertThat(encrypted.getSignature()).as("signature should not be null").isNotNull().isNotEmpty();
-        assertThat(encrypted.getMessageIndex()).as("message index should be 0").isZero();
-        assertThat(encrypted.toString()).as("toString should be base64").isNotNull().isNotEmpty();
+        assertThat(encrypted.ciphertext()).as("ciphertext should not be null").isNotNull().isNotEmpty().isBase64();
+        assertThat(encrypted.mac()).as("mac should not be null").isNotNull().isNotEmpty().isBase64();
+        assertThat(encrypted.signature()).as("signature should not be null").isNotNull().isNotEmpty().isBase64();
+        assertThat(encrypted.messageIndex()).as("message index should be 0").isZero();
+        assertThat(encrypted.toString()).as("toString should be base64").isNotNull().isNotEmpty().isBase64();
 
         MegolmMessage reconstructed = MegolmMessage.fromBase64(encrypted.toString());
         assertThat(reconstructed).as("reconstructed message should equal original")

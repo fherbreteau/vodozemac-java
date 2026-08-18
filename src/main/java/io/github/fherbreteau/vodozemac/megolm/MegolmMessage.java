@@ -48,7 +48,7 @@ public class MegolmMessage {
      *
      * @return the ciphertext as a base64 string
      */
-    public String getCiphertext() {
+    public String ciphertext() {
         return ciphertext;
     }
 
@@ -58,7 +58,7 @@ public class MegolmMessage {
      *
      * @return the message index
      */
-    public int getMessageIndex() {
+    public int messageIndex() {
         return messageIndex;
     }
 
@@ -68,7 +68,7 @@ public class MegolmMessage {
      *
      * @return the MAC as a base64 string
      */
-    public String getMac() {
+    public String mac() {
         return mac;
     }
 
@@ -77,7 +77,7 @@ public class MegolmMessage {
      *
      * @return the signature as a base64 string
      */
-    public String getSignature() {
+    public String signature() {
         return signature;
     }
 
