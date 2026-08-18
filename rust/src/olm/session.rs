@@ -5,17 +5,20 @@ use vodozemac::base64_encode;
 use vodozemac::olm::{OlmMessage, Session, SessionPickle};
 
 use crate::errors::{throw_decryption_error, throw_generic_error, throw_pickle_error};
-use crate::helpers::wrap;
+use crate::helpers::{check_ptr, wrap};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativeFree(
-    _env: EnvUnowned,
+    mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
 ) {
-    unsafe {
-        let _ = Box::from_raw(ptr as *mut Session);
-    }
+    let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
+        check_ptr(env, ptr)?;
+        let _ = unsafe { Box::from_raw(ptr as *mut Session) };
+        Ok(())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
 #[unsafe(no_mangle)]
@@ -25,6 +28,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const Session) };
 
         let session_id = session.session_id();
@@ -41,6 +45,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     ptr: jlong,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const Session) };
 
         let session_keys = session.session_keys();
@@ -66,7 +71,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     _class: JClass,
     ptr: jlong,
 ) -> jint {
-    let outcome = env.with_env(|_env| -> Result<jint, jni::errors::Error> {
+    let outcome = env.with_env(|env| -> Result<jint, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const Session) };
 
         let session_config = session.session_config();
@@ -81,7 +87,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     _class: JClass,
     ptr: jlong,
 ) -> jboolean {
-    let outcome = env.with_env(|_env| -> Result<jboolean, jni::errors::Error> {
+    let outcome = env.with_env(|env| -> Result<jboolean, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const Session) };
 
         Ok(session.has_received_message())
@@ -97,6 +104,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     plaintext: JByteArray,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &mut *(ptr as *mut Session) };
         let plaintext_bytes = env.convert_byte_array(&plaintext)?;
 
@@ -123,6 +131,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     message: JString,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &mut *(ptr as *mut Session) };
         let message_str: String = message.to_string();
 
@@ -144,6 +153,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const Session) };
 
         let pickle_data = session.pickle();
@@ -163,6 +173,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     key: JByteArray,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let session = unsafe { &*(ptr as *const Session) };
         let key = wrap(env.convert_byte_array(key)?)?;
 

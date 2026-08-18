@@ -8,7 +8,7 @@ use vodozemac::{Curve25519PublicKey, KeyId};
 use crate::errors::{
     throw_generic_error, throw_key_error, throw_pickle_error, throw_session_creation_error,
 };
-use crate::helpers::{olm_session_config_from_version, wrap};
+use crate::helpers::{check_ptr, olm_session_config_from_version, wrap};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeNew(
@@ -30,6 +30,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
 
         let identity_key = account.identity_keys();
@@ -52,6 +53,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
 
         let key = account.curve25519_key().to_base64();
@@ -68,6 +70,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
 
         let key = account.ed25519_key().to_base64();
@@ -84,6 +87,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<i64, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
 
         let max_number_of_one_time_keys = account.max_number_of_one_time_keys();
@@ -103,6 +107,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     one_time_key: JString,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &mut *(ptr as *mut Account) };
         let session_config = olm_session_config_from_version(session_version)?;
         let decoded_identity_key = Curve25519PublicKey::from_base64(&identity_key.to_string())
@@ -136,6 +141,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     pre_key_message: JString,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &mut *(ptr as *mut Account) };
         let session_config = olm_session_config_from_version(session_version)?;
         let their_identity_key = Curve25519PublicKey::from_base64(&their_identity_key.to_string())
@@ -175,6 +181,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<i64, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
 
         let stored_one_time_key_count = account.stored_one_time_key_count();
@@ -228,6 +235,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     count: jlong,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &mut *(ptr as *mut Account) };
         let count = usize::try_from(count).map_err(|e| throw_generic_error(env, e))?;
 
@@ -265,6 +273,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
 
         let keys = account.one_time_keys();
@@ -281,6 +290,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &mut *(ptr as *mut Account) };
 
         let result = account.generate_fallback_key();
@@ -302,6 +312,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
 
         let keys = account.fallback_key();
@@ -317,7 +328,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     _class: JClass,
     ptr: jlong,
 ) -> jboolean {
-    let outcome = env.with_env(|_env| -> Result<jboolean, jni::errors::Error> {
+    let outcome = env.with_env(|env| -> Result<jboolean, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &mut *(ptr as *mut Account) };
 
         let forgot = account.forget_fallback_key();
@@ -332,7 +344,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     _class: JClass,
     ptr: jlong,
 ) {
-    let outcome = env.with_env(|_env| -> Result<(), jni::errors::Error> {
+    let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &mut *(ptr as *mut Account) };
 
         account.mark_keys_as_published();
@@ -349,6 +362,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     message: JString,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
         let msg: String = message.to_string();
 
@@ -366,6 +380,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
 
         let pickle_data = account.pickle();
@@ -385,6 +400,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     key: JByteArray,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
         let key = wrap(env.convert_byte_array(key)?)?;
 
@@ -404,6 +420,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     key: JByteArray,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
         let key = wrap(env.convert_byte_array(key)?)?;
 
@@ -500,6 +517,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     key: JByteArray,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+        check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
         let key = wrap(env.convert_byte_array(key)?)?;
 
@@ -522,13 +540,16 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeFree(
-    _env: EnvUnowned,
+    mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
 ) {
-    unsafe {
-        let _ = Box::from_raw(ptr as *mut Account);
-    }
+    let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
+        check_ptr(env, ptr)?;
+        let _ = unsafe { Box::from_raw(ptr as *mut Account) };
+        Ok(())
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
 #[cfg(test)]
