@@ -199,15 +199,16 @@ class EciesTest {
                 EstablishedEcies aliceEcies = aliceResult.getEstablishedEcies();
                 EstablishedEcies bobEcies = bobResult.getEstablishedEcies();
 
-            aliceEcies.close();
+                aliceEcies.close();
 
-            assertThatCode(aliceEcies::publicKey)
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("EstablishedEcies has been closed");
+                assertThatCode(aliceEcies::publicKey)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessage("EstablishedEcies has been closed");
 
                 aliceEcies.close(); // EstablishedEcies closure must be indempotent
 
-            bobEcies.close();
+                bobEcies.close();
+            }
         }
     }
 
