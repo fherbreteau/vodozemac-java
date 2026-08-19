@@ -665,14 +665,14 @@ class InboundGroupSessionTest {
     void testDecryptedMessageEqualsHashCodeToString() {
         DecryptedMessage msg = new DecryptedMessage(new byte[]{1, 2, 3}, 5);
         DecryptedMessage same = new DecryptedMessage(new byte[]{1, 2, 3}, 5);
-        DecryptedMessage different = new DecryptedMessage(new byte[]{1, 2, 3}, 6);
-        DecryptedMessage different2 = new DecryptedMessage(new byte[]{4, 5, 6}, 5);
+        DecryptedMessage differentMi = new DecryptedMessage(new byte[]{1, 2, 3}, 6);
+        DecryptedMessage differentPt = new DecryptedMessage(new byte[]{4, 5, 6}, 5);
 
         assertThat(msg).isEqualTo(msg)
                 .isEqualTo(same)
                 .hasSameHashCodeAs(same)
-                .isNotEqualTo(different)
-                .isNotEqualTo(different2)
+                .isNotEqualTo(differentMi)
+                .isNotEqualTo(differentPt)
                 .isNotEqualTo("not a message")
                 .isNotEqualTo(null);
         assertThat(msg.toString()).contains("plaintext", "messageIndex");
@@ -699,5 +699,20 @@ class InboundGroupSessionTest {
                 .hasSameHashCodeAs(encrypted)
                 .isNotEqualTo("not a MegolmMessage")
                 .isNotEqualTo(null);
+    }
+
+    @Test
+    void testMegolmMessageEqualsHashCodeToString() {
+        MegolmMessage msg = new MegolmMessage("b65", "ct", 1, "mac", "si");
+        MegolmMessage differentCt = new MegolmMessage("b64", "ct2", 1, "mac", "si");
+        MegolmMessage differentMi = new MegolmMessage("b64", "ct", 2, "mac", "si");
+        MegolmMessage differentMac = new MegolmMessage("b64", "ct", 1, "mac2", "si");
+        MegolmMessage differentSi = new MegolmMessage("b64", "ct", 1, "mac", "si2");
+
+        assertThat(msg)
+                .isNotEqualTo(differentCt)
+                .isNotEqualTo(differentMi)
+                .isNotEqualTo(differentMac)
+                .isNotEqualTo(differentSi);
     }
 }
