@@ -97,12 +97,16 @@ class PkEncryptionTest {
     void testPkMessageEqualsHashCodeToString() {
         PkMessage msg = new PkMessage("ct", "mac", "ek");
         PkMessage same = new PkMessage("ct", "mac", "ek");
-        PkMessage different = new PkMessage("ct2", "mac", "ek");
+        PkMessage differentCt = new PkMessage("ct2", "mac", "ek");
+        PkMessage differentMac = new PkMessage("ct", "mac2", "ek");
+        PkMessage differentEk = new PkMessage("ct", "mac", "ek2");
 
         assertThat(msg).isEqualTo(msg)
                 .isEqualTo(same)
                 .hasSameHashCodeAs(same)
-                .isNotEqualTo(different)
+                .isNotEqualTo(differentCt)
+                .isNotEqualTo(differentMac)
+                .isNotEqualTo(differentEk)
                 .isNotEqualTo("not a PkMessage")
                 .isNotEqualTo(null);
         assertThat(msg.toString()).contains("ciphertext", "mac", "ephemeralKey");

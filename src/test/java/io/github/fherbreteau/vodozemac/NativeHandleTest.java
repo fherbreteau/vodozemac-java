@@ -126,4 +126,11 @@ class NativeHandleTest {
         handle.close();
         assertThat(handle.isClosed()).isTrue();
     }
+
+    @Test
+    void testNativeLibraryIsLoaded() {
+        assertThat(NativeLibraryLoader.isLoaded())
+                .as("Native Libray is Loaded")
+                .isTrue();
+    }
 }

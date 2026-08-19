@@ -428,6 +428,16 @@ class AccountTest {
     }
 
     @Test
+    void testEncryptedPickleWithNullKeyThrowsException() {
+        try (Account account = new Account()) {
+            assertThatThrownBy(() -> account.pickle(null))
+                    .as("Pickle with invalid key size should throw KeyException")
+                    .isInstanceOf(KeyException.class)
+                    .hasMessageContaining("256-bit (32-byte)");
+        }
+    }
+
+    @Test
     void testEncryptedUnpickleWithInvalidKeyThrowsException() {
         assertThatThrownBy(() -> Account.unpickle("invalid", new byte[16]))
                 .as("Unpickle with invalid key size should throw KeyException")
@@ -522,12 +532,14 @@ class AccountTest {
     void testIdentityKeysEqualsHashCodeToString() {
         IdentityKeys keys = new IdentityKeys("ed", "cv");
         IdentityKeys same = new IdentityKeys("ed", "cv");
-        IdentityKeys different = new IdentityKeys("ed2", "cv");
+        IdentityKeys differentEd = new IdentityKeys("ed2", "cv");
+        IdentityKeys differentCv = new IdentityKeys("ed", "cv2");
 
         assertThat(keys).isEqualTo(keys)
                 .isEqualTo(same)
                 .hasSameHashCodeAs(same)
-                .isNotEqualTo(different)
+                .isNotEqualTo(differentEd)
+                .isNotEqualTo(differentCv)
                 .isNotEqualTo("not IdentityKeys")
                 .isNotEqualTo(null);
         assertThat(keys.toString()).contains("ed25519", "curve25519");
@@ -538,11 +550,13 @@ class AccountTest {
         OneTimeKeyGenerationResult result = new OneTimeKeyGenerationResult(List.of("k1"), List.of());
         OneTimeKeyGenerationResult same = new OneTimeKeyGenerationResult(List.of("k1"), List.of());
         OneTimeKeyGenerationResult different = new OneTimeKeyGenerationResult(List.of("k2"), List.of());
+        OneTimeKeyGenerationResult different2 = new OneTimeKeyGenerationResult(List.of("k1"), List.of("k2"));
 
         assertThat(result).isEqualTo(result)
                 .isEqualTo(same)
                 .hasSameHashCodeAs(same)
                 .isNotEqualTo(different)
+                .isNotEqualTo(different2)
                 .isNotEqualTo("not a result")
                 .isNotEqualTo(null);
         assertThat(result.toString()).contains("created", "removed");
@@ -553,11 +567,13 @@ class AccountTest {
         DehydratedDeviceResult result = new DehydratedDeviceResult("ct", "nonce");
         DehydratedDeviceResult same = new DehydratedDeviceResult("ct", "nonce");
         DehydratedDeviceResult different = new DehydratedDeviceResult("ct2", "nonce");
+        DehydratedDeviceResult different2 = new DehydratedDeviceResult("ct", "nonce2");
 
         assertThat(result).isEqualTo(result)
                 .isEqualTo(same)
                 .hasSameHashCodeAs(same)
                 .isNotEqualTo(different)
+                .isNotEqualTo(different2)
                 .isNotEqualTo("not a result")
                 .isNotEqualTo(null);
         assertThat(result.toString()).contains("ciphertext", "nonce");

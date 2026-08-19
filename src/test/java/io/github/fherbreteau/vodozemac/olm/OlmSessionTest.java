@@ -300,12 +300,18 @@ class OlmSessionTest {
     void testSessionKeysEqualsHashCodeToString() {
         SessionKeys keys = new SessionKeys("sid", "ik", "bk", "ok");
         SessionKeys same = new SessionKeys("sid", "ik", "bk", "ok");
-        SessionKeys different = new SessionKeys("sid2", "ik", "bk", "ok");
+        SessionKeys differentSid = new SessionKeys("sid2", "ik", "bk", "ok");
+        SessionKeys differentIk = new SessionKeys("sid", "ik2", "bk", "ok");
+        SessionKeys differentBk = new SessionKeys("sid", "ik", "bk2", "ok");
+        SessionKeys differentOk = new SessionKeys("sid", "ik", "bk", "ok3");
 
         assertThat(keys).isEqualTo(keys)
                 .isEqualTo(same)
                 .hasSameHashCodeAs(same)
-                .isNotEqualTo(different)
+                .isNotEqualTo(differentSid)
+                .isNotEqualTo(differentIk)
+                .isNotEqualTo(differentBk)
+                .isNotEqualTo(differentOk)
                 .isNotEqualTo("not SessionKeys")
                 .isNotEqualTo(null);
         assertThat(keys.toString()).contains("sessionId", "identityKey", "baseKey", "oneTimeKey");
