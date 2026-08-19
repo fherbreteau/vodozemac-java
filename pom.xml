@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.fherbreteau</groupId>
@@ -31,17 +31,20 @@
 
         <!-- Tools dependencies versions -->
         <exec-plugin.version>3.6.3</exec-plugin.version>
-        <resource-plugin.version>3.3.1</resource-plugin.version>
+        <resource-plugin.version>3.5.0</resource-plugin.version>
         <compiler-plugin.version>3.15.0</compiler-plugin.version>
         <surefire-plugin.version>3.5.6</surefire-plugin.version>
         <jacoco.version>0.8.15</jacoco.version>
         <checkstyle-maven.version>3.6.0</checkstyle-maven.version>
-        <checkstyle.version>13.10.0</checkstyle.version>
+        <checkstyle.version>14.0.0</checkstyle.version>
         <jar-plugin.version>3.5.1</jar-plugin.version>
         <clean-plugin.version>3.5.0</clean-plugin.version>
         <sonar.version>5.7.0.6970</sonar.version>
         <git-commit-id.version>10.0.0</git-commit-id.version>
-        <dependency.version>3.10.0</dependency.version>
+        <dependency.version>2.21.0</dependency.version>
+        <versions-plugin.version>2.21.0</versions-plugin.version>
+        <dependency-plugin.version>3.11.0</dependency-plugin.version>
+        <enforcer-plugin.version>3.6.3</enforcer-plugin.version>
 
         <!-- Jacoco Coverage Ratio -->
         <jacoco.coverage.ratio>80%</jacoco.coverage.ratio>
@@ -151,6 +154,16 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-dependency-plugin</artifactId>
+                    <version>${dependency-plugin.version}</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${enforcer-plugin.version}</version>
+                </plugin>
+                <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>exec-maven-plugin</artifactId>
                     <version>${exec-plugin.version}</version>
@@ -203,7 +216,21 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>versions-maven-plugin</artifactId>
-                    <version>${dependency.version}</version>
+                    <version>${versions-plugin.version}</version>
+                    <configuration>
+                        <ruleSet>
+                            <ignoreVersions>
+                                <ignoreVersion>
+                                    <type>regex</type>
+                                    <version>(.+-SNAPSHOT|.+-M\d)</version>
+                                </ignoreVersion>
+                                <ignoreVersion>
+                                    <type>regex</type>
+                                    <version>.+-(alpha|beta).+</version>
+                                </ignoreVersion>
+                            </ignoreVersions>
+                        </ruleSet>
+                    </configuration>
                 </plugin>
                 <plugin>
                     <groupId>org.eclipse.m2e</groupId>
@@ -222,7 +249,7 @@
                                         </goals>
                                     </pluginExecutionFilter>
                                     <action>
-                                        <ignore/>
+                                        <ignore />
                                     </action>
                                 </pluginExecution>
                                 <pluginExecution>
@@ -237,7 +264,7 @@
                                     <action>
                                         <execute>
                                             <runOnIncremental>false</runOnIncremental>
-                                        </execute >
+                                        </execute>
                                     </action>
                                 </pluginExecution>
                             </pluginExecutions>
@@ -247,6 +274,28 @@
             </plugins>
         </pluginManagement>
         <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>enforce-maven</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>3.6.3</version>
+                                </requireMavenVersion>
+                                <requireJavaVersion>
+                                    <version>${java.version}</version>
+                                </requireJavaVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
             <plugin>
                 <groupId>io.github.git-commit-id</groupId>
                 <artifactId>git-commit-id-maven-plugin</artifactId>
@@ -396,7 +445,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <argLine>@{surefire.jacoco.args} --enable-native-access=ALL-UNNAMED -Djava.library.path=${project.build.outputDirectory}</argLine>
+                    <argLine>@{surefire.jacoco.args} --enable-native-access=ALL-UNNAMED
+                        -Djava.library.path=${project.build.outputDirectory}</argLine>
                 </configuration>
             </plugin>
 
