@@ -11,7 +11,6 @@ import io.github.fherbreteau.vodozemac.exception.DecryptionException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
 import io.github.fherbreteau.vodozemac.exception.SignatureException;
-import io.github.fherbreteau.vodozemac.exception.VodozemacException;
 import org.junit.jupiter.api.Test;
 
 class InboundGroupSessionTest {
@@ -22,7 +21,7 @@ class InboundGroupSessionTest {
     void testCreateAndDecryptFromOutboundSession() {
         String plaintext = "Hello Megolm!";
         String sessionKey;
-        String encrypted;
+        MegolmMessage encrypted;
 
         try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
             sessionKey = outbound.sessionKey();
@@ -267,7 +266,7 @@ class InboundGroupSessionTest {
     void testImportSessionCanDecryptFromExportIndex() {
         String plaintext = "Hello from index 10";
         String sessionKey;
-        String encryptedAt10;
+        MegolmMessage encryptedAt10;
 
         try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
             sessionKey = outbound.sessionKey();
@@ -336,7 +335,7 @@ class InboundGroupSessionTest {
     void testAdvanceToRemovesAbilityToDecryptEarlierMessages() {
         String plaintext = "Early message";
         String sessionKey;
-        String encrypted;
+        MegolmMessage encrypted;
 
         try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
             sessionKey = outbound.sessionKey();
@@ -582,8 +581,7 @@ class InboundGroupSessionTest {
     void testPickleExceptionOnInvalidPickleData() {
         assertThatThrownBy(() -> InboundGroupSession.unpickle("invalid-json"))
                 .as("Unpickling invalid JSON should throw PickleException")
-                .isInstanceOf(PickleException.class)
-                .isInstanceOf(VodozemacException.class);
+                .isInstanceOf(PickleException.class);
     }
 
     @Test
@@ -591,14 +589,13 @@ class InboundGroupSessionTest {
         byte[] key = new byte[32];
         assertThatThrownBy(() -> InboundGroupSession.unpickle("invalid-encrypted-data", key))
                 .as("Unpickling invalid encrypted data should throw PickleException")
-                .isInstanceOf(PickleException.class)
-                .isInstanceOf(VodozemacException.class);
+                .isInstanceOf(PickleException.class);
     }
 
     @Test
     void testSignatureExceptionOnWrongSessionDecrypt() {
         String plaintext = "Hello Megolm!";
-        String encrypted;
+        MegolmMessage encrypted;
 
         try (OutboundGroupSession outbound1 = new OutboundGroupSession(MegolmSessionVersion.V2)) {
             encrypted = outbound1.encrypt(plaintext.getBytes(StandardCharsets.UTF_8));
@@ -609,8 +606,7 @@ class InboundGroupSessionTest {
             try (InboundGroupSession wrongInbound = new InboundGroupSession(sessionKey2, MegolmSessionVersion.V2)) {
                 assertThatThrownBy(() -> wrongInbound.decrypt(encrypted))
                         .as("Decrypting with wrong session should throw SignatureException")
-                        .isInstanceOf(SignatureException.class)
-                        .isInstanceOf(VodozemacException.class);
+                        .isInstanceOf(SignatureException.class);
             }
         }
     }
@@ -619,7 +615,7 @@ class InboundGroupSessionTest {
     void testDecryptionExceptionOnUnknownMessageIndex() {
         String plaintext = "Early message";
         String sessionKey;
-        String encrypted;
+        MegolmMessage encrypted;
 
         try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
             sessionKey = outbound.sessionKey();
@@ -631,8 +627,7 @@ class InboundGroupSessionTest {
 
             assertThatThrownBy(() -> inbound.decrypt(encrypted))
                     .as("Decrypting with unknown message index should throw DecryptionException")
-                    .isInstanceOf(DecryptionException.class)
-                    .isInstanceOf(VodozemacException.class);
+                    .isInstanceOf(DecryptionException.class);
         }
     }
 
@@ -640,7 +635,7 @@ class InboundGroupSessionTest {
     void testKeyExceptionOnInvalidSessionKey() {
         assertThatThrownBy(() -> new InboundGroupSession("invalid-base64-key", MegolmSessionVersion.V2))
                 .as("Creating session with invalid key should throw VodozemacException")
-                .isInstanceOf(VodozemacException.class);
+                .isInstanceOf(KeyException.class);
     }
 
     @Test
@@ -670,16 +665,54 @@ class InboundGroupSessionTest {
     void testDecryptedMessageEqualsHashCodeToString() {
         DecryptedMessage msg = new DecryptedMessage(new byte[]{1, 2, 3}, 5);
         DecryptedMessage same = new DecryptedMessage(new byte[]{1, 2, 3}, 5);
-        DecryptedMessage different = new DecryptedMessage(new byte[]{1, 2, 3}, 6);
-        DecryptedMessage different2 = new DecryptedMessage(new byte[]{4, 5, 6}, 5);
+        DecryptedMessage differentMi = new DecryptedMessage(new byte[]{1, 2, 3}, 6);
+        DecryptedMessage differentPt = new DecryptedMessage(new byte[]{4, 5, 6}, 5);
 
         assertThat(msg).isEqualTo(msg)
                 .isEqualTo(same)
                 .hasSameHashCodeAs(same)
-                .isNotEqualTo(different)
-                .isNotEqualTo(different2)
+                .isNotEqualTo(differentMi)
+                .isNotEqualTo(differentPt)
                 .isNotEqualTo("not a message")
                 .isNotEqualTo(null);
         assertThat(msg.toString()).contains("plaintext", "messageIndex");
+    }
+
+    @Test
+    void testMegolmMessageFieldsAndRoundTrip() {
+        String plaintext = "Hello Megolm!";
+        MegolmMessage encrypted;
+
+        try (OutboundGroupSession outbound = new OutboundGroupSession()) {
+            encrypted = outbound.encrypt(plaintext.getBytes(StandardCharsets.UTF_8));
+        }
+
+        assertThat(encrypted.ciphertext()).as("ciphertext should not be null").isNotNull().isNotEmpty().isBase64();
+        assertThat(encrypted.mac()).as("mac should not be null").isNotNull().isNotEmpty().isBase64();
+        assertThat(encrypted.signature()).as("signature should not be null").isNotNull().isNotEmpty().isBase64();
+        assertThat(encrypted.messageIndex()).as("message index should be 0").isZero();
+        assertThat(encrypted.toString()).as("toString should be base64").isNotNull().isNotEmpty().isBase64();
+
+        MegolmMessage reconstructed = MegolmMessage.fromBase64(encrypted.toString());
+        assertThat(reconstructed).as("reconstructed message should equal original")
+                .isEqualTo(encrypted)
+                .hasSameHashCodeAs(encrypted)
+                .isNotEqualTo("not a MegolmMessage")
+                .isNotEqualTo(null);
+    }
+
+    @Test
+    void testMegolmMessageEqualsHashCodeToString() {
+        MegolmMessage msg = new MegolmMessage("b65", "ct", 1, "mac", "si");
+        MegolmMessage differentCt = new MegolmMessage("b64", "ct2", 1, "mac", "si");
+        MegolmMessage differentMi = new MegolmMessage("b64", "ct", 2, "mac", "si");
+        MegolmMessage differentMac = new MegolmMessage("b64", "ct", 1, "mac2", "si");
+        MegolmMessage differentSi = new MegolmMessage("b64", "ct", 1, "mac", "si2");
+
+        assertThat(msg)
+                .isNotEqualTo(differentCt)
+                .isNotEqualTo(differentMi)
+                .isNotEqualTo(differentMac)
+                .isNotEqualTo(differentSi);
     }
 }

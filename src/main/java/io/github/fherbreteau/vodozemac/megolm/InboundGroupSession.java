@@ -87,15 +87,15 @@ public final class InboundGroupSession extends NativeHandle {
     /**
      * Decrypts the provided Megolm message.
      *
-     * @param message the base64-encoded encrypted message
+     * @param message the {@link MegolmMessage} to decrypt
      * @return a {@link DecryptedMessage} containing the plaintext and message index
      * @throws IllegalStateException    if this session has been closed
      * @throws DecryptionException      if decryption fails (invalid MAC, padding, or unknown message index)
      * @throws SignatureException       if the message signature is invalid
      */
-    public DecryptedMessage decrypt(String message) {
+    public DecryptedMessage decrypt(MegolmMessage message) {
         checkNotClosed();
-        return nativeDecrypt(nativePtr, message);
+        return nativeDecrypt(nativePtr, message.toString());
     }
 
     /**

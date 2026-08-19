@@ -47,13 +47,19 @@ class OutboundGroupSessionTest {
                     .as("Initial message index should be 0")
                     .isZero();
 
-            String encrypted = session.encrypt("Hello Megolm".getBytes(StandardCharsets.UTF_8));
+            MegolmMessage encrypted = session.encrypt("Hello Megolm".getBytes(StandardCharsets.UTF_8));
 
             assertThat(encrypted)
-                    .as("Encrypted message should be base64")
+                    .as("Encrypted message should not be null")
+                    .isNotNull();
+            assertThat(encrypted.toString())
+                    .as("Encrypted message wire format should be base64")
                     .isNotNull()
                     .isNotEmpty()
-                    .matches("[A-Za-z0-9+/=]+");
+                    .isBase64();
+            assertThat(encrypted.messageIndex())
+                    .as("Message index should be 0 for the first message")
+                    .isZero();
 
             assertThat(session.messageIndex())
                     .as("Message index should increment after encrypt")
