@@ -16,8 +16,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     _class: JClass,
     version: jint,
 ) -> jlong {
-    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
-        let config = megolm_session_config_from_version(version)?;
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
+        let config = megolm_session_config_from_version(env, version)?;
 
         let session = Box::new(GroupSession::new(config));
         Ok(Box::into_raw(session) as jlong)
@@ -100,7 +100,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         check_ptr(env, ptr)?;
         let session = unsafe { &mut *(ptr as *mut GroupSession) };
-        let plaintext_bytes = env.convert_byte_array(&plaintext)?;
+        let plaintext_bytes = env.convert_byte_array(plaintext)?;
 
         let message = session.encrypt(&plaintext_bytes).to_base64();
         let result = env.new_string(message)?;
@@ -192,7 +192,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
-        let pickle_key = env.convert_byte_array(&pickle_key)?;
+        let pickle_key = env.convert_byte_array(pickle_key)?;
 
         let session = GroupSession::from_libolm_pickle(&pickle_str, &pickle_key)
             .map_err(|e| throw_pickle_error(env, e))?;
@@ -218,31 +218,75 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
 
 #[cfg(test)]
 mod tests {
+    use crate::helpers::get_jvm;
+
     use super::*;
     use vodozemac::megolm::SessionConfig as MegolmSessionConfig;
 
     #[test]
     fn test_megolm_session_config_version_1() {
-        let result = megolm_session_config_from_version(1);
-        assert!(
-            result.is_ok(),
-            "Megolm version 1 should produce a valid SessionConfig"
-        );
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let result = megolm_session_config_from_version(env, 1);
+            assert!(
+                result.is_ok(),
+                "Megolm version 1 should produce a valid SessionConfig"
+            );
+            Ok(())
+        })
+        .expect("JVM test failed");
     }
 
     #[test]
     fn test_megolm_session_config_version_2() {
-        let result = megolm_session_config_from_version(2);
-        assert!(
-            result.is_ok(),
-            "Megolm version 2 should produce a valid SessionConfig"
-        );
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let result = megolm_session_config_from_version(env, 2);
+            assert!(
+                result.is_ok(),
+                "Megolm version 2 should produce a valid SessionConfig"
+            );
+            Ok(())
+        })
+        .expect("JVM test failed");
     }
 
     #[test]
     fn test_megolm_session_config_invalid_version() {
-        assert!(megolm_session_config_from_version(0).is_err());
-        assert!(megolm_session_config_from_version(3).is_err());
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let result = megolm_session_config_from_version(env, 0);
+            assert!(result.is_err(), "Version 0 should produce an error");
+            assert!(
+                env.exception_check(),
+                "a Java exception should have been thrown"
+            );
+            env.exception_clear();
+            Ok(())
+        })
+        .expect("JVM test failed");
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let result = megolm_session_config_from_version(env, 3);
+            assert!(result.is_err(), "Version 3 should produce an error");
+            assert!(
+                env.exception_check(),
+                "a Java exception should have been thrown"
+            );
+            env.exception_clear();
+            Ok(())
+        })
+        .expect("JVM test failed");
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let result = megolm_session_config_from_version(env, -1);
+            assert!(result.is_err(), "Version -1 should produce an error");
+            assert!(
+                env.exception_check(),
+                "a Java exception should have been thrown"
+            );
+            env.exception_clear();
+            Ok(())
+        })
+        .expect("JVM test failed");
     }
 
     #[test]

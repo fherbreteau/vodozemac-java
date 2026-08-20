@@ -14,7 +14,8 @@ public final class SampleEcies {
     private SampleEcies() {
     }
 
-    public static void main() {
+    @SuppressWarnings("java:S106")
+    public static void main(String[] args) {
         byte[] plaintext = "It's a secret to everybody".getBytes(UTF_8);
 
         try (Ecies alice = new Ecies();

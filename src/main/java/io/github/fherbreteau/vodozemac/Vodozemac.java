@@ -51,7 +51,7 @@ public final class Vodozemac {
      *
      * @return the vodozemac crate version (e.g. {@code "0.10.0"})
      */
-    public static String getVersion() {
+    public static String version() {
         return nativeVersion();
     }
 

@@ -11,7 +11,8 @@ public final class SampleMegolm {
     private SampleMegolm() {
     }
 
-    public static void main() {
+    @SuppressWarnings("java:S106")
+    public static void main(String[] args) {
         String message = "This is a message";
         try (OutboundGroupSession outbound = new OutboundGroupSession()) {
             String sessionId = outbound.sessionId();

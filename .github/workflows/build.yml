@@ -54,22 +54,22 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7 # v7
 
       - name: Setup Java (pour générer les headers JNI)
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5 # v5
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c
+        uses: dtolnay/rust-toolchain@4360b52568e2003a75bf9bc1d59f33a8e3fc893c # v7
         with:
           toolchain: ${{ env.RUST_VERSION }}
           targets: ${{ matrix.target }}
 
       - name: Cache Rust dependencies
-        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6
+        uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: rust
           key: ${{ matrix.target }}
@@ -96,7 +96,7 @@ jobs:
           ls -la "${{ matrix.artifact_path }}"
 
       - name: Upload native library artifact
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7 # v7
         with:
           name: native-lib-${{ matrix.name }}
           path: ${{ matrix.artifact_path }}
@@ -111,10 +111,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7 # v7
 
       - name: Setup Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5 # v5
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
@@ -122,7 +122,7 @@ jobs:
 
       # Télécharge tous les artefacts natifs générés précédemment
       - name: Download all native libraries
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v8 # v8
         with:
           pattern: native-lib-*
           path: downloaded-natives
@@ -149,7 +149,7 @@ jobs:
         run: mvn clean package -DskipRustBuild=true -DskipTests
 
       - name: Upload Maven artifact (JAR complet)
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7 # v7
         with:
           name: vodozemac-java-jar
           path: target/*.jar
@@ -184,17 +184,17 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7 # v7
 
       - name: Setup Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5 # v5
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 
       - name: Download native library for this platform
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@v8 # v8
         with:
           name: ${{ matrix.native_artifact }}
           path: target/classes
@@ -213,12 +213,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7 # v7
         with:
           fetch-depth: 0
 
       - name: Setup Java
-        uses: actions/setup-java@v5
+        uses: actions/setup-java@v5 # v5
         with:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}

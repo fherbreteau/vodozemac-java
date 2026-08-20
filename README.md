@@ -120,9 +120,9 @@ Main class for Olm account management — identity keys, one-time keys, fallback
 | `long maxNumberOfOneTimeKeys()` | Get max one-time keys to store |
 | `OneTimeKeyGenerationResult generateOneTimeKeys(long count)` | Generate one-time keys |
 | `long storedOneTimeKeyCount()` | Get number of stored one-time keys |
-| `Map getUnpublishedOneTimeKeys()` | Get unpublished one-time keys |
+| `Map unpublishedOneTimeKeys()` | Get unpublished one-time keys |
 | `Optional<String> generateFallbackKey()` | Generate a fallback key |
-| `Map getUnpublishedFallbackKey()` | Get unpublished fallback key |
+| `Map unpublishedFallbackKey()` | Get unpublished fallback key |
 | `boolean forgetFallbackKey()` | Forget previously used fallback key |
 | `void markKeysAsPublished()` | Mark keys as published |
 | `OlmSession createOutboundSession(...)` | Create an outbound Olm session |
@@ -158,8 +158,8 @@ Produced by `OlmSession.encrypt()` and consumed by `OlmSession.decrypt()` and
 
 | Method | Description |
 |--------|-------------|
-| `MessageType getType()` | Get the message type (pre-key or normal) |
-| `String getBody()` | Get the base64-encoded ciphertext body |
+| `MessageType type()` | Get the message type (pre-key or normal) |
+| `String body()` | Get the base64-encoded ciphertext body |
 | `String toString()` | Get the JSON representation for Matrix wire format |
 
 ### MessageType
@@ -312,9 +312,9 @@ An encrypted message produced by `PkEncryption`, consisting of three base64-enco
 
 | Method | Description |
 |--------|-------------|
-| `String getCiphertext()` | Get the base64-encoded ciphertext |
-| `String getMac()` | Get the base64-encoded MAC (does not authenticate the ciphertext) |
-| `String getEphemeralKey()` | Get the base64-encoded ephemeral Curve25519 public key |
+| `String ciphertext()` | Get the base64-encoded ciphertext |
+| `String mac()` | Get the base64-encoded MAC (does not authenticate the ciphertext) |
+| `String ephemeralKey()` | Get the base64-encoded ephemeral Curve25519 public key |
 
 ### Exceptions
 
@@ -339,7 +339,7 @@ Utility class providing base64 encoding/decoding and access to the vodozemac lib
 |--------|-------------|
 | `static String base64Encode(byte[] src)` | Encode bytes to unpadded base64 |
 | `static byte[] base64Decode(String src)` | Decode base64 (padded or unpadded) to bytes |
-| `static String getVersion()` | Get the vodozemac Rust crate version |
+| `static String version()` | Get the vodozemac Rust crate version |
 
 ## 🏗️ Architecture
 
