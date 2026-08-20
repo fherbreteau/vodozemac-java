@@ -12,7 +12,8 @@ public final class SampleSas {
 
     }
 
-    public static void main() {
+    @SuppressWarnings("java:S106")
+    public static void main(String[] args) {
 
         String agreedInfo = "AGREED_INFO";
 

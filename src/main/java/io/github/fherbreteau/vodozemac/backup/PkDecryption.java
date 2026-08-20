@@ -130,11 +130,27 @@ public final class PkDecryption extends NativeHandle {
         return new PkDecryption(nativePtr);
     }
 
+    /**
+     * Pickles this {@code PkDecryption} into the legacy libolm pickle format.
+     * The pickle is encrypted with the provided key.
+     *
+     * @param pickleKey the key used to encrypt the pickle data
+     * @return the libolm pickle data
+     * @throws IllegalStateException if this {@code PkDecryption} has been closed
+     * @throws PickleException if the pickling fails
+     */
+    public String pickleLegacy(byte[] pickleKey) {
+        checkNotClosed();
+        return nativePickleLegacy(nativePtr, pickleKey);
+    }
+
     private static native long nativeNew();
 
     private static native long nativeFromKey(String key);
 
     private static native long nativeUnpickleLegacy(String pickleData, byte[] pickleKey);
+
+    private native String nativePickleLegacy(long ptr, byte[] key);
 
     private native String nativeSecretKey(long ptr);
 

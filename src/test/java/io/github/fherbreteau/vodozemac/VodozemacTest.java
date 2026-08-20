@@ -26,7 +26,7 @@ class VodozemacTest {
 
     @Test
     void testVersionExtraction() {
-        String version = Vodozemac.getVersion();
+        String version = Vodozemac.version();
 
         assertThat(version).isNotNull()
             .isEqualTo("0.10.0");
