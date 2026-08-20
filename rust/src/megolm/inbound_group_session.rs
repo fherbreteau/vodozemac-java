@@ -23,7 +23,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     version: jint,
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
-        let config = megolm_session_config_from_version(version)?;
+        let config = megolm_session_config_from_version(env, version)?;
         let session_key = SessionKey::from_base64(&session_key.to_string())
             .map_err(|e| throw_session_key_decode_error(env, e))?;
 
@@ -357,7 +357,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
-        let pickle_key = env.convert_byte_array(&pickle_key)?;
+        let pickle_key = env.convert_byte_array(pickle_key)?;
         let session = InboundGroupSession::from_libolm_pickle(&pickle_str, &pickle_key)
             .map_err(|e| throw_pickle_error(env, e))?;
 
@@ -375,7 +375,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     version: jint,
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
-        let config = megolm_session_config_from_version(version)?;
+        let config = megolm_session_config_from_version(env, version)?;
         let session_str: String = session_key.to_string();
         let exported_session = ExportedSessionKey::from_base64(&session_str)
             .map_err(|e| throw_session_key_decode_error(env, e))?;

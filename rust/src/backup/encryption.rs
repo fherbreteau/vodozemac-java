@@ -16,8 +16,6 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkEncryption_
         let public_key = Curve25519PublicKey::from_base64(&key.to_string())
             .map_err(|e| throw_key_error(env, e))?;
 
-        let _ = PkEncryption::from_key(public_key);
-
         let key = env.new_string(public_key.to_base64())?;
         let result = env.new_object(
             jni_str!("io/github/fherbreteau/vodozemac/backup/PkEncryption"),
@@ -47,7 +45,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkEncryption_
             .map_err(|e| throw_encryption_error(env, e))?;
 
         let ciphertext = env.new_string(base64_encode(result.ciphertext))?;
-        let mac =  env.new_string(base64_encode(result.mac))?;
+        let mac = env.new_string(base64_encode(result.mac))?;
         let ephemeral_key = env.new_string(result.ephemeral_key.to_base64())?;
 
         let result = env.new_object(

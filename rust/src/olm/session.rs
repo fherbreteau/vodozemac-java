@@ -106,7 +106,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         check_ptr(env, ptr)?;
         let session = unsafe { &mut *(ptr as *mut Session) };
-        let plaintext_bytes = env.convert_byte_array(&plaintext)?;
+        let plaintext_bytes = env.convert_byte_array(plaintext)?;
 
         let olm_message = session
             .encrypt(&plaintext_bytes)
@@ -230,7 +230,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
-        let pickle_key = env.convert_byte_array(&pickle_key)?;
+        let pickle_key = env.convert_byte_array(pickle_key)?;
 
         let session = Session::from_libolm_pickle(&pickle_str, &pickle_key)
             .map_err(|e| throw_pickle_error(env, e))?;

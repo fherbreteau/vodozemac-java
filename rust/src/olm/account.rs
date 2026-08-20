@@ -109,7 +109,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         check_ptr(env, ptr)?;
         let account = unsafe { &mut *(ptr as *mut Account) };
-        let session_config = olm_session_config_from_version(session_version)?;
+        let session_config = olm_session_config_from_version(env, session_version)?;
         let decoded_identity_key = Curve25519PublicKey::from_base64(&identity_key.to_string())
             .map_err(|e| throw_key_error(env, e))?;
         let decoded_one_time_key = Curve25519PublicKey::from_base64(&one_time_key.to_string())
@@ -143,7 +143,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         check_ptr(env, ptr)?;
         let account = unsafe { &mut *(ptr as *mut Account) };
-        let session_config = olm_session_config_from_version(session_version)?;
+        let session_config = olm_session_config_from_version(env, session_version)?;
         let their_identity_key = Curve25519PublicKey::from_base64(&their_identity_key.to_string())
             .map_err(|e| throw_key_error(env, e))?;
         let olm_message: OlmMessage = serde_json::from_str(&pre_key_message.to_string())
@@ -478,7 +478,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
-        let pickle_key = env.convert_byte_array(&pickle_key)?;
+        let pickle_key = env.convert_byte_array(pickle_key)?;
 
         let from_olm = Account::from_libolm_pickle(&pickle_str, &pickle_key)
             .map_err(|e| throw_pickle_error(env, e))?;
@@ -566,32 +566,70 @@ mod tests {
 
     #[test]
     fn test_session_config_version_1() {
-        let result = olm_session_config_from_version(1);
-        assert!(
-            result.is_ok(),
-            "Version 1 should produce a valid SessionConfig"
-        );
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let result = olm_session_config_from_version(env, 1);
+            assert!(
+                result.is_ok(),
+                "Version 1 should produce a valid SessionConfig"
+            );
+            Ok(())
+        })
+        .expect("JVM test failed");
     }
 
     #[test]
     fn test_session_config_version_2() {
-        let result = olm_session_config_from_version(2);
-        assert!(
-            result.is_ok(),
-            "Version 2 should produce a valid SessionConfig"
-        );
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let result = olm_session_config_from_version(env, 2);
+            assert!(
+                result.is_ok(),
+                "Version 2 should produce a valid SessionConfig"
+            );
+            Ok(())
+        })
+        .expect("JVM test failed");
     }
 
     #[test]
     fn test_session_config_invalid_version() {
-        let result = olm_session_config_from_version(0);
-        assert!(result.is_err(), "Version 0 should produce an error");
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let result = olm_session_config_from_version(env, 0);
+            assert!(result.is_err(), "Version 0 should produce an error");
+            assert!(
+                env.exception_check(),
+                "a Java exception should have been thrown"
+            );
+            env.exception_clear();
+            Ok(())
+        })
+        .expect("JVM test failed");
 
-        let result = olm_session_config_from_version(3);
-        assert!(result.is_err(), "Version 3 should produce an error");
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let result = olm_session_config_from_version(env, 3);
+            assert!(result.is_err(), "Version 3 should produce an error");
+            assert!(
+                env.exception_check(),
+                "a Java exception should have been thrown"
+            );
+            env.exception_clear();
+            Ok(())
+        })
+        .expect("JVM test failed");
 
-        let result = olm_session_config_from_version(-1);
-        assert!(result.is_err(), "Negative version should produce an error");
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let result = olm_session_config_from_version(env, -1);
+            assert!(result.is_err(), "Negative version should produce an error");
+            assert!(
+                env.exception_check(),
+                "a Java exception should have been thrown"
+            );
+            env.exception_clear();
+            Ok(())
+        })
+        .expect("JVM test failed");
     }
 
     #[test]

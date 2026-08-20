@@ -10,22 +10,30 @@ pub(crate) fn wrap<T>(v: Vec<T>) -> Result<[T; 32], jni::errors::Error> {
 }
 
 pub(crate) fn olm_session_config_from_version(
+    env: &mut Env,
     version: jint,
 ) -> Result<OlmSessionConfig, jni::errors::Error> {
     match version {
         1 => Ok(OlmSessionConfig::version_1()),
         2 => Ok(OlmSessionConfig::version_2()),
-        _ => Err(jni::errors::Error::JavaException),
+        _ => Err(throw_generic_error(
+            env,
+            format!("Invalid session config version: {version}"),
+        )),
     }
 }
 
 pub(crate) fn megolm_session_config_from_version(
+    env: &mut Env,
     version: jint,
 ) -> Result<MegolmSessionConfig, jni::errors::Error> {
     match version {
         1 => Ok(MegolmSessionConfig::version_1()),
         2 => Ok(MegolmSessionConfig::version_2()),
-        _ => Err(jni::errors::Error::JavaException),
+        _ => Err(throw_generic_error(
+            env,
+            format!("Invalid session config version: {version}"),
+        )),
     }
 }
 

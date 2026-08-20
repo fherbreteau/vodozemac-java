@@ -116,12 +116,33 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
-        let pickle_key = env.convert_byte_array(&pickle_key)?;
+        let pickle_key = env.convert_byte_array(pickle_key)?;
 
         let from_olm = PkDecryption::from_libolm_pickle(&pickle_str, &pickle_key)
             .map_err(|e| throw_pickle_error(env, e))?;
         let pk_decryption = Box::new(from_olm);
         Ok(Box::into_raw(pk_decryption) as jlong)
+    });
+    outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
+}
+
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_nativePickleLegacy(
+    mut env: EnvUnowned,
+    _class: JClass,
+    ptr: jlong,
+    key: JByteArray,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        check_ptr(env, ptr)?;
+        let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
+        let key = wrap(env.convert_byte_array(key)?)?;
+
+        let pickle = pk_decryption
+            .to_libolm_pickle(&key)
+            .map_err(|e| throw_pickle_error(env, e))?;
+        let result = env.new_string(pickle)?;
+        Ok(result.into_raw())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

@@ -105,7 +105,7 @@ pub(crate) fn throw_generic_error<E: std::fmt::Display>(
 ) -> jni::errors::Error {
     throw(
         env,
-        jni_str!("io/github/fherbreteau/vodozemac/exception/VodozemacException"),
+        jni_str!("io/github/fherbreteau/vodozemac/exception/ConversionException"),
         &error.to_string(),
     )
 }
