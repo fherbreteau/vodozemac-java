@@ -8,7 +8,7 @@ use vodozemac::{Curve25519PublicKey, KeyId};
 use crate::errors::{
     throw_generic_error, throw_key_error, throw_pickle_error, throw_session_creation_error,
 };
-use crate::helpers::{check_ptr, olm_session_config_from_version, wrap};
+use crate::helpers::{check_ptr, native_free, olm_session_config_from_version, wrap};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeNew(
@@ -545,8 +545,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let _ = unsafe { Box::from_raw(ptr as *mut Account) };
+        native_free::<Account>(env, ptr);
         Ok(())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

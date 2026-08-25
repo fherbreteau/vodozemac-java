@@ -10,7 +10,7 @@ use crate::errors::{
     throw_decode_error, throw_generic_error, throw_megolm_decryption_error, throw_pickle_error,
     throw_session_key_decode_error,
 };
-use crate::helpers::{check_ptr, megolm_session_config_from_version, wrap};
+use crate::helpers::{check_ptr, megolm_session_config_from_version, native_free, wrap};
 
 // Megolm: InboundGroupSession (wraps vodozemac::megolm::InboundGroupSession)
 // ============================================================================
@@ -305,8 +305,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     ptr: jlong,
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let _ = unsafe { Box::from_raw(ptr as *mut InboundGroupSession) };
+        native_free::<InboundGroupSession>(env, ptr);
         Ok(())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

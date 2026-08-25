@@ -7,7 +7,7 @@ use vodozemac::{Curve25519PublicKey, Curve25519SecretKey, base64_decode, base64_
 use crate::errors::{
     throw_decryption_error, throw_generic_error, throw_key_error, throw_pickle_error,
 };
-use crate::helpers::{check_ptr, wrap};
+use crate::helpers::{check_ptr, native_free, wrap};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_nativeNew(
@@ -154,8 +154,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
     ptr: jlong,
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let _ = unsafe { Box::from_raw(ptr as *mut PkDecryption) };
+        native_free::<PkDecryption>(env, ptr);
         Ok(())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

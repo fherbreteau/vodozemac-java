@@ -37,6 +37,15 @@ pub(crate) fn megolm_session_config_from_version(
     }
 }
 
+pub(crate) fn native_free<T>(env: &mut Env, ptr: jlong) {
+    if check_ptr(env, ptr).is_err() {
+        return;
+    }
+    unsafe {
+        let _ = Box::from_raw(ptr as *mut T);
+    }
+}
+
 pub(crate) fn check_ptr(env: &mut Env, ptr: jlong) -> Result<(), jni::errors::Error> {
     if ptr == 0 {
         return Err(throw_generic_error(env, "Null native pointer"));

@@ -4,7 +4,7 @@ use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};
 use vodozemac::sas::{EstablishedSas, Mac, SasBytes};
 
 use crate::errors::{throw_generic_error, throw_invalid_count_error, throw_sas_error};
-use crate::helpers::check_ptr;
+use crate::helpers::{check_ptr, native_free};
 
 fn to_decimal_array<'local>(
     env: &mut Env<'local>,
@@ -211,8 +211,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
     ptr: jlong,
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let _ = unsafe { Box::from_raw(ptr as *mut EstablishedSas) };
+        native_free::<EstablishedSas>(env, ptr);
         Ok(())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

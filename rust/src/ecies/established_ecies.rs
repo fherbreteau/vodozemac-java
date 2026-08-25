@@ -4,7 +4,7 @@ use jni::{EnvUnowned, JValue, jni_sig, jni_str};
 use vodozemac::ecies::{EstablishedEcies, Message};
 
 use crate::errors::throw_ecies_error;
-use crate::helpers::check_ptr;
+use crate::helpers::{check_ptr, native_free};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEcies_nativePublicKey(
@@ -94,8 +94,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEci
     ptr: jlong,
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let _ = unsafe { Box::from_raw(ptr as *mut EstablishedEcies) };
+        native_free::<EstablishedEcies>(env, ptr);
         Ok(())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
