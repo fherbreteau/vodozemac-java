@@ -339,4 +339,21 @@ class OlmSessionTest {
             }
         }
     }
+
+    @Test
+    void testOlmMessageEqualsHashCodeToString() {
+        OlmMessage msg = new OlmMessage(0, "body");
+        OlmMessage same = new OlmMessage(0, "body");
+        OlmMessage differentType = new OlmMessage(1, "body");
+        OlmMessage differentBody = new OlmMessage(0, "body2");
+
+        assertThat(msg).isEqualTo(msg)
+                .isEqualTo(same)
+                .hasSameHashCodeAs(same)
+                .isNotEqualTo(differentType)
+                .isNotEqualTo(differentBody)
+                .isNotEqualTo("not SessionKeys")
+                .isNotEqualTo(null);
+        assertThat(msg.toString()).contains("type", "body");
+    }
 }

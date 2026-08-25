@@ -53,10 +53,10 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEci
     ptr: jlong,
     plaintext: JByteArray,
 ) -> jstring {
-    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
         check_ptr(env, ptr)?;
         let ecies = unsafe { &mut *(ptr as *mut EstablishedEcies) };
-        let plaintext = env.convert_byte_array(&plaintext)?;
+        let plaintext = env.convert_byte_array(plaintext)?;
 
         let message = ecies.encrypt(&plaintext).encode();
         let result = env.new_string(&message)?;

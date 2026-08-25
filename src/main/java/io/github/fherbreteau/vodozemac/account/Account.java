@@ -210,7 +210,7 @@ public final class Account extends NativeHandle {
      * @return a map of key ID to base64-encoded Curve25519 public key
      * @throws IllegalStateException if this account has been closed
      */
-    public Map<String, String> getUnpublishedOneTimeKeys() {
+    public Map<String, String> unpublishedOneTimeKeys() {
         checkNotClosed();
         return nativeOneTimeKeys(nativePtr);
     }
@@ -239,7 +239,7 @@ public final class Account extends NativeHandle {
      * @return a map of key ID to base64-encoded Curve25519 public key
      * @throws IllegalStateException if this account has been closed
      */
-    public Map<String, String> getUnpublishedFallbackKey() {
+    public Map<String, String> unpublishedFallbackKey() {
         checkNotClosed();
         return nativeFallbackKey(nativePtr);
     }

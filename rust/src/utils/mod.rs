@@ -12,7 +12,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_Vodozemac_nativeBase
     src: JByteArray,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
-        let src = env.convert_byte_array(&src)?;
+        let src = env.convert_byte_array(src)?;
 
         let dst = base64_encode(src);
         let result = env.new_string(&dst)?;

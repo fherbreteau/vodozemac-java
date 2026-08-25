@@ -86,6 +86,31 @@ class PkEncryptionTest {
     }
 
     @Test
+    void testPickleLegacyRoundTrip() {
+        byte[] pickleKey = new byte[32];
+
+        try (PkDecryption original = new PkDecryption()) {
+            String publicKey = original.publicKey();
+            String secretKey = original.secretKey();
+
+            String pickleData = original.pickleLegacy(pickleKey);
+            assertThat(pickleData)
+                    .as("Legacy pickle data should not be null or empty")
+                    .isNotNull()
+                    .isNotEmpty();
+
+            try (PkDecryption restored = PkDecryption.unpickleLegacy(pickleData, pickleKey)) {
+                assertThat(restored.publicKey())
+                        .as("Restored PkDecryption should have the same public key")
+                        .isEqualTo(publicKey);
+                assertThat(restored.secretKey())
+                        .as("Restored PkDecryption should have the same secret key")
+                        .isEqualTo(secretKey);
+            }
+        }
+    }
+
+    @Test
     void testEncryptionExceptionIsVodozemacException() {
         assertThat(new EncryptionException("encryption failed"))
                 .as("EncryptionException should be a VodozemacException")

@@ -1,4 +1,5 @@
 package io.github.fherbreteau.vodozemac.olm;
+import java.util.Objects;
 
 /**
  * A structured Olm message, consisting of a {@link MessageType} and a
@@ -49,6 +50,20 @@ public class OlmMessage {
      */
     public MessageType type() {
         return type;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof OlmMessage olmMessage)) {
+            return false;
+        }
+        return Objects.equals(body, olmMessage.body)
+                && Objects.equals(type, olmMessage.type);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(body, type);
     }
 
     /**

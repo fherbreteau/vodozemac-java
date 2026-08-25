@@ -351,7 +351,7 @@ class AccountTest {
             assertThat(result.removed())
                     .as("No one-time key should be removed on first generation")
                     .isEmpty();
-            Map<String, String> oneTimeKeys = account.getUnpublishedOneTimeKeys();
+            Map<String, String> oneTimeKeys = account.unpublishedOneTimeKeys();
             assertThat(oneTimeKeys)
                     .hasSize(1);
             storedKeyCount = account.storedOneTimeKeyCount();
@@ -362,7 +362,7 @@ class AccountTest {
             assertThat(fallbackKey)
                     .as("First fallback key generation should not return a previous key")
                     .isEmpty();
-            Map<String, String> fallbackKeys = account.getUnpublishedFallbackKey();
+            Map<String, String> fallbackKeys = account.unpublishedFallbackKey();
             assertThat(fallbackKeys)
                     .hasSize(1);
 
@@ -375,10 +375,10 @@ class AccountTest {
 
             // Mark all the keys as published
             account.markKeysAsPublished();
-            oneTimeKeys = account.getUnpublishedOneTimeKeys();
+            oneTimeKeys = account.unpublishedOneTimeKeys();
             assertThat(oneTimeKeys)
                     .isEmpty();
-            fallbackKeys = account.getUnpublishedFallbackKey();
+            fallbackKeys = account.unpublishedFallbackKey();
             assertThat(fallbackKeys)
                     .isEmpty();
         }
@@ -398,7 +398,7 @@ class AccountTest {
                     .singleElement()
                     .isNotNull();
 
-            Map<String, String> oneTimeKeys = bobAccount.getUnpublishedOneTimeKeys();
+            Map<String, String> oneTimeKeys = bobAccount.unpublishedOneTimeKeys();
             assertThat(oneTimeKeys)
                     .as("Bob should have one unpublished one-time key")
                     .hasSize(1);
@@ -496,7 +496,7 @@ class AccountTest {
         try (Account aliceAccount = new Account();
                 Account bobAccount = new Account()) {
             bobAccount.generateOneTimeKeys(1L);
-            Map<String, String> oneTimeKeys = bobAccount.getUnpublishedOneTimeKeys();
+            Map<String, String> oneTimeKeys = bobAccount.unpublishedOneTimeKeys();
             String bobCurve25519Key = bobAccount.curve25519Key();
             String bobOneTimeKey = oneTimeKeys.values().iterator().next();
 
@@ -511,7 +511,7 @@ class AccountTest {
         try (Account aliceAccount = new Account();
                 Account bobAccount = new Account()) {
             bobAccount.generateOneTimeKeys(1L);
-            Map<String, String> oneTimeKeys = bobAccount.getUnpublishedOneTimeKeys();
+            Map<String, String> oneTimeKeys = bobAccount.unpublishedOneTimeKeys();
             String bobCurve25519Key = bobAccount.curve25519Key();
             String bobOneTimeKey = oneTimeKeys.values().iterator().next();
 
