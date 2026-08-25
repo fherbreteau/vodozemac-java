@@ -15,7 +15,8 @@ class PkEncryptionTest {
 
     @Test
     void encryptionRoundTrip() {
-        try (PkDecryption decryptor = new PkDecryption()) {
+        try (PkDecryption decryptor = new PkDecryption();
+            PkEncryption encryptor = PkEncryption.fromKey(decryptor.publicKey())) {
             String publicKey = decryptor.publicKey();
             assertThat(publicKey)
                     .as("Decryptor public key should be defined")
@@ -24,7 +25,6 @@ class PkEncryptionTest {
             assertThat(secretKey)
                     .as("Decryptor secret key should be defined")
                     .isNotNull().isNotEmpty();
-            PkEncryption encryptor = PkEncryption.fromKey(publicKey);
 
             String message = "It's a secret to everybody";
 

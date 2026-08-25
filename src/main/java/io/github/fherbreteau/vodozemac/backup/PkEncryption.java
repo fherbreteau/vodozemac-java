@@ -1,5 +1,6 @@
 package io.github.fherbreteau.vodozemac.backup;
 
+import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
 import io.github.fherbreteau.vodozemac.exception.EncryptionException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
@@ -24,24 +25,21 @@ import io.github.fherbreteau.vodozemac.exception.KeyException;
  * of a {@link PkDecryption} object and can be used to encrypt messages that
  * only the corresponding {@code PkDecryption} can decrypt.
  * <p>
- * This class does not extend {@link io.github.fherbreteau.vodozemac.NativeHandle}
- * because it holds no persistent native resource — it only stores the public
- * key string and delegates each encryption call to the native layer.
+ * This class implements {@link AutoCloseable} and should be used in a
+ * try-with-resources block to ensure native resources are properly released.
  *
  * @author François HERBRETEAU
  * @see PkDecryption
  * @see PkMessage
  */
-public final class PkEncryption {
+public final class PkEncryption extends NativeHandle {
 
     static {
         NativeLibraryLoader.loadLibrary();
     }
 
-    private String publicKey;
-
-    PkEncryption(String publicKey) {
-        this.publicKey = publicKey;
+    private PkEncryption(long nativePtr) {
+        super(nativePtr);
     }
 
     /**
@@ -56,7 +54,8 @@ public final class PkEncryption {
      * @throws KeyException if the key is not a valid Curve25519 public key
      */
     public static PkEncryption fromKey(String key) {
-        return nativeFromKey(key);
+        long nativePtr = nativeFromKey(key);
+        return new PkEncryption(nativePtr);
     }
 
     /**
@@ -71,10 +70,13 @@ public final class PkEncryption {
      * @throws EncryptionException if encryption fails (e.g. non-contributory key)
      */
     public PkMessage encrypt(byte[] plaintext) {
-        return nativeEncrypt(publicKey, plaintext);
+        return nativeEncrypt(nativePtr, plaintext);
     }
 
-    private static native PkEncryption nativeFromKey(String key);
+    private static native long nativeFromKey(String key);
 
-    private native PkMessage nativeEncrypt(String publicKey, byte[] plaintext);
+    private native PkMessage nativeEncrypt(long ptr, byte[] plaintext);
+
+    protected native void nativeFree(long ptr);
+
 }
