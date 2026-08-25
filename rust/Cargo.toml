@@ -11,6 +11,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 vodozemac = {version = "0.10.0", features = [ "libolm-compat", "experimental-session-config", "insecure-pk-encryption" ]}
 jni = "0.22.4"
+serde = { version = "1", features = ["derive"] }
 serde_json = "1.0.141"
 
 [dev-dependencies]
