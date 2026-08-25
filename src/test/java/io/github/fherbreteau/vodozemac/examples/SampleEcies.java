@@ -1,4 +1,4 @@
-package io.github.fherbreteau.vodozemac;
+package io.github.fherbreteau.vodozemac.examples;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
