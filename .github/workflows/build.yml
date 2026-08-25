@@ -34,11 +34,11 @@ jobs:
             lib_name: libvodozemac_java.so
             artifact_path: rust/target/aarch64-unknown-linux-gnu/release/libvodozemac_java.so
 
-#          - name: darwin-x86_64
-#            os: macos-14-intel
-#            target: x86_64-apple-darwin
-#            lib_name: libvodozemac_java.dylib
-#            artifact_path: rust/target/x86_64-apple-darwin/release/libvodozemac_java.dylib
+          - name: darwin-x86_64
+            os: macos-15-intel
+            target: x86_64-apple-darwin
+            lib_name: libvodozemac_java.dylib
+            artifact_path: rust/target/x86_64-apple-darwin/release/libvodozemac_java.dylib
 
           - name: darwin-aarch64
             os: macos-latest
@@ -51,6 +51,12 @@ jobs:
             target: x86_64-pc-windows-msvc
             lib_name: vodozemac_java.dll
             artifact_path: rust/target/x86_64-pc-windows-msvc/release/vodozemac_java.dll
+
+          - name: windows-aarch64
+            os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            lib_name: vodozemac_java.dll
+            artifact_path: rust/target/aarch64-pc-windows-msvc/release/vodozemac_java.dll
 
     steps:
       - name: Checkout repository
@@ -132,15 +138,17 @@ jobs:
         run: |
           mkdir -p src/main/resources/native/linux-x86_64
           mkdir -p src/main/resources/native/linux-aarch64
-          # mkdir -p src/main/resources/native/darwin-x86_64
+          mkdir -p src/main/resources/native/darwin-x86_64
           mkdir -p src/main/resources/native/darwin-aarch64
           mkdir -p src/main/resources/native/windows-x86_64
+          mkdir -p src/main/resources/native/windows-aarch64
 
           cp downloaded-natives/native-lib-linux-x86_64/*.so src/main/resources/native/linux-x86_64/
           cp downloaded-natives/native-lib-linux-aarch64/*.so src/main/resources/native/linux-aarch64/
-          # cp downloaded-natives/native-lib-darwin-x86_64/*.dylib src/main/resources/native/darwin-x86_64/
+          cp downloaded-natives/native-lib-darwin-x86_64/*.dylib src/main/resources/native/darwin-x86_64/
           cp downloaded-natives/native-lib-darwin-aarch64/*.dylib src/main/resources/native/darwin-aarch64/
           cp downloaded-natives/native-lib-windows-x86_64/*.dll src/main/resources/native/windows-x86_64/
+          cp downloaded-natives/native-lib-windows-aarch64/*.dll src/main/resources/native/windows-aarch64/
 
           echo "📦 Native libraries organized:"
           find src/main/resources/native -type f
@@ -172,15 +180,18 @@ jobs:
           - name: linux-aarch64
             os: ubuntu-24.04-arm
             native_artifact: native-lib-linux-aarch64
-#          - name: darwin-x86_64
-#            os: macos-14-intel
-#            native_artifact: native-lib-darwin-x86_64
+          - name: darwin-x86_64
+            os: macos-15-intel
+            native_artifact: native-lib-darwin-x86_64
           - name: darwin-aarch64
             os: macos-latest
             native_artifact: native-lib-darwin-aarch64
           - name: windows-x86_64
             os: windows-latest
             native_artifact: native-lib-windows-x86_64
+          - name: windows-aarch64
+            os: windows-11-arm
+            native_artifact: native-lib-windows-aarch64
 
     steps:
       - name: Checkout repository
