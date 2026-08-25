@@ -4,6 +4,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 
 import io.github.fherbreteau.vodozemac.megolm.DecryptedMessage;
 import io.github.fherbreteau.vodozemac.megolm.InboundGroupSession;
+import io.github.fherbreteau.vodozemac.megolm.MegolmMessage;
 import io.github.fherbreteau.vodozemac.megolm.OutboundGroupSession;
 
 public final class SampleMegolm {
@@ -21,13 +22,17 @@ public final class SampleMegolm {
             String sessionKey = outbound.sessionKey();
             System.out.println("Outbound: Session key: " + sessionKey);
 
-            String encrypted = outbound.encrypt(message.getBytes(UTF_8));
+            MegolmMessage encrypted = outbound.encrypt(message.getBytes(UTF_8));
             System.out.println("Outbound: Encrypted message: " + encrypted);
             System.out.println("Inbound: Message index: " + outbound.messageIndex());
+            System.out.println("Message: Message index: " + encrypted.messageIndex());
+            System.out.println("Message: Ciphertext:    " + encrypted.ciphertext());
+            System.out.println("Message: Mac:           " + encrypted.mac());
+            System.out.println("Message: Signature:     " + encrypted.signature());
 
             outbound.encrypt(message.getBytes(UTF_8));
             outbound.encrypt(message.getBytes(UTF_8));
-            String encrypted4 = outbound.encrypt(message.getBytes(UTF_8));
+            MegolmMessage encrypted4 = outbound.encrypt(message.getBytes(UTF_8));
 
             try (InboundGroupSession inbound = new InboundGroupSession(sessionKey)) {
                 sessionId = inbound.sessionId();
