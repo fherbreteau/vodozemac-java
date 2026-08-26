@@ -96,6 +96,18 @@ All of the following must pass before committing:
 - **JNI 0.22.4** (Rust crate)
 - **JUnit 6**, AssertJ, JaCoCo 0.8.15, Checkstyle 14.0.0
 
+## Working Files (`docs/`)
+
+The files `docs/CODE_REVIEW.md` and `docs/IMPLEMENTATION_PLAN.md` are working documents used to track progress during a task. They must remain in the `docs/` folder.
+
+**Constraint**: These files may only be created or updated when the current Git branch is associated with a pull request whose diff contains *only* these two files (no other changes). Before modifying them, verify with:
+
+```bash
+gh pr view --json files --jq '.files[].path'
+```
+
+If the PR includes any files other than `docs/CODE_REVIEW.md` and `docs/IMPLEMENTATION_PLAN.md`, do not create or edit these files — instead, open a separate PR dedicated solely to these working files.
+
 ## Cross-compilation
 
 `.cargo/config.toml` configures cross-compilation for `x86_64-unknown-linux-gnu` and `aarch64-unknown-linux-gnu` using `clang` + `lld`. The Maven build compiles Rust for the host platform by default; CI workflows handle cross-compilation for multi-platform releases.
