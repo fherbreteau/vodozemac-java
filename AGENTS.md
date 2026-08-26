@@ -4,6 +4,16 @@
 
 Java bindings for the [vodozemac](https://github.com/matrix-org/vodozemac) Rust cryptographic library (v0.10.0), providing Olm, Megolm, SAS, ECIES, and PK Encryption/Decryption functionality for the Matrix protocol.
 
+## Project Documentation
+
+The following documentation files live at the root of the repository (not in `docs/`):
+
+- **`README.md`** — Project introduction, usage examples, and getting started guide
+- **`CHANGELOG.md`** — Release history and changes per version
+- **`CONTRIBUTING.md`** — Guidelines for contributing to the project
+- **`CODE_OF_CONDUCT.md`** — Code of conduct for contributors
+- **`SECURITY.md`** — Security policy and vulnerability reporting
+
 ## Build & Test Commands
 
 ### Java (Maven)
@@ -98,15 +108,15 @@ All of the following must pass before committing:
 
 ## Working Files (`docs/`)
 
-The files `docs/CODE_REVIEW.md` and `docs/IMPLEMENTATION_PLAN.md` are working documents used to track progress during a task. They must remain in the `docs/` folder.
+The `docs/` folder contains working documents (`docs/CODE_REVIEW.md` and `docs/IMPLEMENTATION_PLAN.md`) used to track progress during a task. The `docs/` folder must not be created, modified, or deleted unless in the appropriate PR.
 
-**Constraint**: These files may only be created or updated when the current Git branch is associated with a pull request whose diff contains *only* these two files (no other changes). Before modifying them, verify with:
+**Constraint**: The `docs/` folder may only be modified when the current Git branch is associated with a pull request whose diff contains *only* files within the `docs/` folder (no other changes). Before modifying anything in `docs/`, verify with:
 
 ```bash
 gh pr view --json files --jq '.files[].path'
 ```
 
-If the PR includes any files other than `docs/CODE_REVIEW.md` and `docs/IMPLEMENTATION_PLAN.md`, do not create or edit these files — instead, open a separate PR dedicated solely to these working files.
+If the PR includes any files outside of the `docs/` folder, do not create or edit any files in `docs/` — instead, open a separate PR dedicated solely to these working files.
 
 ## Native Compilation
 
