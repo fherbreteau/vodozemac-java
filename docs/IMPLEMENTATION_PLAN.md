@@ -287,35 +287,43 @@ Addresses CODE_REVIEW.md A1, A2, D1, D2, D3.
 
 ---
 
-## Phase 7: Cryptographic key types (Medium, feature)
+## Phase 7: Cryptographic key types (Medium, feature) — COMPLETE
 
-Addresses CODE_REVIEW.md F1.
+Addresses CODE_REVIEW.md F1. **Status**: Complete (PR #38).
 
-### 7.1 New Java classes
+### 7.1 New Java classes — Done
 
 | Class | vodozemac type | Methods |
 |---|---|---|
-| `Ed25519PublicKey` | `vodozemac::Ed25519PublicKey` | `fromBase64(String)`, `toBase64()`, `verify(String message, String signature) -> boolean` |
+| `Ed25519PublicKey` | `vodozemac::Ed25519PublicKey` | `fromBase64(String)`, `toBase64()`, `verify(String, Ed25519Signature)`, `verify(byte[], Ed25519Signature)` |
 | `Ed25519Signature` | `vodozemac::Ed25519Signature` | `fromBase64(String)`, `toBase64()` |
 | `Curve25519PublicKey` | `vodozemac::Curve25519PublicKey` | `fromBase64(String)`, `toBase64()` |
 
-### 7.2 New Rust JNI module `rust/src/types/` with thin wrappers
+All three are `final` value classes with `equals`/`hashCode`/`toString`, located in
+`io.github.fherbreteau.vodozemac.types`.
 
-- `Ed25519PublicKey`: `nativeFromBase64`, `nativeToBase64`, `nativeVerify`
-- `Ed25519Signature`: `nativeFromBase64`, `nativeToBase64`
-- `Curve25519PublicKey`: `nativeFromBase64`, `nativeToBase64`
+### 7.2 New Rust JNI module `rust/src/types/` — Done
 
-### 7.3 Design decisions
+- `Ed25519PublicKey`: `nativeValidate`, `nativeVerify`
+- `Ed25519Signature`: `nativeValidate`
+- `Curve25519PublicKey`: `nativeValidate`
+- Helper functions: `to_java_curve25519`, `to_java_ed25519`, `to_java_signature` (used by `account.rs`, `session.rs`)
 
-- `Ed25519Keypair` and secret keys are not needed in Java (clients don't create keypairs
+### 7.3 Design decisions — Applied
+
+- `Ed25519Keypair` and secret keys are not exposed in Java (clients don't create keypairs
   directly — `Account` does).
 - `Ed25519PublicKey.verify()` is the main use case — verify signatures from other devices.
-- Could be simpler to add `Account.verify(String message, String signature, String theirEd25519Key)`
-  without exposing the key type. But exposing the type is more flexible.
+- The typed key classes are integrated throughout `Account`, `IdentityKeys`,
+  `OneTimeKeyGenerationResult`, and `SessionKeys` (replacing raw `String`).
 
-### 7.4 Tests: base64 round-trips, signature verify (valid + tampered).
+### 7.4 Tests — Done
 
-**Estimated effort**: 3 new Java classes, 1 new Rust module, ~6 JNI functions, tests.
+- `TypesTest`: base64 validation errors (invalid keys/signatures), `equals`/`hashCode`/`toString`,
+  signature verification failure (returns `false`).
+- Existing tests (`AccountTest`, `OlmSessionTest`, `NativeHandleTest`, `SampleOlm`) updated to
+  use typed key classes.
+- 149 Java tests pass, 29 Rust tests pass, coverage ≥80%.
 
 ---
 
@@ -379,7 +387,7 @@ Addresses CODE_REVIEW.md T1–T8.
 | 4. Medium bugs | Medium | ~4 Java files, 1 pom.xml | ~30 lines changed |
 | 5. Low bugs & docs | Low | ~4 Java files, 1 Rust file | ~20 lines changed |
 | 6. Rust architecture | Medium | ~5 Rust files | -200 / +100 lines |
-| 7. Crypto key types | Medium (feature) | 3 classes + 1 Rust module | ~6 JNI + tests |
+| 7. Crypto key types | Medium (feature) | 3 classes + 1 Rust module | **Complete** (PR #38) |
 | 8. pickleLegacy (blocked) | Low (blocked) | 0 (blocked) | 0 until vodozemac adds API |
 | 9. Test coverage | Low–Medium | ~15 Java tests, ~10 Rust tests | ~300 lines added |
 
@@ -407,7 +415,7 @@ Addresses CODE_REVIEW.md T1–T8.
 | D3: Inconsistent `Box::into_raw` vs `box_to_jlong` | 6.5 | Open |
 | C1: `pickleLegacy()` for session types | 8 | Blocked |
 | C2: `InboundCreationResult.equals()` ignores session | 4.5 | Open |
-| F1: Cryptographic key types | 7 | Open |
+| F1: Cryptographic key types | 7 | **Complete** (PR #38) |
 | T1–T8: Test coverage gaps | 9 | Open |
 
 > All prior critical/security findings (S1–S11) from previous reviews are **complete** and not listed here.

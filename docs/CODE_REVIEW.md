@@ -204,7 +204,7 @@ previous reviews are complete.
 
 ### Feature gaps (Medium, tracked in IMPLEMENTATION_PLAN.md)
 
-- [ ] **F1: Cryptographic key types**: `Ed25519PublicKey`, `Ed25519Signature`, `Curve25519PublicKey` Java classes do not exist; keys are passed as raw base64 `String` throughout the API.
+- [x] **F1: Cryptographic key types**: `Ed25519PublicKey`, `Ed25519Signature`, `Curve25519PublicKey` Java classes now exist in `io.github.fherbreteau.vodozemac.types`, backed by `rust/src/types/mod.rs`. Keys are typed throughout the Account, IdentityKeys, OneTimeKeyGenerationResult, and SessionKeys APIs. — **Complete** (Phase 7, PR #38)
 
 ### Test Coverage Gaps
 
