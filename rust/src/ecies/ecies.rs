@@ -141,3 +141,126 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeFr
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_ecies_new_generates_public_key() {
+        let ecies = Ecies::new();
+        let public_key = ecies.public_key();
+        assert!(!public_key.to_base64().is_empty());
+    }
+
+    #[test]
+    fn test_ecies_with_info_custom_prefix() {
+        let ecies = Ecies::with_info("CUSTOM_INFO");
+        let public_key = ecies.public_key();
+        assert!(!public_key.to_base64().is_empty());
+    }
+
+    #[test]
+    fn test_ecies_new_and_with_info_produce_different_keys() {
+        let ecies1 = Ecies::new();
+        let ecies2 = Ecies::new();
+        assert_ne!(
+            ecies1.public_key().to_base64(),
+            ecies2.public_key().to_base64(),
+            "Two random Ecies instances should have different keys"
+        );
+    }
+
+    #[test]
+    fn test_ecies_establish_outbound_channel() {
+        let alice = Ecies::new();
+        let bob = Ecies::new();
+
+        let plaintext = b"Hello ECIES!";
+
+        let result = alice
+            .establish_outbound_channel(bob.public_key(), plaintext)
+            .expect("Should establish outbound channel");
+
+        assert!(!result.message.encode().is_empty());
+    }
+
+    #[test]
+    fn test_ecies_establish_inbound_channel() {
+        let alice = Ecies::new();
+        let bob = Ecies::new();
+
+        let plaintext = b"Hello ECIES!";
+
+        let outbound = alice
+            .establish_outbound_channel(bob.public_key(), plaintext)
+            .expect("Should establish outbound channel");
+
+        let inbound = bob
+            .establish_inbound_channel(&outbound.message)
+            .expect("Should establish inbound channel");
+
+        assert_eq!(
+            inbound.message, plaintext,
+            "Decrypted plaintext should match the original"
+        );
+    }
+
+    #[test]
+    fn test_ecies_outbound_inbound_check_codes_match() {
+        let alice = Ecies::new();
+        let bob = Ecies::new();
+
+        let plaintext = b"Check code test";
+
+        let outbound = alice
+            .establish_outbound_channel(bob.public_key(), plaintext)
+            .expect("Should establish outbound channel");
+
+        let inbound = bob
+            .establish_inbound_channel(&outbound.message)
+            .expect("Should establish inbound channel");
+
+        assert_eq!(
+            outbound.ecies.check_code(),
+            inbound.ecies.check_code(),
+            "Check codes should match on both sides"
+        );
+    }
+
+    #[test]
+    fn test_ecies_with_info_establishes_channel() {
+        let alice = Ecies::with_info("CUSTOM_APP_INFO");
+        let bob = Ecies::with_info("CUSTOM_APP_INFO");
+
+        let plaintext = b"Custom info test";
+
+        let outbound = alice
+            .establish_outbound_channel(bob.public_key(), plaintext)
+            .expect("Should establish outbound channel");
+
+        let inbound = bob
+            .establish_inbound_channel(&outbound.message)
+            .expect("Should establish inbound channel");
+
+        assert_eq!(inbound.message, plaintext);
+    }
+
+    #[test]
+    fn test_ecies_initial_message_encode_decode_roundtrip() {
+        let alice = Ecies::new();
+        let bob = Ecies::new();
+
+        let plaintext = b"Roundtrip test";
+
+        let outbound = alice
+            .establish_outbound_channel(bob.public_key(), plaintext)
+            .expect("Should establish outbound channel");
+
+        let encoded = outbound.message.encode();
+        let decoded = InitialMessage::decode(&encoded).expect("Should decode initial message");
+
+        assert_eq!(decoded.public_key, outbound.message.public_key);
+        assert_eq!(decoded.ciphertext, outbound.message.ciphertext);
+    }
+}

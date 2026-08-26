@@ -469,4 +469,340 @@ mod tests {
 
         assert_eq!(restored_inbound.session_id(), original_id);
     }
+
+    #[test]
+    fn test_megolm_inbound_export_at_first_known_index() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let inbound = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        let exported = inbound.export_at_first_known_index();
+        assert!(!exported.to_base64().is_empty());
+    }
+
+    #[test]
+    fn test_megolm_inbound_export_at_specific_index() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut inbound = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        assert!(
+            inbound.export_at(5).is_some(),
+            "Should be able to export at index 5"
+        );
+        assert!(
+            inbound.export_at(0).is_some(),
+            "Should be able to export at index 0"
+        );
+    }
+
+    #[test]
+    fn test_megolm_inbound_export_at_after_advance() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut inbound = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        assert!(inbound.advance_to(10));
+        assert!(
+            inbound.export_at(10).is_some(),
+            "Should export at first known index 10"
+        );
+        assert!(
+            inbound.export_at(5).is_none(),
+            "Should not export at index below first known"
+        );
+    }
+
+    #[test]
+    fn test_megolm_inbound_import_from_export() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let inbound = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        let exported = inbound.export_at_first_known_index();
+        let imported = InboundGroupSession::import(&exported, MegolmSessionConfig::version_2());
+
+        assert_eq!(imported.session_id(), inbound.session_id());
+        assert_eq!(imported.first_known_index(), 0);
+    }
+
+    #[test]
+    fn test_megolm_inbound_import_from_export_at_index() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut inbound = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        let exported = inbound.export_at(10).expect("Should export at index 10");
+        let imported = InboundGroupSession::import(&exported, MegolmSessionConfig::version_2());
+
+        assert_eq!(imported.session_id(), inbound.session_id());
+        assert_eq!(imported.first_known_index(), 10);
+    }
+
+    #[test]
+    fn test_megolm_inbound_connected_same_session() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut session1 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+        let mut session2 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        assert!(
+            session1.connected(&mut session2),
+            "Sessions from the same outbound should be connected"
+        );
+    }
+
+    #[test]
+    fn test_megolm_inbound_connected_different_sessions() {
+        let outbound1 = GroupSession::new(MegolmSessionConfig::version_2());
+        let outbound2 = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key1 = outbound1.session_key();
+        let session_key2 = outbound2.session_key();
+        let mut session1 =
+            InboundGroupSession::new(&session_key1, MegolmSessionConfig::version_2());
+        let mut session2 =
+            InboundGroupSession::new(&session_key2, MegolmSessionConfig::version_2());
+
+        assert!(
+            !session1.connected(&mut session2),
+            "Sessions from different outbound should not be connected"
+        );
+    }
+
+    #[test]
+    fn test_megolm_inbound_connected_after_advance() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut session1 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+        let mut session2 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        session2.advance_to(10);
+
+        assert!(
+            session1.connected(&mut session2),
+            "Sessions at different indices should still be connected"
+        );
+    }
+
+    #[test]
+    fn test_megolm_inbound_compare_equal() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut session1 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+        let mut session2 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        assert_eq!(
+            session1.compare(&mut session2),
+            SessionOrdering::Equal,
+            "Same index sessions should compare as Equal"
+        );
+    }
+
+    #[test]
+    fn test_megolm_inbound_compare_better() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut session1 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+        let mut session2 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        session2.advance_to(10);
+
+        assert_eq!(
+            session1.compare(&mut session2),
+            SessionOrdering::Better,
+            "Lower index session should compare as Better"
+        );
+    }
+
+    #[test]
+    fn test_megolm_inbound_compare_worse() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut session1 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+        let mut session2 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        session1.advance_to(10);
+
+        assert_eq!(
+            session1.compare(&mut session2),
+            SessionOrdering::Worse,
+            "Higher index session should compare as Worse"
+        );
+    }
+
+    #[test]
+    fn test_megolm_inbound_compare_unconnected() {
+        let outbound1 = GroupSession::new(MegolmSessionConfig::version_2());
+        let outbound2 = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key1 = outbound1.session_key();
+        let session_key2 = outbound2.session_key();
+        let mut session1 =
+            InboundGroupSession::new(&session_key1, MegolmSessionConfig::version_2());
+        let mut session2 =
+            InboundGroupSession::new(&session_key2, MegolmSessionConfig::version_2());
+
+        assert_eq!(
+            session1.compare(&mut session2),
+            SessionOrdering::Unconnected,
+            "Different sessions should compare as Unconnected"
+        );
+    }
+
+    #[test]
+    fn test_megolm_inbound_merge_equal() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut session1 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+        let mut session2 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        let merged = session1
+            .merge(&mut session2)
+            .expect("Should merge equal sessions");
+
+        assert_eq!(merged.first_known_index(), 0);
+    }
+
+    #[test]
+    fn test_megolm_inbound_merge_better_with_worse() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut session1 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+        let mut session2 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        session2.advance_to(10);
+
+        let merged = session1
+            .merge(&mut session2)
+            .expect("Should merge connected sessions");
+
+        assert_eq!(
+            merged.first_known_index(),
+            0,
+            "Merged session should have lower index"
+        );
+    }
+
+    #[test]
+    fn test_megolm_inbound_merge_unconnected_returns_none() {
+        let outbound1 = GroupSession::new(MegolmSessionConfig::version_2());
+        let outbound2 = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key1 = outbound1.session_key();
+        let session_key2 = outbound2.session_key();
+        let mut session1 =
+            InboundGroupSession::new(&session_key1, MegolmSessionConfig::version_2());
+        let mut session2 =
+            InboundGroupSession::new(&session_key2, MegolmSessionConfig::version_2());
+
+        assert!(
+            session1.merge(&mut session2).is_none(),
+            "Unconnected sessions should not merge"
+        );
+    }
+
+    #[test]
+    fn test_megolm_inbound_merge_preserves_verification() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut session1 = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        let exported = session1.export_at(10).expect("Should export at index 10");
+        let mut session2 = InboundGroupSession::import(&exported, MegolmSessionConfig::version_2());
+
+        let merged = session2
+            .merge(&mut session1)
+            .expect("Should merge connected sessions");
+
+        assert_eq!(
+            merged.first_known_index(),
+            0,
+            "Merged session should use the better ratchet"
+        );
+    }
+
+    #[test]
+    fn test_megolm_inbound_advance_to() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut inbound = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        assert_eq!(inbound.first_known_index(), 0);
+
+        assert!(inbound.advance_to(10));
+        assert_eq!(inbound.first_known_index(), 10);
+
+        assert!(!inbound.advance_to(5), "Should not advance to lower index");
+        assert_eq!(inbound.first_known_index(), 10);
+
+        assert!(!inbound.advance_to(10), "Should not advance to same index");
+        assert_eq!(inbound.first_known_index(), 10);
+
+        assert!(inbound.advance_to(20));
+        assert_eq!(inbound.first_known_index(), 20);
+    }
+
+    #[test]
+    fn test_megolm_inbound_advance_to_then_decrypt_fails_for_old_messages() {
+        let mut outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut inbound = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        let msg0 = outbound.encrypt("first");
+        let _msg1 = outbound.encrypt("second");
+        let msg2 = outbound.encrypt("third");
+
+        let decrypted0 = inbound.decrypt(&msg0).expect("Should decrypt message 0");
+        assert_eq!(decrypted0.plaintext, b"first");
+
+        inbound.advance_to(2);
+
+        assert!(
+            inbound.decrypt(&msg0).is_err(),
+            "Should not decrypt message with index below first known index"
+        );
+
+        let decrypted2 = inbound.decrypt(&msg2).expect("Should decrypt message 2");
+        assert_eq!(decrypted2.plaintext, b"third");
+    }
+
+    #[test]
+    fn test_megolm_inbound_decrypt_multiple_messages() {
+        let mut outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut inbound = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        for i in 0..5 {
+            let plaintext = format!("Message {i}");
+            let message = outbound.encrypt(&plaintext);
+            let decrypted = inbound.decrypt(&message).expect("Should decrypt");
+            assert_eq!(decrypted.plaintext, plaintext.as_bytes());
+            assert_eq!(decrypted.message_index, i);
+        }
+    }
+
+    #[test]
+    fn test_megolm_inbound_session_id_matches_outbound() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let inbound = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        assert_eq!(inbound.session_id(), outbound.session_id());
+    }
+
+    #[test]
+    fn test_megolm_inbound_import_preserves_session_id() {
+        let outbound = GroupSession::new(MegolmSessionConfig::version_2());
+        let session_key = outbound.session_key();
+        let mut inbound = InboundGroupSession::new(&session_key, MegolmSessionConfig::version_2());
+
+        for i in 0..3 {
+            let exported = inbound.export_at(i as u32).expect("Should export");
+            let imported = InboundGroupSession::import(&exported, MegolmSessionConfig::version_2());
+            assert_eq!(
+                imported.session_id(),
+                inbound.session_id(),
+                "Imported session should have same ID at index {i}"
+            );
+            assert_eq!(imported.first_known_index(), i as u32);
+        }
+    }
 }

@@ -231,3 +231,196 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use vodozemac::sas::Sas;
+
+    fn establish_sas_pair() -> (EstablishedSas, EstablishedSas) {
+        let alice = Sas::new();
+        let bob = Sas::new();
+
+        let alice_public = alice.public_key();
+        let bob_public = bob.public_key();
+
+        let alice_established = alice
+            .diffie_hellman(bob_public)
+            .expect("Alice DH should succeed");
+        let bob_established = bob
+            .diffie_hellman(alice_public)
+            .expect("Bob DH should succeed");
+
+        (alice_established, bob_established)
+    }
+
+    #[test]
+    fn test_established_sas_bytes_match() {
+        let (alice, bob) = establish_sas_pair();
+
+        let alice_bytes = alice.bytes("SAS_INFO");
+        let bob_bytes = bob.bytes("SAS_INFO");
+
+        assert_eq!(
+            alice_bytes, bob_bytes,
+            "Both sides should derive the same SasBytes"
+        );
+    }
+
+    #[test]
+    fn test_established_sas_emoji_indices_match() {
+        let (alice, bob) = establish_sas_pair();
+
+        let alice_emojis = alice.bytes("SAS_INFO").emoji_indices();
+        let bob_emojis = bob.bytes("SAS_INFO").emoji_indices();
+
+        assert_eq!(alice_emojis, bob_emojis);
+    }
+
+    #[test]
+    fn test_established_sas_decimals_match() {
+        let (alice, bob) = establish_sas_pair();
+
+        let alice_decimals = alice.bytes("SAS_INFO").decimals();
+        let bob_decimals = bob.bytes("SAS_INFO").decimals();
+
+        assert_eq!(alice_decimals, bob_decimals);
+    }
+
+    #[test]
+    fn test_established_sas_raw_bytes() {
+        let (alice, bob) = establish_sas_pair();
+
+        let alice_raw = alice
+            .bytes_raw("SAS_INFO", 32)
+            .expect("Should generate 32 bytes");
+        let bob_raw = bob
+            .bytes_raw("SAS_INFO", 32)
+            .expect("Should generate 32 bytes");
+
+        assert_eq!(alice_raw, bob_raw);
+        assert_eq!(alice_raw.len(), 32);
+    }
+
+    #[test]
+    fn test_established_sas_bytes_raw_different_info_produces_different_bytes() {
+        let (alice, _) = establish_sas_pair();
+
+        let bytes1 = alice.bytes("INFO_1");
+        let bytes2 = alice.bytes("INFO_2");
+
+        assert_ne!(
+            bytes1, bytes2,
+            "Different info strings should produce different bytes"
+        );
+    }
+
+    #[test]
+    fn test_established_sas_calculate_mac() {
+        let (alice, bob) = establish_sas_pair();
+
+        let message = "ed25519:BOB_DEVICE";
+        let info = "MATRIX_KEY_VERIFICATION_MAC";
+
+        let alice_mac = alice.calculate_mac(message, info);
+        let bob_mac = bob.calculate_mac(message, info);
+
+        assert_eq!(
+            alice_mac.to_base64(),
+            bob_mac.to_base64(),
+            "MACs should match"
+        );
+        assert!(!alice_mac.to_base64().is_empty());
+    }
+
+    #[test]
+    fn test_established_sas_verify_mac_valid() {
+        let (alice, bob) = establish_sas_pair();
+
+        let message = "ed25519:BOB_DEVICE";
+        let info = "MATRIX_KEY_VERIFICATION_MAC";
+
+        let alice_mac = alice.calculate_mac(message, info);
+
+        bob.verify_mac(message, info, &alice_mac)
+            .expect("Bob should verify Alice's MAC");
+    }
+
+    #[test]
+    fn test_established_sas_verify_mac_invalid() {
+        let (alice, _) = establish_sas_pair();
+
+        let message = "ed25519:BOB_DEVICE";
+        let info = "MATRIX_KEY_VERIFICATION_MAC";
+
+        let invalid_mac = Mac::from_slice(&[
+            0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0,
+            1, 0, 1,
+        ]);
+
+        alice
+            .verify_mac(message, info, &invalid_mac)
+            .expect_err("Should fail to verify invalid MAC");
+    }
+
+    #[test]
+    fn test_established_sas_mac_from_base64_roundtrip() {
+        let (alice, _) = establish_sas_pair();
+
+        let message = "test message";
+        let info = "test info";
+
+        let mac = alice.calculate_mac(message, info);
+        let mac_base64 = mac.to_base64();
+
+        let restored = Mac::from_base64(&mac_base64).expect("Should decode MAC from base64");
+
+        alice
+            .verify_mac(message, info, &restored)
+            .expect("Should verify restored MAC");
+    }
+
+    #[test]
+    fn test_established_sas_calculate_mac_invalid_base64() {
+        let (alice, _) = establish_sas_pair();
+
+        let mac = alice.calculate_mac("", "");
+        let invalid = alice.calculate_mac_invalid_base64("", "");
+
+        assert_ne!(
+            mac.to_base64(),
+            invalid,
+            "Invalid base64 MAC should differ from valid MAC"
+        );
+    }
+
+    #[test]
+    fn test_established_sas_our_public_key() {
+        let sas = Sas::new();
+        let public_key = sas.public_key();
+
+        let established = sas
+            .diffie_hellman(Sas::new().public_key())
+            .expect("DH should succeed");
+
+        assert_eq!(established.our_public_key(), public_key);
+    }
+
+    #[test]
+    fn test_established_sas_their_public_key() {
+        let alice = Sas::new();
+        let bob = Sas::new();
+        let bob_public = bob.public_key();
+
+        let established = alice.diffie_hellman(bob_public).expect("DH should succeed");
+
+        assert_eq!(established.their_public_key(), bob_public);
+    }
+
+    #[test]
+    fn test_sas_bytes_as_bytes() {
+        let (alice, _) = establish_sas_pair();
+        let bytes = alice.bytes("INFO");
+        assert_eq!(bytes.as_bytes().len(), 6);
+    }
+}

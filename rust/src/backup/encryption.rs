@@ -71,3 +71,101 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkEncryption_
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
+
+#[cfg(test)]
+mod tests {
+    use vodozemac::pk_encryption::PkDecryption;
+
+    use super::*;
+
+    #[test]
+    fn test_pk_encryption_from_key() {
+        let decryption = PkDecryption::new();
+        let public_key = decryption.public_key();
+        let encryption = PkEncryption::from_key(public_key);
+        let _ = encryption;
+    }
+
+    #[test]
+    fn test_pk_encryption_from_curve25519_public_key() {
+        let decryption = PkDecryption::new();
+        let encryption = PkEncryption::from(decryption.public_key());
+        let _ = encryption;
+    }
+
+    #[test]
+    fn test_pk_encryption_encrypt() {
+        let decryption = PkDecryption::new();
+        let encryption = PkEncryption::from_key(decryption.public_key());
+
+        let plaintext = b"It's a secret to everybody";
+        let message = encryption
+            .encrypt(plaintext)
+            .expect("Should encrypt message");
+
+        assert!(!message.ciphertext.is_empty());
+        assert!(!message.mac.is_empty());
+    }
+
+    #[test]
+    fn test_pk_encryption_encrypt_decrypt_roundtrip() {
+        let decryption = PkDecryption::new();
+        let encryption = PkEncryption::from_key(decryption.public_key());
+
+        let plaintext = b"It's a secret to everybody";
+        let message = encryption
+            .encrypt(plaintext)
+            .expect("Should encrypt message");
+
+        let decrypted = decryption
+            .decrypt(&message)
+            .expect("Should decrypt message");
+
+        assert_eq!(decrypted.as_slice(), plaintext);
+    }
+
+    #[test]
+    fn test_pk_encryption_different_messages() {
+        let decryption = PkDecryption::new();
+        let encryption = PkEncryption::from_key(decryption.public_key());
+
+        let msg1 = encryption.encrypt(b"Message 1").expect("Should encrypt");
+        let msg2 = encryption.encrypt(b"Message 2").expect("Should encrypt");
+
+        assert_ne!(
+            msg1.ciphertext, msg2.ciphertext,
+            "Ciphertexts should differ"
+        );
+
+        let decrypted1 = decryption.decrypt(&msg1).expect("Should decrypt msg1");
+        let decrypted2 = decryption.decrypt(&msg2).expect("Should decrypt msg2");
+
+        assert_eq!(decrypted1, b"Message 1");
+        assert_eq!(decrypted2, b"Message 2");
+    }
+
+    #[test]
+    fn test_pk_encryption_from_pk_decryption() {
+        let decryption = PkDecryption::new();
+        let encryption = PkEncryption::from(&decryption);
+
+        let plaintext = b"Test from decryption";
+        let message = encryption.encrypt(plaintext).expect("Should encrypt");
+        let decrypted = decryption.decrypt(&message).expect("Should decrypt");
+
+        assert_eq!(decrypted.as_slice(), plaintext);
+    }
+
+    #[test]
+    fn test_pk_encryption_empty_plaintext() {
+        let decryption = PkDecryption::new();
+        let encryption = PkEncryption::from_key(decryption.public_key());
+
+        let message = encryption
+            .encrypt(b"")
+            .expect("Should encrypt empty plaintext");
+        let decrypted = decryption.decrypt(&message).expect("Should decrypt");
+
+        assert!(decrypted.is_empty());
+    }
+}

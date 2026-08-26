@@ -85,3 +85,84 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeFree(
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_sas_new_generates_public_key() {
+        let sas = Sas::new();
+        let public_key = sas.public_key();
+        assert!(!public_key.to_base64().is_empty());
+    }
+
+    #[test]
+    fn test_sas_public_key_is_43_chars() {
+        let sas = Sas::new();
+        let public_key = sas.public_key().to_base64();
+        assert_eq!(public_key.len(), 43);
+    }
+
+    #[test]
+    fn test_sas_diffie_hellman_establishes_shared_secret() {
+        let alice = Sas::new();
+        let bob = Sas::new();
+
+        let alice_public = alice.public_key();
+        let bob_public = bob.public_key();
+
+        let alice_established = alice
+            .diffie_hellman(bob_public)
+            .expect("Alice DH should succeed");
+        let bob_established = bob
+            .diffie_hellman(alice_public)
+            .expect("Bob DH should succeed");
+
+        let alice_bytes = alice_established.bytes("TEST_INFO");
+        let bob_bytes = bob_established.bytes("TEST_INFO");
+
+        assert_eq!(
+            alice_bytes, bob_bytes,
+            "Both sides should derive the same SAS bytes"
+        );
+    }
+
+    #[test]
+    fn test_sas_diffie_hellman_different_keys_produce_different_bytes() {
+        let alice = Sas::new();
+        let bob1 = Sas::new();
+        let bob2 = Sas::new();
+
+        let established1 = alice
+            .diffie_hellman(bob1.public_key())
+            .expect("DH with bob1 should succeed");
+        let bytes1 = established1.bytes("TEST_INFO");
+
+        let established2 = bob2
+            .diffie_hellman(bob1.public_key())
+            .expect("DH with bob1 from bob2 should succeed");
+        let bytes2 = established2.bytes("TEST_INFO");
+
+        assert_ne!(
+            bytes1, bytes2,
+            "Different key pairs should produce different SAS bytes"
+        );
+    }
+
+    #[test]
+    fn test_sas_established_public_keys() {
+        let alice = Sas::new();
+        let bob = Sas::new();
+
+        let alice_public = alice.public_key();
+        let bob_public = bob.public_key();
+
+        let alice_established = alice
+            .diffie_hellman(bob_public)
+            .expect("Alice DH should succeed");
+
+        assert_eq!(alice_established.our_public_key(), alice_public);
+        assert_eq!(alice_established.their_public_key(), bob_public);
+    }
+}
