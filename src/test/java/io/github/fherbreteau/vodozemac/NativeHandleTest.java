@@ -12,6 +12,7 @@ import io.github.fherbreteau.vodozemac.megolm.InboundGroupSession;
 import io.github.fherbreteau.vodozemac.megolm.OutboundGroupSession;
 import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
 import io.github.fherbreteau.vodozemac.sas.Sas;
+import io.github.fherbreteau.vodozemac.types.Curve25519PublicKey;
 import org.junit.jupiter.api.Test;
 
 class NativeHandleTest {
@@ -31,7 +32,7 @@ class NativeHandleTest {
         try (Account aliceAccount = new Account();
                 Account bobAccount = new Account()) {
             OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = result.created().iterator().next();
+            Curve25519PublicKey bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             NativeHandle handle = aliceAccount.createOutboundSession(

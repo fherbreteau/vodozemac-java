@@ -3,6 +3,7 @@ package io.github.fherbreteau.vodozemac.olm;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
+import static org.assertj.core.api.InstanceOfAssertFactories.type;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -12,6 +13,7 @@ import io.github.fherbreteau.vodozemac.account.OneTimeKeyGenerationResult;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.SessionCreationException;
 import io.github.fherbreteau.vodozemac.exception.VodozemacException;
+import io.github.fherbreteau.vodozemac.types.Curve25519PublicKey;
 import org.junit.jupiter.api.Test;
 
 class OlmSessionTest {
@@ -28,11 +30,11 @@ class OlmSessionTest {
             assertThat(result.created())
                     .as("Bob should generate one-time keys")
                     .isNotEmpty();
-            String bobOneTimeKey = result.created().iterator().next();
+            Curve25519PublicKey bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             // Alice creates an outbound session with Bob
-            String bobCurve25519Key = bobAccount.curve25519Key();
+            Curve25519PublicKey bobCurve25519Key = bobAccount.curve25519Key();
             try (OlmSession outboundSession = aliceAccount.createOutboundSession(
                     OlmSessionVersion.V2, bobCurve25519Key, bobOneTimeKey)) {
 
@@ -53,7 +55,8 @@ class OlmSessionTest {
                         .extracting(SessionKeys::oneTimeKey)
                         .isEqualTo(bobOneTimeKey);
                 assertThat(sessionKeys)
-                        .extracting(SessionKeys::baseKey, STRING)
+                        .extracting(SessionKeys::baseKey, type(Curve25519PublicKey.class))
+                        .extracting(Curve25519PublicKey::toBase64, STRING)
                         .isNotEmpty();
 
                 assertThat(outboundSession.sessionConfig())
@@ -133,7 +136,7 @@ class OlmSessionTest {
                 Account bobAccount = new Account()) {
 
             OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = result.created().iterator().next();
+            Curve25519PublicKey bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             String pickleData;
@@ -165,7 +168,7 @@ class OlmSessionTest {
                 Account bobAccount = new Account()) {
 
             OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = result.created().iterator().next();
+            Curve25519PublicKey bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             byte[] key = new byte[32];
@@ -198,7 +201,7 @@ class OlmSessionTest {
                 Account bobAccount = new Account()) {
 
             OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = result.created().iterator().next();
+            Curve25519PublicKey bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             try (OlmSession session = aliceAccount.createOutboundSession(
@@ -228,7 +231,7 @@ class OlmSessionTest {
                 Account bobAccount = new Account()) {
 
             OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = result.created().iterator().next();
+            Curve25519PublicKey bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             OlmSession session = aliceAccount.createOutboundSession(
@@ -273,13 +276,13 @@ class OlmSessionTest {
                 Account bobAccount = new Account()) {
 
             OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = result.created().iterator().next();
+            Curve25519PublicKey bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             try (OlmSession outboundSession = aliceAccount.createOutboundSession(
                     OlmSessionVersion.V2, bobAccount.curve25519Key(), bobOneTimeKey)) {
                 OlmMessage encrypted = outboundSession.encrypt("Hello Bob".getBytes(StandardCharsets.UTF_8));
-                String aliceIdentityKey = aliceAccount.curve25519Key();
+                Curve25519PublicKey aliceIdentityKey = aliceAccount.curve25519Key();
 
                 assertThatThrownBy(() -> bobAccount.createInboundSession(OlmSessionVersion.V1, aliceIdentityKey, encrypted))
                         .as("Creating inbound session with mismatched version should throw SessionCreationException")
@@ -298,12 +301,19 @@ class OlmSessionTest {
 
     @Test
     void testSessionKeysEqualsHashCodeToString() {
-        SessionKeys keys = new SessionKeys("sid", "ik", "bk", "ok");
-        SessionKeys same = new SessionKeys("sid", "ik", "bk", "ok");
-        SessionKeys differentSid = new SessionKeys("sid2", "ik", "bk", "ok");
-        SessionKeys differentIk = new SessionKeys("sid", "ik2", "bk", "ok");
-        SessionKeys differentBk = new SessionKeys("sid", "ik", "bk2", "ok");
-        SessionKeys differentOk = new SessionKeys("sid", "ik", "bk", "ok3");
+        Curve25519PublicKey ik1 = Curve25519PublicKey.fromBase64("WHKTK+K7GSjf83JuPfGV0KAZjxQU/3HKOb0DD1MaOm4");
+        Curve25519PublicKey ik2 = Curve25519PublicKey.fromBase64("dMjtgG+vJgd7P7zpZSDH/sJLcqu87gISGA7d/brNfmQ");
+        Curve25519PublicKey bk1 = Curve25519PublicKey.fromBase64("/3CB/Y9RBxbM1HZuC9eu1n+RKmRrPUOXIfJVPsW+djg");
+        Curve25519PublicKey bk2 = Curve25519PublicKey.fromBase64("nXUWh+tgcK/iPySPa+auHLWq1gNcAw0Ol0nF9MlQvGU");
+        Curve25519PublicKey ok1 = Curve25519PublicKey.fromBase64("e2F6C6HefmEh8uvwDIOZtwLbOijctKBAr4XygaA//HU");
+        Curve25519PublicKey ok2 = Curve25519PublicKey.fromBase64("9jAgLTO2oP2R4DTMfeyv5SI8B5M3jE90s60uO+BrNRc");
+
+        SessionKeys keys = new SessionKeys("sid", ik1, bk1, ok1);
+        SessionKeys same = new SessionKeys("sid", ik1, bk1, ok1);
+        SessionKeys differentSid = new SessionKeys("sid2", ik1, bk1, ok1);
+        SessionKeys differentIk = new SessionKeys("sid", ik2, bk1, ok1);
+        SessionKeys differentBk = new SessionKeys("sid", ik1, bk2, ok1);
+        SessionKeys differentOk = new SessionKeys("sid", ik1, bk1, ok2);
 
         assertThat(keys).isEqualTo(keys)
                 .isEqualTo(same)
@@ -322,7 +332,7 @@ class OlmSessionTest {
         try (Account aliceAccount = new Account();
                 Account bobAccount = new Account()) {
             OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = result.created().iterator().next();
+            Curve25519PublicKey bobOneTimeKey = result.created().iterator().next();
             bobAccount.markKeysAsPublished();
 
             try (OlmSession session = aliceAccount.createOutboundSession(

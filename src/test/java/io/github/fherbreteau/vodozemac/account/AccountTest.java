@@ -16,6 +16,9 @@ import io.github.fherbreteau.vodozemac.olm.InboundCreationResult;
 import io.github.fherbreteau.vodozemac.olm.OlmMessage;
 import io.github.fherbreteau.vodozemac.olm.OlmSession;
 import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
+import io.github.fherbreteau.vodozemac.types.Curve25519PublicKey;
+import io.github.fherbreteau.vodozemac.types.Ed25519PublicKey;
+import io.github.fherbreteau.vodozemac.types.Ed25519Signature;
 import org.junit.jupiter.api.Test;
 
 class AccountTest {
@@ -31,25 +34,27 @@ class AccountTest {
                     .isNotNull();
 
             // Test Curve25519 key generation
-            String curve25519Key = account.curve25519Key();
+            Curve25519PublicKey curve25519Key = account.curve25519Key();
             assertThat(curve25519Key)
                     .as("Curve25519 key should be generated")
                     .isNotNull()
+                    .extracting(Curve25519PublicKey::toBase64, STRING)
                     .isNotEmpty()
                     .hasSizeGreaterThan(20); // Should be a reasonable base64 string
 
             // Test Ed25519 key generation
-            String ed25519Key = account.ed25519Key();
+            Ed25519PublicKey ed25519Key = account.ed25519Key();
             assertThat(ed25519Key)
                     .as("Ed25519 key should be generated")
                     .isNotNull()
+                    .extracting(Ed25519PublicKey::toBase64, STRING)
                     .isNotEmpty()
                     .hasSizeGreaterThan(20); // Should be a reasonable base64 string
 
             // Test that keys are different (they should be different key types)
-            assertThat(curve25519Key)
+            assertThat(curve25519Key.toBase64())
                     .as("Curve25519 and Ed25519 keys should be different")
-                    .isNotEqualTo(ed25519Key);
+                    .isNotEqualTo(ed25519Key.toBase64());
 
             // Test that identity Keys contains the ed25519 and curve25519
             IdentityKeys identityKeys = account.identityKeys();
@@ -65,14 +70,19 @@ class AccountTest {
     @Test
     void testMessageSigning() {
         try (Account account = new Account()) {
-            String message = "Hello Matrix!";
-            String signature = account.sign(message);
+            byte[] message = "Hello Matrix!".getBytes(UTF_8);
+            Ed25519Signature signature = account.sign(message);
 
             assertThat(signature)
                     .as("Message signature should be generated")
                     .isNotNull()
+                    .extracting(Ed25519Signature::toBase64, STRING)
                     .isNotEmpty()
                     .hasSizeGreaterThan(20); // Should be a reasonable base64 signature
+
+            boolean result = account.ed25519Key().verify(message, signature);
+            assertThat(result)
+                    .isTrue();
         }
     }
 
@@ -81,11 +91,10 @@ class AccountTest {
         Account account = new Account();
 
         // Verify the account works before closing
-        String key = account.curve25519Key();
+        Curve25519PublicKey key = account.curve25519Key();
         assertThat(key)
                 .as("Account should work before closing")
-                .isNotNull()
-                .isNotEmpty();
+                .isNotNull();
 
         // Close the account
         account.close();
@@ -100,13 +109,12 @@ class AccountTest {
     @Test
     void testTryWithResources() {
         // This test verifies that try-with-resources works correctly
-        String key = null;
+        Ed25519PublicKey key = null;
         try (Account account = new Account()) {
             key = account.ed25519Key();
             assertThat(key)
                     .as("Account should work within try-with-resources")
-                    .isNotNull()
-                    .isNotEmpty();
+                    .isNotNull();
         }
 
         // If we get here without exceptions, the resource management worked
@@ -121,18 +129,16 @@ class AccountTest {
         try (Account account1 = new Account();
                 Account account2 = new Account()) {
 
-            String key1 = account1.curve25519Key();
-            String key2 = account2.curve25519Key();
+            Curve25519PublicKey key1 = account1.curve25519Key();
+            Curve25519PublicKey key2 = account2.curve25519Key();
 
             assertThat(key1)
                     .as("First account should generate a valid key")
-                    .isNotNull()
-                    .isNotEmpty();
+                    .isNotNull();
 
             assertThat(key2)
                     .as("Second account should generate a valid key")
-                    .isNotNull()
-                    .isNotEmpty();
+                    .isNotNull();
 
             // Different accounts should have different keys
             assertThat(key1)
@@ -144,24 +150,26 @@ class AccountTest {
     @Test
     void testKeyProperties() {
         try (Account account = new Account()) {
-            String curve25519Key = account.curve25519Key();
-            String ed25519Key = account.ed25519Key();
+            Curve25519PublicKey curve25519Key = account.curve25519Key();
+            Ed25519PublicKey ed25519Key = account.ed25519Key();
 
             // Test that keys are valid base64 strings
             assertThat(curve25519Key)
                     .as("Curve25519 key should be valid base64")
+                    .extracting(Curve25519PublicKey::toBase64, STRING)
                     .isBase64();
 
             assertThat(ed25519Key)
                     .as("Ed25519 key should be valid base64")
+                    .extracting(Ed25519PublicKey::toBase64, STRING)
                     .isBase64();
 
             // Test that keys have reasonable lengths for cryptographic keys
-            assertThat(curve25519Key.length())
+            assertThat(curve25519Key.toBase64().length())
                     .as("Curve25519 key should have reasonable length")
                     .isBetween(40, 50);
 
-            assertThat(ed25519Key.length())
+            assertThat(ed25519Key.toBase64().length())
                     .as("Ed25519 key should have reasonable length")
                     .isBetween(40, 50);
         }
@@ -170,9 +178,9 @@ class AccountTest {
     @Test
     void testPicklingAndUnpickling() {
         // Create an account and get its original keys
-        String originalCurve25519Key;
-        String originalEd25519Key;
-        String originalSignature;
+        Curve25519PublicKey originalCurve25519Key;
+        Ed25519PublicKey originalEd25519Key;
+        Ed25519Signature originalSignature;
         String pickleData = null;
 
         try (Account originalAccount = new Account()) {
@@ -199,8 +207,8 @@ class AccountTest {
         // Unpickle the account
         try (Account unpickledAccount = Account.unpickle(pickleData)) {
             // Verify that the unpickled account has the same keys as the original
-            String unpickledCurve25519Key = unpickledAccount.curve25519Key();
-            String unpickledEd25519Key = unpickledAccount.ed25519Key();
+            Curve25519PublicKey unpickledCurve25519Key = unpickledAccount.curve25519Key();
+            Ed25519PublicKey unpickledEd25519Key = unpickledAccount.ed25519Key();
 
             assertThat(unpickledCurve25519Key)
                     .as("Unpickled account should have the same Curve25519 key")
@@ -211,7 +219,7 @@ class AccountTest {
                     .isEqualTo(originalEd25519Key);
 
             // Verify that the unpickled account can sign messages with the same result
-            String unpickledSignature = unpickledAccount.sign("Test message for pickling");
+            Ed25519Signature unpickledSignature = unpickledAccount.sign("Test message for pickling");
 
             assertThat(unpickledSignature)
                     .as("Unpickled account should produce the same signature")
@@ -222,9 +230,9 @@ class AccountTest {
     @Test
     void testPicklingAndUnpicklingWithEncryption() {
         // Create an account and get its original keys
-        String originalCurve25519Key;
-        String originalEd25519Key;
-        String originalSignature;
+        Curve25519PublicKey originalCurve25519Key;
+        Ed25519PublicKey originalEd25519Key;
+        Ed25519Signature originalSignature;
         String pickleData = null;
 
         byte[] key = new byte[32];
@@ -254,8 +262,8 @@ class AccountTest {
         // Unpickle the account
         try (Account unpickledAccount = Account.unpickle(pickleData, key)) {
             // Verify that the unpickled account has the same keys as the original
-            String unpickledCurve25519Key = unpickledAccount.curve25519Key();
-            String unpickledEd25519Key = unpickledAccount.ed25519Key();
+            Curve25519PublicKey unpickledCurve25519Key = unpickledAccount.curve25519Key();
+            Ed25519PublicKey unpickledEd25519Key = unpickledAccount.ed25519Key();
 
             assertThat(unpickledCurve25519Key)
                     .as("Unpickled account should have the same Curve25519 key")
@@ -266,7 +274,7 @@ class AccountTest {
                     .isEqualTo(originalEd25519Key);
 
             // Verify that the unpickled account can sign messages with the same result
-            String unpickledSignature = unpickledAccount.sign("Test message for pickling");
+            Ed25519Signature unpickledSignature = unpickledAccount.sign("Test message for pickling");
 
             assertThat(unpickledSignature)
                     .as("Unpickled account should produce the same signature")
@@ -276,9 +284,9 @@ class AccountTest {
 
     @Test
     void testDehydratedDeviceConversion() {
-        String originalCurve25519Key;
-        String originalEd25519Key;
-        String originalSignature;
+        Curve25519PublicKey originalCurve25519Key;
+        Ed25519PublicKey originalEd25519Key;
+        Ed25519Signature originalSignature;
         DehydratedDeviceResult dehydratexDevice;
         byte[] key = new byte[32];
         random.nextBytes(key);
@@ -309,8 +317,8 @@ class AccountTest {
 
         try (Account rehydratedDevice = Account.fromDehydratedDevice(dehydratexDevice.ciphertext(),
                 dehydratexDevice.nonce(), key)) {
-            String rehydratedCurve25519Key = rehydratedDevice.curve25519Key();
-            String rehydratedEd25519Key = rehydratedDevice.ed25519Key();
+            Curve25519PublicKey rehydratedCurve25519Key = rehydratedDevice.curve25519Key();
+            Ed25519PublicKey rehydratedEd25519Key = rehydratedDevice.ed25519Key();
 
             assertThat(rehydratedCurve25519Key)
                     .as("Unpickled account should have the same Curve25519 key")
@@ -321,7 +329,7 @@ class AccountTest {
                     .isEqualTo(originalEd25519Key);
 
             // Verify that the unpickled account can sign messages with the same result
-            String unpickledSignature = rehydratedDevice.sign("Test message for pickling");
+            Ed25519Signature unpickledSignature = rehydratedDevice.sign("Test message for pickling");
 
             assertThat(unpickledSignature)
                     .as("Unpickled account should produce the same signature")
@@ -344,25 +352,26 @@ class AccountTest {
             assertThat(result)
                     .as("Should generate at least 1 one-time key")
                     .isNotNull()
-                    .extracting(OneTimeKeyGenerationResult::created, list(String.class))
+                    .extracting(OneTimeKeyGenerationResult::created, list(Curve25519PublicKey.class))
                     .isNotEmpty()
-                    .singleElement(STRING)
+                    .singleElement()
+                    .extracting(Curve25519PublicKey::toBase64, STRING)
                     .isNotEmpty();
             assertThat(result.removed())
                     .as("No one-time key should be removed on first generation")
                     .isEmpty();
-            Map<String, String> oneTimeKeys = account.unpublishedOneTimeKeys();
+            Map<String, Curve25519PublicKey> oneTimeKeys = account.unpublishedOneTimeKeys();
             assertThat(oneTimeKeys)
                     .hasSize(1);
             storedKeyCount = account.storedOneTimeKeyCount();
             assertThat(storedKeyCount)
                     .as("A one-time key should be unpublished")
                     .isEqualTo(1);
-            Optional<String> fallbackKey = account.generateFallbackKey();
+            Optional<Curve25519PublicKey> fallbackKey = account.generateFallbackKey();
             assertThat(fallbackKey)
                     .as("First fallback key generation should not return a previous key")
                     .isEmpty();
-            Map<String, String> fallbackKeys = account.unpublishedFallbackKey();
+            Map<String, Curve25519PublicKey> fallbackKeys = account.unpublishedFallbackKey();
             assertThat(fallbackKeys)
                     .hasSize(1);
 
@@ -394,17 +403,17 @@ class AccountTest {
             assertThat(result)
                     .as("Bob should generate one-time keys")
                     .isNotNull()
-                    .extracting(OneTimeKeyGenerationResult::created, list(String.class))
+                    .extracting(OneTimeKeyGenerationResult::created, list(Curve25519PublicKey.class))
                     .singleElement()
                     .isNotNull();
 
-            Map<String, String> oneTimeKeys = bobAccount.unpublishedOneTimeKeys();
+            Map<String, Curve25519PublicKey> oneTimeKeys = bobAccount.unpublishedOneTimeKeys();
             assertThat(oneTimeKeys)
                     .as("Bob should have one unpublished one-time key")
                     .hasSize(1);
 
-            String bobCurve25519Key = bobAccount.curve25519Key();
-            String bobOneTimeKey = oneTimeKeys.values().iterator().next();
+            Curve25519PublicKey bobCurve25519Key = bobAccount.curve25519Key();
+            Curve25519PublicKey bobOneTimeKey = oneTimeKeys.values().iterator().next();
 
             // Alice creates an outbound session with Bob's identity key and one-time key
             try (OlmSession session = aliceAccount.createOutboundSession(
@@ -480,11 +489,13 @@ class AccountTest {
             assertThat(account.ed25519Key())
                     .as("Legacy account should have a valid Ed25519 key")
                     .isNotNull()
+                    .extracting(Ed25519PublicKey::toBase64, STRING)
                     .isNotEmpty();
 
             assertThat(account.curve25519Key())
                     .as("Legacy account should have a valid Curve25519 key")
                     .isNotNull()
+                    .extracting(Curve25519PublicKey::toBase64, STRING)
                     .isNotEmpty();
             assertThat(account.pickleLegacy(pickleKey))
                 .isEqualTo(pickleData);
@@ -496,9 +507,9 @@ class AccountTest {
         try (Account aliceAccount = new Account();
                 Account bobAccount = new Account()) {
             bobAccount.generateOneTimeKeys(1L);
-            Map<String, String> oneTimeKeys = bobAccount.unpublishedOneTimeKeys();
-            String bobCurve25519Key = bobAccount.curve25519Key();
-            String bobOneTimeKey = oneTimeKeys.values().iterator().next();
+            Map<String, Curve25519PublicKey> oneTimeKeys = bobAccount.unpublishedOneTimeKeys();
+            Curve25519PublicKey bobCurve25519Key = bobAccount.curve25519Key();
+            Curve25519PublicKey bobOneTimeKey = oneTimeKeys.values().iterator().next();
 
             try (OlmSession session = aliceAccount.createOutboundSession(bobCurve25519Key, bobOneTimeKey)) {
                 assertThat(session).as("Outbound session with default version should be created").isNotNull();
@@ -511,9 +522,9 @@ class AccountTest {
         try (Account aliceAccount = new Account();
                 Account bobAccount = new Account()) {
             bobAccount.generateOneTimeKeys(1L);
-            Map<String, String> oneTimeKeys = bobAccount.unpublishedOneTimeKeys();
-            String bobCurve25519Key = bobAccount.curve25519Key();
-            String bobOneTimeKey = oneTimeKeys.values().iterator().next();
+            Map<String, Curve25519PublicKey> oneTimeKeys = bobAccount.unpublishedOneTimeKeys();
+            Curve25519PublicKey bobCurve25519Key = bobAccount.curve25519Key();
+            Curve25519PublicKey bobOneTimeKey = oneTimeKeys.values().iterator().next();
 
             try (OlmSession outboundSession = aliceAccount.createOutboundSession(bobCurve25519Key, bobOneTimeKey)) {
                 String plaintext = "Hello Bob";
@@ -530,10 +541,14 @@ class AccountTest {
 
     @Test
     void testIdentityKeysEqualsHashCodeToString() {
-        IdentityKeys keys = new IdentityKeys("ed", "cv");
-        IdentityKeys same = new IdentityKeys("ed", "cv");
-        IdentityKeys differentEd = new IdentityKeys("ed2", "cv");
-        IdentityKeys differentCv = new IdentityKeys("ed", "cv2");
+        Ed25519PublicKey ed1 = Ed25519PublicKey.fromBase64("NnTo+WL1n6ZjGN1EdHKtrYMRKAlrNUlxrZLtX0hDkbs");
+        Curve25519PublicKey cv1 = Curve25519PublicKey.fromBase64("WHKTK+K7GSjf83JuPfGV0KAZjxQU/3HKOb0DD1MaOm4");
+        Ed25519PublicKey ed2 = Ed25519PublicKey.fromBase64("Zv95Ka4ThW9hogCkG0MLTI+0+i9K6qS/S3tdfuWsMI4");
+        Curve25519PublicKey cv2 = Curve25519PublicKey.fromBase64("YEgdMTY8JPLnIvFCGg/66vxcsA53GSMlyRBsqhv4hn8");
+        IdentityKeys keys = new IdentityKeys(ed1, cv1);
+        IdentityKeys same = new IdentityKeys(ed1, cv1);
+        IdentityKeys differentEd = new IdentityKeys(ed2, cv1);
+        IdentityKeys differentCv = new IdentityKeys(ed1, cv2);
 
         assertThat(keys).isEqualTo(keys)
                 .isEqualTo(same)
@@ -547,16 +562,18 @@ class AccountTest {
 
     @Test
     void testOneTimeKeyGenerationResultEqualsHashCodeToString() {
-        OneTimeKeyGenerationResult result = new OneTimeKeyGenerationResult(List.of("k1"), List.of());
-        OneTimeKeyGenerationResult same = new OneTimeKeyGenerationResult(List.of("k1"), List.of());
-        OneTimeKeyGenerationResult different = new OneTimeKeyGenerationResult(List.of("k2"), List.of());
-        OneTimeKeyGenerationResult different2 = new OneTimeKeyGenerationResult(List.of("k1"), List.of("k2"));
+        Curve25519PublicKey k1 = Curve25519PublicKey.fromBase64("WHKTK+K7GSjf83JuPfGV0KAZjxQU/3HKOb0DD1MaOm4");
+        Curve25519PublicKey k2 = Curve25519PublicKey.fromBase64("YEgdMTY8JPLnIvFCGg/66vxcsA53GSMlyRBsqhv4hn8");
+        OneTimeKeyGenerationResult result = new OneTimeKeyGenerationResult(List.of(k1), List.of(k2));
+        OneTimeKeyGenerationResult same = new OneTimeKeyGenerationResult(List.of(k1), List.of(k2));
+        OneTimeKeyGenerationResult differentK1 = new OneTimeKeyGenerationResult(List.of(), List.of(k2));
+        OneTimeKeyGenerationResult differentK2 = new OneTimeKeyGenerationResult(List.of(k1), List.of());
 
         assertThat(result).isEqualTo(result)
                 .isEqualTo(same)
                 .hasSameHashCodeAs(same)
-                .isNotEqualTo(different)
-                .isNotEqualTo(different2)
+                .isNotEqualTo(differentK1)
+                .isNotEqualTo(differentK2)
                 .isNotEqualTo("not a result")
                 .isNotEqualTo(null);
         assertThat(result.toString()).contains("created", "removed");
