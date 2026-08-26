@@ -108,6 +108,6 @@ gh pr view --json files --jq '.files[].path'
 
 If the PR includes any files other than `docs/CODE_REVIEW.md` and `docs/IMPLEMENTATION_PLAN.md`, do not create or edit these files — instead, open a separate PR dedicated solely to these working files.
 
-## Cross-compilation
+## Native Compilation
 
-`.cargo/config.toml` configures cross-compilation for `x86_64-unknown-linux-gnu` and `aarch64-unknown-linux-gnu` using `clang` + `lld`. The Maven build compiles Rust for the host platform by default; CI workflows handle cross-compilation for multi-platform releases.
+All CI targets build natively on matching GitHub-hosted runners (x86_64 and ARM64 for Linux, macOS, and Windows). No cross-compilation configuration is needed. The Maven build compiles Rust for the host platform by default; CI workflows build on each target platform separately.
