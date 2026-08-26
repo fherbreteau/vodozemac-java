@@ -2,14 +2,15 @@ use jni::objects::{JByteArray, JClass, JObject, JString};
 use jni::sys::{jboolean, jint, jlong, jobject, jstring};
 use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};
 use std::collections::HashMap;
-use vodozemac::olm::{Account, AccountPickle, OlmMessage};
+use std::mem::forget;
+use vodozemac::olm::{Account, AccountPickle, OlmMessage, Session};
 use vodozemac::{Curve25519PublicKey, KeyId};
 
 use crate::errors::{
     throw_generic_error, throw_key_error, throw_pickle_error, throw_session_creation_error,
 };
 use crate::helpers::{
-    box_to_jlong, check_ptr, from_json, json_to_jstring, native_free,
+    box_to_jlong, catch_panic, check_ptr, from_json, json_to_jstring, native_free,
     olm_session_config_from_version, string_to_jstring, wrap,
 };
 use crate::types::{to_java_curve25519, to_java_ed25519, to_java_signature};
@@ -20,9 +21,9 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     _class: JClass,
 ) -> jlong {
     let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
-        let account = Box::new(Account::new());
+        let account = Account::new();
 
-        Ok(Box::into_raw(account) as jlong)
+        Ok(box_to_jlong(account))
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -34,18 +35,20 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &*(ptr as *const Account) };
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &*(ptr as *const Account) };
 
-        let identity_key = account.identity_keys();
-        let ed25519 = to_java_ed25519(env, &(identity_key.ed25519))?;
-        let curve25519 = to_java_curve25519(env, &(identity_key.curve25519))?;
-        let identity_keys = env.new_object(
-            jni_str!("io/github/fherbreteau/vodozemac/account/IdentityKeys"),
-            jni_sig!((ed25519: io.github.fherbreteau.vodozemac.types.Ed25519PublicKey, curve25519: io.github.fherbreteau.vodozemac.types.Curve25519PublicKey) -> void),
-            &[JValue::Object(&ed25519), JValue::Object(&curve25519)],
-        )?;
-        Ok(identity_keys.into_raw())
+            let identity_key = account.identity_keys();
+            let ed25519 = to_java_ed25519(env, &(identity_key.ed25519))?;
+            let curve25519 = to_java_curve25519(env, &(identity_key.curve25519))?;
+            let identity_keys = env.new_object(
+                jni_str!("io/github/fherbreteau/vodozemac/account/IdentityKeys"),
+                jni_sig!((ed25519: io.github.fherbreteau.vodozemac.types.Ed25519PublicKey, curve25519: io.github.fherbreteau.vodozemac.types.Curve25519PublicKey) -> void),
+                &[JValue::Object(&ed25519), JValue::Object(&curve25519)],
+            )?;
+            Ok(identity_keys.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -55,13 +58,15 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
-) -> jobject {
-    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &*(ptr as *const Account) };
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &*(ptr as *const Account) };
 
-        let curve25519 = to_java_curve25519(env, &(account.curve25519_key()))?;
-        Ok(curve25519.into_raw())
+            let curve25519 = to_java_curve25519(env, &(account.curve25519_key()))?;
+            Ok(curve25519.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -71,13 +76,15 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
-) -> jobject {
-    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &*(ptr as *const Account) };
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &*(ptr as *const Account) };
 
-        let ed25519 = to_java_ed25519(env, &(account.ed25519_key()))?;
-        Ok(ed25519.into_raw())
+            let ed25519 = to_java_ed25519(env, &(account.ed25519_key()))?;
+            Ok(ed25519.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -89,13 +96,15 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<i64, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &*(ptr as *const Account) };
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &*(ptr as *const Account) };
 
-        let max_number_of_one_time_keys = account.max_number_of_one_time_keys();
-        let result = jlong::try_from(max_number_of_one_time_keys)
-            .map_err(|e| throw_generic_error(env, e))?;
-        Ok(result)
+            let max_number_of_one_time_keys = account.max_number_of_one_time_keys();
+            let result = jlong::try_from(max_number_of_one_time_keys)
+                .map_err(|e| throw_generic_error(env, e))?;
+            Ok(result)
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -109,26 +118,28 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     one_time_key: JString,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &mut *(ptr as *mut Account) };
-        let session_config = olm_session_config_from_version(env, session_version)?;
-        let decoded_identity_key = Curve25519PublicKey::from_base64(&identity_key.to_string())
-            .map_err(|e| throw_key_error(env, e))?;
-        let decoded_one_time_key = Curve25519PublicKey::from_base64(&one_time_key.to_string())
-            .map_err(|e| throw_key_error(env, e))?;
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &mut *(ptr as *mut Account) };
+            let session_config = olm_session_config_from_version(env, session_version)?;
+            let decoded_identity_key = Curve25519PublicKey::from_base64(&identity_key.to_string())
+                .map_err(|e| throw_key_error(env, e))?;
+            let decoded_one_time_key = Curve25519PublicKey::from_base64(&one_time_key.to_string())
+                .map_err(|e| throw_key_error(env, e))?;
 
-        let session = account.create_outbound_session(
-            session_config,
-            decoded_identity_key,
-            decoded_one_time_key,
-        );
-        let session_ptr = Box::into_raw(Box::new(session)) as jlong;
-        let result = env.new_object(
-            jni_str!("io/github/fherbreteau/vodozemac/olm/OlmSession"),
-            jni_sig!((nativePtr: long) -> void),
-            &[JValue::Long(session_ptr)],
-        )?;
-        Ok(result.into_raw())
+            let session = account
+                .create_outbound_session(session_config, decoded_identity_key, decoded_one_time_key)
+                .map_err(|e| throw_session_creation_error(env, e))?;
+            let session_box = Box::new(session);
+            let session_ptr = &*session_box as *const Session as jlong;
+            let result = env.new_object(
+                jni_str!("io/github/fherbreteau/vodozemac/olm/OlmSession"),
+                jni_sig!((nativePtr: long) -> void),
+                &[JValue::Long(session_ptr)],
+            )?;
+            forget(session_box);
+            Ok(result.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -143,35 +154,40 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     pre_key_message: JString,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &mut *(ptr as *mut Account) };
-        let session_config = olm_session_config_from_version(env, session_version)?;
-        let their_identity_key = Curve25519PublicKey::from_base64(&their_identity_key.to_string())
-            .map_err(|e| throw_key_error(env, e))?;
-        let olm_message: OlmMessage = serde_json::from_str(&pre_key_message.to_string())
-            .map_err(|e| throw_session_creation_error(env, e))?;
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &mut *(ptr as *mut Account) };
+            let session_config = olm_session_config_from_version(env, session_version)?;
+            let their_identity_key =
+                Curve25519PublicKey::from_base64(&their_identity_key.to_string())
+                    .map_err(|e| throw_key_error(env, e))?;
+            let olm_message: OlmMessage = serde_json::from_str(&pre_key_message.to_string())
+                .map_err(|e| throw_session_creation_error(env, e))?;
 
-        let pre_key_message = match olm_message {
-            OlmMessage::PreKey(pk) => pk,
-            OlmMessage::Normal(_) => {
-                return Err(throw_session_creation_error(
-                    env,
-                    "Expected a pre-key message but got a normal message",
-                ));
-            }
-        };
-        let result = account
-            .create_inbound_session(session_config, their_identity_key, &pre_key_message)
-            .map_err(|e| throw_session_creation_error(env, e))?;
+            let pre_key_message = match olm_message {
+                OlmMessage::PreKey(pk) => pk,
+                OlmMessage::Normal(_) => {
+                    return Err(throw_session_creation_error(
+                        env,
+                        "Expected a pre-key message but got a normal message",
+                    ));
+                }
+            };
+            let result = account
+                .create_inbound_session(session_config, their_identity_key, &pre_key_message)
+                .map_err(|e| throw_session_creation_error(env, e))?;
 
-        let session_ptr = Box::into_raw(Box::new(result.session)) as jlong;
-        let plaintext_bytes = env.byte_array_from_slice(&result.plaintext)?;
-        let result = env.new_object(
-            jni_str!("io/github/fherbreteau/vodozemac/olm/InboundCreationResult"),
-            jni_sig!((sessionPtr: long, plaintext: byte[]) -> void),
-            &[JValue::Long(session_ptr), JValue::Object(&plaintext_bytes)],
-        )?;
-        Ok(result.into_raw())
+            let session_box = Box::new(result.session);
+            let session_ptr = &*session_box as *const Session as jlong;
+            let plaintext_bytes = env.byte_array_from_slice(&result.plaintext)?;
+            let result = env.new_object(
+                jni_str!("io/github/fherbreteau/vodozemac/olm/InboundCreationResult"),
+                jni_sig!((sessionPtr: long, plaintext: byte[]) -> void),
+                &[JValue::Long(session_ptr), JValue::Object(&plaintext_bytes)],
+            )?;
+            forget(session_box);
+            Ok(result.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -183,13 +199,15 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<i64, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &*(ptr as *const Account) };
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &*(ptr as *const Account) };
 
-        let stored_one_time_key_count = account.stored_one_time_key_count();
-        let result =
-            jlong::try_from(stored_one_time_key_count).map_err(|e| throw_generic_error(env, e))?;
-        Ok(result)
+            let stored_one_time_key_count = account.stored_one_time_key_count();
+            let result = jlong::try_from(stored_one_time_key_count)
+                .map_err(|e| throw_generic_error(env, e))?;
+            Ok(result)
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -238,13 +256,15 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     count: jlong,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &mut *(ptr as *mut Account) };
-        let count = usize::try_from(count).map_err(|e| throw_generic_error(env, e))?;
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &mut *(ptr as *mut Account) };
+            let count = usize::try_from(count).map_err(|e| throw_generic_error(env, e))?;
 
-        let result = account.generate_one_time_keys(count);
-        let result = key_generation_to_result(env, result)?;
-        Ok(result.into_raw())
+            let result = account.generate_one_time_keys(count);
+            let result = key_generation_to_result(env, result)?;
+            Ok(result.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -276,12 +296,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &*(ptr as *const Account) };
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &*(ptr as *const Account) };
 
-        let keys = account.one_time_keys();
-        let result = key_map_to_result(env, &keys)?;
-        Ok(result.into_raw())
+            let keys = account.one_time_keys();
+            let result = key_map_to_result(env, &keys)?;
+            Ok(result.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -293,17 +315,19 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &mut *(ptr as *mut Account) };
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &mut *(ptr as *mut Account) };
 
-        let result = account.generate_fallback_key();
-        match result {
-            Some(key) => {
-                let key_str = to_java_curve25519(env, &key)?;
-                Ok(key_str.into_raw() as jobject)
+            let result = account.generate_fallback_key();
+            match result {
+                Some(key) => {
+                    let key_str = to_java_curve25519(env, &key)?;
+                    Ok(key_str.into_raw() as jobject)
+                }
+                None => Ok(std::ptr::null_mut()),
             }
-            None => Ok(std::ptr::null_mut()),
-        }
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -315,12 +339,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &*(ptr as *const Account) };
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &*(ptr as *const Account) };
 
-        let keys = account.fallback_key();
-        let result = key_map_to_result(env, &keys)?;
-        Ok(result.into_raw())
+            let keys = account.fallback_key();
+            let result = key_map_to_result(env, &keys)?;
+            Ok(result.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -332,11 +358,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jboolean {
     let outcome = env.with_env(|env| -> Result<jboolean, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &mut *(ptr as *mut Account) };
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &mut *(ptr as *mut Account) };
 
-        let forgot = account.forget_fallback_key();
-        Ok(forgot)
+            let forgot = account.forget_fallback_key();
+            Ok(forgot)
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -348,11 +376,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &mut *(ptr as *mut Account) };
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &mut *(ptr as *mut Account) };
 
-        account.mark_keys_as_published();
-        Ok(())
+            account.mark_keys_as_published();
+            Ok(())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>();
 }
@@ -362,17 +392,18 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
-    message: JByteArray,
-) -> jobject {
-    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &*(ptr as *const Account) };
-        let message = env.convert_byte_array(message)?;
+    message: JString,
+) -> jstring {
+    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &*(ptr as *const Account) };
+            let msg: String = message.to_string();
 
-        let signature = account.sign(&message);
-        let signature = to_java_signature(env, &signature)?;
-
-        Ok(signature.into_raw())
+            let signature = account.sign(&msg);
+            let signature = to_java_signature(env, &signature)?;
+            Ok(signature.into_raw())
+       })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -384,10 +415,12 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &*(ptr as *const Account) };
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &*(ptr as *const Account) };
 
-        json_to_jstring(env, &account.pickle())
+            json_to_jstring(env, &account.pickle())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -400,12 +433,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     key: JByteArray,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &*(ptr as *const Account) };
-        let key = wrap(env.convert_byte_array(key)?)?;
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &*(ptr as *const Account) };
+            let key = wrap(env, env.convert_byte_array(key)?)?;
 
-        let encrypted = account.pickle().encrypt(&key);
-        string_to_jstring(env, encrypted)
+            let encrypted = account.pickle().encrypt(&key);
+            string_to_jstring(env, encrypted)
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -418,14 +453,16 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     key: JByteArray,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &*(ptr as *const Account) };
-        let key = wrap(env.convert_byte_array(key)?)?;
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &*(ptr as *const Account) };
+            let key = wrap(env, env.convert_byte_array(key)?)?;
 
-        let pickle = account
-            .to_libolm_pickle(&key)
-            .map_err(|e| throw_pickle_error(env, e))?;
-        string_to_jstring(env, pickle)
+            let pickle = account
+                .to_libolm_pickle(&key)
+                .map_err(|e| throw_pickle_error(env, e))?;
+            string_to_jstring(env, pickle)
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -437,10 +474,12 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     pickle_data: JString,
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
-        let pickle_str: String = pickle_data.to_string();
+        catch_panic(env, |env| {
+            let pickle_str: String = pickle_data.to_string();
 
-        let pickle_data: AccountPickle = from_json(env, &pickle_str)?;
-        Ok(box_to_jlong(Account::from_pickle(pickle_data)))
+            let pickle_data: AccountPickle = from_json(env, &pickle_str)?;
+            Ok(box_to_jlong(Account::from_pickle(pickle_data)))
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -453,12 +492,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     key: JByteArray,
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
-        let pickle_str: String = pickle_data.to_string();
-        let key = wrap(env.convert_byte_array(key)?)?;
+        catch_panic(env, |env| {
+            let pickle_str: String = pickle_data.to_string();
+            let key = wrap(env, env.convert_byte_array(key)?)?;
 
-        let pickle_data = AccountPickle::from_encrypted(&pickle_str, &key)
-            .map_err(|e| throw_pickle_error(env, e))?;
-        Ok(box_to_jlong(Account::from_pickle(pickle_data)))
+            let pickle_data = AccountPickle::from_encrypted(&pickle_str, &key)
+                .map_err(|e| throw_pickle_error(env, e))?;
+            Ok(box_to_jlong(Account::from_pickle(pickle_data)))
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -471,12 +512,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     pickle_key: JByteArray,
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
-        let pickle_str: String = pickle_data.to_string();
-        let pickle_key = env.convert_byte_array(pickle_key)?;
+        catch_panic(env, |env| {
+            let pickle_str: String = pickle_data.to_string();
+            let pickle_key = env.convert_byte_array(pickle_key)?;
 
-        let from_olm = Account::from_libolm_pickle(&pickle_str, &pickle_key)
-            .map_err(|e| throw_pickle_error(env, e))?;
-        Ok(box_to_jlong(from_olm))
+            let from_olm = Account::from_libolm_pickle(&pickle_str, &pickle_key)
+                .map_err(|e| throw_pickle_error(env, e))?;
+            Ok(box_to_jlong(from_olm))
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -490,14 +533,15 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     key: JByteArray,
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
-        let ciphertext_str: String = ciphertext.to_string();
-        let nonce_str: String = nonce.to_string();
-        let key = wrap(env.convert_byte_array(key)?)?;
+        catch_panic(env, |env| {
+            let ciphertext_str: String = ciphertext.to_string();
+            let nonce_str: String = nonce.to_string();
+            let key = wrap(env, env.convert_byte_array(key)?)?;
 
-        let dehydrated = Account::from_dehydrated_device(&ciphertext_str, &nonce_str, &key)
-            .map_err(|e| throw_pickle_error(env, e))?;
-        let account = Box::new(dehydrated);
-        Ok(Box::into_raw(account) as jlong)
+            let dehydrated = Account::from_dehydrated_device(&ciphertext_str, &nonce_str, &key)
+                .map_err(|e| throw_pickle_error(env, e))?;
+            Ok(box_to_jlong(dehydrated))
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -510,23 +554,25 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     key: JByteArray,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let account = unsafe { &*(ptr as *const Account) };
-        let key = wrap(env.convert_byte_array(key)?)?;
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let account = unsafe { &*(ptr as *const Account) };
+            let key = wrap(env, env.convert_byte_array(key)?)?;
 
-        let pickle_data = account
-            .to_dehydrated_device(&key)
-            .map_err(|e| throw_pickle_error(env, e))?;
-        let ciphertext = env.new_string(pickle_data.ciphertext)?;
-        let nonce = env.new_string(pickle_data.nonce)?;
+            let pickle_data = account
+                .to_dehydrated_device(&key)
+                .map_err(|e| throw_pickle_error(env, e))?;
+            let ciphertext = env.new_string(pickle_data.ciphertext)?;
+            let nonce = env.new_string(pickle_data.nonce)?;
 
-        let dehydrated_device = env.new_object(
-            jni_str!("io/github/fherbreteau/vodozemac/account/DehydratedDeviceResult"),
-            jni_sig!((ciphertext: java.lang.String, nonce: java.lang.String) -> void),
-            &[JValue::Object(&ciphertext), JValue::Object(&nonce)],
-        )?;
+            let dehydrated_device = env.new_object(
+                jni_str!("io/github/fherbreteau/vodozemac/account/DehydratedDeviceResult"),
+                jni_sig!((ciphertext: java.lang.String, nonce: java.lang.String) -> void),
+                &[JValue::Object(&ciphertext), JValue::Object(&nonce)],
+            )?;
 
-        Ok(dehydrated_device.into_raw())
+            Ok(dehydrated_device.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
