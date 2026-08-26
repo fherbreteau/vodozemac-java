@@ -94,7 +94,7 @@ All of the following must pass before committing:
 - **Rust** (stable), Cargo
 - **vodozemac 0.10.0** (Rust crate with features: `libolm-compat`, `experimental-session-config`, `insecure-pk-encryption`)
 - **JNI 0.22.4** (Rust crate)
-- **JUnit 5**, AssertJ, JaCoCo 0.8.15, Checkstyle 13.10.0
+- **JUnit 6**, AssertJ, JaCoCo 0.8.15, Checkstyle 14.0.0
 
 ## Cross-compilation
 

@@ -19,16 +19,16 @@ Vodozemac Java provides Java Native Interface (JNI) bindings for the [Vodozemac]
 - **🔗 ECIES Channels**: Elliptic Curve Integrated Encryption Scheme for QR-code-based device login (MSC3886)
 - **💾 PK Encryption**: Megolm key backup using Curve25519-AES-SHA2 hybrid encryption
 - **🔄 libolm Compatibility**: Legacy pickle support for migrating from libolm
-- **🌍 Cross-Platform**: Linux (x86_64, ARM64), macOS (Apple Silicon), Windows (x86_64)
+- **🌍 Cross-Platform**: Linux (x86_64, ARM64), macOS (Intel, Apple Silicon), Windows (x86_64, ARM64)
 - **📦 Maven Integration**: Automatic Rust compilation and native library packaging
 - **🗑️ Memory Safety**: Proper resource management with Java's `AutoCloseable`
-- **🧪 Comprehensive Testing**: AssertJ-based test suite with 101 test cases
+- **🧪 Comprehensive Testing**: AssertJ-based test suite with 142 test cases
 - **🔧 GitHub CI/CD**: Multi-platform build and test pipeline
 
 ## 📋 Requirements
 
 - **Java 25+** (Required for JNI and modern features)
-- **Maven 3.8+** (For building the project)
+- **Maven 3.6.3+** (For building the project)
 - **Rust toolchain** (For native library compilation)
 - **Git** (For version control)
 
@@ -349,7 +349,7 @@ Utility class providing base64 encoding/decoding and access to the vodozemac lib
 vodozemac-java/
 ├── .github/
 │   └── workflows/              # GitHub Actions CI/CD
-│       ├── build.yml           # Multi-platform build pipeline
+│       ├── build.yml           # 6-platform native build + Maven package + test
 │       ├── test.yml            # Test pipeline
 │       └── release.yml         # Release pipeline
 ├── rust/                       # Rust JNI bindings
@@ -406,9 +406,10 @@ vodozemac-java/
 |----------|--------------|-------------|--------|
 | 🐧 Linux | x86_64 | `x86_64-unknown-linux-gnu` | ✅ Supported |
 | 🐧 Linux | ARM64 | `aarch64-unknown-linux-gnu` | ✅ Supported |
-| 🍎 macOS | Intel | `x86_64-apple-darwin` | ❌ Not built (disabled in CI) |
+| 🍎 macOS | Intel | `x86_64-apple-darwin` | ✅ Supported |
 | 🍎 macOS | Apple Silicon | `aarch64-apple-darwin` | ✅ Supported |
 | 🪟 Windows | x86_64 | `x86_64-pc-windows-msvc` | ✅ Supported |
+| 🪟 Windows | ARM64 | `aarch64-pc-windows-msvc` | ✅ Supported |
 
 ## 👨‍💻 Development
 
