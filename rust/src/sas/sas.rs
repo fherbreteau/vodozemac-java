@@ -5,7 +5,7 @@ use vodozemac::Curve25519PublicKey;
 use vodozemac::sas::Sas;
 
 use crate::errors::throw_key_error;
-use crate::helpers::check_ptr;
+use crate::helpers::{check_ptr, native_free};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeNew(
@@ -72,8 +72,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeFree(
     ptr: jlong,
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let _ = unsafe { Box::from_raw(ptr as *mut Sas) };
+        native_free::<Sas>(env, ptr);
         Ok(())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

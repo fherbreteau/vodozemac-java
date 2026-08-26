@@ -8,7 +8,10 @@ use vodozemac::{Curve25519PublicKey, KeyId};
 use crate::errors::{
     throw_generic_error, throw_key_error, throw_pickle_error, throw_session_creation_error,
 };
-use crate::helpers::{check_ptr, olm_session_config_from_version, wrap};
+use crate::helpers::{
+    box_to_jlong, check_ptr, from_json, json_to_jstring, native_free,
+    olm_session_config_from_version, string_to_jstring, wrap,
+};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeNew(
@@ -383,11 +386,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
         check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
 
-        let pickle_data = account.pickle();
-        let json_string =
-            serde_json::to_string(&pickle_data).map_err(|e| throw_pickle_error(env, e))?;
-        let result = env.new_string(json_string)?;
-        Ok(result.into_raw())
+        json_to_jstring(env, &account.pickle())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -404,10 +403,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
         let account = unsafe { &*(ptr as *const Account) };
         let key = wrap(env.convert_byte_array(key)?)?;
 
-        let pickle = account.pickle();
-        let encrypted = pickle.encrypt(&key);
-        let result = env.new_string(encrypted)?;
-        Ok(result.into_raw())
+        let encrypted = account.pickle().encrypt(&key);
+        string_to_jstring(env, encrypted)
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -427,8 +424,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
         let pickle = account
             .to_libolm_pickle(&key)
             .map_err(|e| throw_pickle_error(env, e))?;
-        let result = env.new_string(pickle)?;
-        Ok(result.into_raw())
+        string_to_jstring(env, pickle)
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -442,10 +438,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         let pickle_str: String = pickle_data.to_string();
 
-        let pickle_data: AccountPickle =
-            serde_json::from_str(&pickle_str).map_err(|e| throw_pickle_error(env, e))?;
-        let account = Box::new(Account::from_pickle(pickle_data));
-        Ok(Box::into_raw(account) as jlong)
+        let pickle_data: AccountPickle = from_json(env, &pickle_str)?;
+        Ok(box_to_jlong(Account::from_pickle(pickle_data)))
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -463,8 +457,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 
         let pickle_data = AccountPickle::from_encrypted(&pickle_str, &key)
             .map_err(|e| throw_pickle_error(env, e))?;
-        let account = Box::new(Account::from_pickle(pickle_data));
-        Ok(Box::into_raw(account) as jlong)
+        Ok(box_to_jlong(Account::from_pickle(pickle_data)))
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -482,8 +475,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 
         let from_olm = Account::from_libolm_pickle(&pickle_str, &pickle_key)
             .map_err(|e| throw_pickle_error(env, e))?;
-        let account = Box::new(from_olm);
-        Ok(Box::into_raw(account) as jlong)
+        Ok(box_to_jlong(from_olm))
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -545,8 +537,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     ptr: jlong,
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let _ = unsafe { Box::from_raw(ptr as *mut Account) };
+        native_free::<Account>(env, ptr);
         Ok(())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

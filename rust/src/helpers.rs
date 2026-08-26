@@ -1,9 +1,10 @@
 use jni::Env;
-use jni::sys::{jint, jlong};
+use jni::sys::{jint, jlong, jstring};
+use serde::{Deserialize, Serialize};
 use vodozemac::megolm::SessionConfig as MegolmSessionConfig;
 use vodozemac::olm::SessionConfig as OlmSessionConfig;
 
-use crate::errors::throw_generic_error;
+use crate::errors::{throw_generic_error, throw_pickle_error};
 
 pub(crate) fn wrap<T>(v: Vec<T>) -> Result<[T; 32], jni::errors::Error> {
     v.try_into().map_err(|_v| jni::errors::Error::JavaException)
@@ -35,6 +36,40 @@ pub(crate) fn megolm_session_config_from_version(
             format!("Invalid session config version: {version}"),
         )),
     }
+}
+
+pub(crate) fn native_free<T>(env: &mut Env, ptr: jlong) {
+    if check_ptr(env, ptr).is_err() {
+        return;
+    }
+    unsafe {
+        let _ = Box::from_raw(ptr as *mut T);
+    }
+}
+
+pub(crate) fn json_to_jstring<T: Serialize>(
+    env: &mut Env,
+    value: &T,
+) -> Result<jstring, jni::errors::Error> {
+    let json = serde_json::to_string(value).map_err(|e| throw_pickle_error(env, e))?;
+    let result = env.new_string(json)?;
+    Ok(result.into_raw())
+}
+
+pub(crate) fn string_to_jstring(env: &mut Env, s: String) -> Result<jstring, jni::errors::Error> {
+    let result = env.new_string(s)?;
+    Ok(result.into_raw())
+}
+
+pub(crate) fn from_json<T: for<'de> Deserialize<'de>>(
+    env: &mut Env,
+    json: &str,
+) -> Result<T, jni::errors::Error> {
+    serde_json::from_str(json).map_err(|e| throw_pickle_error(env, e))
+}
+
+pub(crate) fn box_to_jlong<T>(value: T) -> jlong {
+    Box::into_raw(Box::new(value)) as jlong
 }
 
 pub(crate) fn check_ptr(env: &mut Env, ptr: jlong) -> Result<(), jni::errors::Error> {

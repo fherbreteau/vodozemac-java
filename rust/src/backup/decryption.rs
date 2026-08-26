@@ -7,7 +7,7 @@ use vodozemac::{Curve25519PublicKey, Curve25519SecretKey, base64_decode, base64_
 use crate::errors::{
     throw_decryption_error, throw_generic_error, throw_key_error, throw_pickle_error,
 };
-use crate::helpers::{check_ptr, wrap};
+use crate::helpers::{box_to_jlong, check_ptr, native_free, string_to_jstring, wrap};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_nativeNew(
@@ -120,8 +120,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
 
         let from_olm = PkDecryption::from_libolm_pickle(&pickle_str, &pickle_key)
             .map_err(|e| throw_pickle_error(env, e))?;
-        let pk_decryption = Box::new(from_olm);
-        Ok(Box::into_raw(pk_decryption) as jlong)
+        Ok(box_to_jlong(from_olm))
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -141,8 +140,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
         let pickle = pk_decryption
             .to_libolm_pickle(&key)
             .map_err(|e| throw_pickle_error(env, e))?;
-        let result = env.new_string(pickle)?;
-        Ok(result.into_raw())
+        string_to_jstring(env, pickle)
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -154,8 +152,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
     ptr: jlong,
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let _ = unsafe { Box::from_raw(ptr as *mut PkDecryption) };
+        native_free::<PkDecryption>(env, ptr);
         Ok(())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

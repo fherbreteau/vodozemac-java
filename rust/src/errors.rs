@@ -9,68 +9,46 @@ fn throw(env: &mut Env, class: &JNIStr, message: &str) -> jni::errors::Error {
     jni::errors::Error::JavaException
 }
 
-pub(crate) fn throw_pickle_error<E: std::fmt::Display>(
-    env: &mut Env,
-    error: E,
-) -> jni::errors::Error {
-    throw(
-        env,
-        jni_str!("io/github/fherbreteau/vodozemac/exception/PickleException"),
-        &error.to_string(),
-    )
+macro_rules! throw_typed {
+    ($name:ident, $class:expr) => {
+        pub(crate) fn $name<E: std::fmt::Display>(env: &mut Env, error: E) -> jni::errors::Error {
+            throw(env, $class, &error.to_string())
+        }
+    };
 }
 
-pub(crate) fn throw_decryption_error<E: std::fmt::Display>(
-    env: &mut Env,
-    error: E,
-) -> jni::errors::Error {
-    throw(
-        env,
-        jni_str!("io/github/fherbreteau/vodozemac/exception/DecryptionException"),
-        &error.to_string(),
-    )
-}
-
-pub(crate) fn throw_encryption_error<E: std::fmt::Display>(
-    env: &mut Env,
-    error: E,
-) -> jni::errors::Error {
-    throw(
-        env,
-        jni_str!("io/github/fherbreteau/vodozemac/exception/EncryptionException"),
-        &error.to_string(),
-    )
-}
-
-pub(crate) fn throw_session_creation_error<E: std::fmt::Display>(
-    env: &mut Env,
-    error: E,
-) -> jni::errors::Error {
-    throw(
-        env,
-        jni_str!("io/github/fherbreteau/vodozemac/exception/SessionCreationException"),
-        &error.to_string(),
-    )
-}
-
-pub(crate) fn throw_key_error<E: std::fmt::Display>(env: &mut Env, error: E) -> jni::errors::Error {
-    throw(
-        env,
-        jni_str!("io/github/fherbreteau/vodozemac/exception/KeyException"),
-        &error.to_string(),
-    )
-}
-
-pub(crate) fn throw_signature_error<E: std::fmt::Display>(
-    env: &mut Env,
-    error: E,
-) -> jni::errors::Error {
-    throw(
-        env,
-        jni_str!("io/github/fherbreteau/vodozemac/exception/SignatureException"),
-        &error.to_string(),
-    )
-}
+throw_typed!(
+    throw_pickle_error,
+    jni_str!("io/github/fherbreteau/vodozemac/exception/PickleException")
+);
+throw_typed!(
+    throw_decryption_error,
+    jni_str!("io/github/fherbreteau/vodozemac/exception/DecryptionException")
+);
+throw_typed!(
+    throw_encryption_error,
+    jni_str!("io/github/fherbreteau/vodozemac/exception/EncryptionException")
+);
+throw_typed!(
+    throw_session_creation_error,
+    jni_str!("io/github/fherbreteau/vodozemac/exception/SessionCreationException")
+);
+throw_typed!(
+    throw_key_error,
+    jni_str!("io/github/fherbreteau/vodozemac/exception/KeyException")
+);
+throw_typed!(
+    throw_signature_error,
+    jni_str!("io/github/fherbreteau/vodozemac/exception/SignatureException")
+);
+throw_typed!(
+    throw_ecies_error,
+    jni_str!("io/github/fherbreteau/vodozemac/exception/EciesException")
+);
+throw_typed!(
+    throw_generic_error,
+    jni_str!("io/github/fherbreteau/vodozemac/exception/ConversionException")
+);
 
 pub(crate) fn throw_sas_error(env: &mut Env, error: SasError) -> jni::errors::Error {
     throw(
@@ -80,32 +58,10 @@ pub(crate) fn throw_sas_error(env: &mut Env, error: SasError) -> jni::errors::Er
     )
 }
 
-pub(crate) fn throw_ecies_error<E: std::fmt::Display>(
-    env: &mut Env,
-    error: E,
-) -> jni::errors::Error {
-    throw(
-        env,
-        jni_str!("io/github/fherbreteau/vodozemac/exception/EciesException"),
-        &error.to_string(),
-    )
-}
-
 pub(crate) fn throw_invalid_count_error(env: &mut Env, error: InvalidCount) -> jni::errors::Error {
     throw(
         env,
         jni_str!("io/github/fherbreteau/vodozemac/exception/SasException"),
-        &error.to_string(),
-    )
-}
-
-pub(crate) fn throw_generic_error<E: std::fmt::Display>(
-    env: &mut Env,
-    error: E,
-) -> jni::errors::Error {
-    throw(
-        env,
-        jni_str!("io/github/fherbreteau/vodozemac/exception/ConversionException"),
         &error.to_string(),
     )
 }
