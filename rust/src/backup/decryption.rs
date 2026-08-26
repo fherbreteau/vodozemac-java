@@ -7,7 +7,7 @@ use vodozemac::{Curve25519PublicKey, Curve25519SecretKey, base64_decode, base64_
 use crate::errors::{
     throw_decryption_error, throw_generic_error, throw_key_error, throw_pickle_error,
 };
-use crate::helpers::{box_to_jlong, check_ptr, native_free, string_to_jstring, wrap};
+use crate::helpers::{box_to_jlong, catch_panic, check_ptr, native_free, string_to_jstring, wrap};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_nativeNew(
@@ -15,9 +15,9 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
     _class: JClass,
 ) -> jlong {
     let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
-        let pk_decryption = Box::new(PkDecryption::new());
+        let pk_decryption = PkDecryption::new();
 
-        Ok(Box::into_raw(pk_decryption) as jlong)
+        Ok(box_to_jlong(pk_decryption))
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -29,13 +29,15 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
     key: JString,
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
-        let bytes = base64_decode(key.to_string()).map_err(|e| throw_generic_error(env, e))?;
-        let bytes: [u8; 32] = wrap(bytes)?;
-        let secret_key = Curve25519SecretKey::from_slice(&bytes);
+        catch_panic(env, |env| {
+            let bytes = base64_decode(key.to_string()).map_err(|e| throw_generic_error(env, e))?;
+            let bytes: [u8; 32] = wrap(env, bytes)?;
+            let secret_key = Curve25519SecretKey::from_slice(&bytes);
 
-        let pk_decryption = Box::new(PkDecryption::from_key(secret_key));
+            let pk_decryption = PkDecryption::from_key(secret_key);
 
-        Ok(Box::into_raw(pk_decryption) as jlong)
+            Ok(box_to_jlong(pk_decryption))
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -47,12 +49,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
 
-        let secret_key = pk_decryption.secret_key().to_bytes().to_vec();
-        let result = env.new_string(base64_encode(secret_key))?;
-        Ok(result.into_raw())
+            let secret_key = pk_decryption.secret_key().to_bytes().to_vec();
+            let result = env.new_string(base64_encode(secret_key))?;
+            Ok(result.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -64,12 +68,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
     ptr: jlong,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
 
-        let public_key = pk_decryption.public_key().to_base64();
-        let result = env.new_string(public_key)?;
-        Ok(result.into_raw())
+            let public_key = pk_decryption.public_key().to_base64();
+            let result = env.new_string(public_key)?;
+            Ok(result.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -84,25 +90,27 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
     ephemeral_key: JString,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
-        let ciphertext =
-            base64_decode(ciphertext.to_string()).map_err(|e| throw_generic_error(env, e))?;
-        let mac = base64_decode(mac.to_string()).map_err(|e| throw_generic_error(env, e))?;
-        let ephemeral_key = Curve25519PublicKey::from_base64(&ephemeral_key.to_string())
-            .map_err(|e| throw_key_error(env, e))?;
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
+            let ciphertext =
+                base64_decode(ciphertext.to_string()).map_err(|e| throw_generic_error(env, e))?;
+            let mac = base64_decode(mac.to_string()).map_err(|e| throw_generic_error(env, e))?;
+            let ephemeral_key = Curve25519PublicKey::from_base64(&ephemeral_key.to_string())
+                .map_err(|e| throw_key_error(env, e))?;
 
-        let message = Message {
-            ciphertext,
-            mac,
-            ephemeral_key,
-        };
+            let message = Message {
+                ciphertext,
+                mac,
+                ephemeral_key,
+            };
 
-        let plaintext = pk_decryption
-            .decrypt(&message)
-            .map_err(|e| throw_decryption_error(env, e))?;
-        let result = env.byte_array_from_slice(&plaintext)?;
-        Ok(result.into_raw())
+            let plaintext = pk_decryption
+                .decrypt(&message)
+                .map_err(|e| throw_decryption_error(env, e))?;
+            let result = env.byte_array_from_slice(&plaintext)?;
+            Ok(result.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -115,12 +123,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
     pickle_key: JByteArray,
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
-        let pickle_str: String = pickle_data.to_string();
-        let pickle_key = env.convert_byte_array(pickle_key)?;
+        catch_panic(env, |env| {
+            let pickle_str: String = pickle_data.to_string();
+            let pickle_key = env.convert_byte_array(pickle_key)?;
 
-        let from_olm = PkDecryption::from_libolm_pickle(&pickle_str, &pickle_key)
-            .map_err(|e| throw_pickle_error(env, e))?;
-        Ok(box_to_jlong(from_olm))
+            let from_olm = PkDecryption::from_libolm_pickle(&pickle_str, &pickle_key)
+                .map_err(|e| throw_pickle_error(env, e))?;
+            Ok(box_to_jlong(from_olm))
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -133,14 +143,16 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
     key: JByteArray,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
-        let key = wrap(env.convert_byte_array(key)?)?;
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
+            let key = wrap(env, env.convert_byte_array(key)?)?;
 
-        let pickle = pk_decryption
-            .to_libolm_pickle(&key)
-            .map_err(|e| throw_pickle_error(env, e))?;
-        string_to_jstring(env, pickle)
+            let pickle = pk_decryption
+                .to_libolm_pickle(&key)
+                .map_err(|e| throw_pickle_error(env, e))?;
+            string_to_jstring(env, pickle)
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

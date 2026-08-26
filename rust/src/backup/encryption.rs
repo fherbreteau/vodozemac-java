@@ -5,7 +5,7 @@ use vodozemac::pk_encryption::PkEncryption;
 use vodozemac::{Curve25519PublicKey, base64_encode};
 
 use crate::errors::{throw_encryption_error, throw_key_error};
-use crate::helpers::{check_ptr, native_free};
+use crate::helpers::{box_to_jlong, catch_panic, check_ptr, native_free};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkEncryption_nativeFromKey(
@@ -14,12 +14,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkEncryption_
     key: JString,
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
-        let public_key = Curve25519PublicKey::from_base64(&key.to_string())
-            .map_err(|e| throw_key_error(env, e))?;
+        catch_panic(env, |env| {
+            let public_key = Curve25519PublicKey::from_base64(&key.to_string())
+                .map_err(|e| throw_key_error(env, e))?;
 
-        let encryption = Box::new(PkEncryption::from(public_key));
+            let encryption = PkEncryption::from(public_key);
 
-        Ok(Box::into_raw(encryption) as jlong)
+            Ok(box_to_jlong(encryption))
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -32,25 +34,27 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkEncryption_
     plaintext: JByteArray,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        check_ptr(env, ptr)?;
-        let encryption = unsafe { &*(ptr as *const PkEncryption) };
-        let data = env.convert_byte_array(plaintext)?;
+        catch_panic(env, |env| {
+            check_ptr(env, ptr)?;
+            let encryption = unsafe { &*(ptr as *const PkEncryption) };
+            let data = env.convert_byte_array(plaintext)?;
 
-        let result = encryption.encrypt(&data)
-            .map_err(|e| throw_encryption_error(env, e))?;
-        let ciphertext = env.new_string(base64_encode(result.ciphertext))?;
-        let mac = env.new_string(base64_encode(result.mac))?;
-        let ephemeral_key = env.new_string(result.ephemeral_key.to_base64())?;
+            let result = encryption.encrypt(&data)
+                .map_err(|e| throw_encryption_error(env, e))?;
+            let ciphertext = env.new_string(base64_encode(result.ciphertext))?;
+            let mac = env.new_string(base64_encode(result.mac))?;
+            let ephemeral_key = env.new_string(result.ephemeral_key.to_base64())?;
 
-        let result = env.new_object(
-            jni_str!("io/github/fherbreteau/vodozemac/backup/PkMessage"),
-             jni_sig!((ciphertext: java.lang.String, mac: java.lang.String, ephemeralKey: java.lang.String) -> void),
-             &[
-                JValue::Object(&ciphertext),
-                JValue::Object(&mac),
-                JValue::Object(&ephemeral_key)])?;
+            let result = env.new_object(
+                jni_str!("io/github/fherbreteau/vodozemac/backup/PkMessage"),
+                 jni_sig!((ciphertext: java.lang.String, mac: java.lang.String, ephemeralKey: java.lang.String) -> void),
+                 &[
+                    JValue::Object(&ciphertext),
+                    JValue::Object(&mac),
+                    JValue::Object(&ephemeral_key)])?;
 
-        Ok(result.into_raw())
+            Ok(result.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
