@@ -6,8 +6,13 @@ use vodozemac::olm::SessionConfig as OlmSessionConfig;
 
 use crate::errors::{throw_generic_error, throw_pickle_error};
 
-pub(crate) fn wrap<T>(v: Vec<T>) -> Result<[T; 32], jni::errors::Error> {
-    v.try_into().map_err(|_v| jni::errors::Error::JavaException)
+pub(crate) fn wrap<T>(env: &mut Env, v: Vec<T>) -> Result<[T; 32], jni::errors::Error> {
+    v.try_into().map_err(|vec: Vec<T>| {
+        throw_generic_error(
+            env,
+            format!("Expected 32-byte key, got {} bytes", vec.len()),
+        )
+    })
 }
 
 pub(crate) fn olm_session_config_from_version(
@@ -77,6 +82,17 @@ pub(crate) fn check_ptr(env: &mut Env, ptr: jlong) -> Result<(), jni::errors::Er
         return Err(throw_generic_error(env, "Null native pointer"));
     }
     Ok(())
+}
+
+pub(crate) fn catch_panic<T, F>(env: &mut Env, f: F) -> Result<T, jni::errors::Error>
+where
+    F: FnOnce(&mut Env) -> Result<T, jni::errors::Error>,
+{
+    let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| f(&mut *env)));
+    match result {
+        Ok(inner) => inner,
+        Err(e) => Err(throw_generic_error(env, format!("Rust panic: {e:?}"))),
+    }
 }
 
 #[cfg(test)]
