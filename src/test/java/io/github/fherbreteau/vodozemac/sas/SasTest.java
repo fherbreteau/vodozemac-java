@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.SasException;
 import org.junit.jupiter.api.Test;
 
@@ -117,6 +118,17 @@ class SasTest {
                         .hasMessage("The SAS MAC validation didn't succeed: MAC tag mismatch");
             }
         }
+    }
+
+    @Test
+    void testSasClosedAfterFailedDiffieHellman() {
+        Sas sas = new Sas();
+        assertThatThrownBy(() -> sas.diffieHellman("invalid-key"))
+                .isInstanceOf(KeyException.class);
+        assertThatThrownBy(sas::publicKey)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Sas has been closed");
+        sas.close();
     }
 
     @Test

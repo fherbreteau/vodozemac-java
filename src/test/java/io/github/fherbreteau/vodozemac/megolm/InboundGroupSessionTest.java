@@ -11,6 +11,7 @@ import io.github.fherbreteau.vodozemac.exception.DecryptionException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
 import io.github.fherbreteau.vodozemac.exception.SignatureException;
+import io.github.fherbreteau.vodozemac.exception.VodozemacException;
 import org.junit.jupiter.api.Test;
 
 class InboundGroupSessionTest {
@@ -531,6 +532,33 @@ class InboundGroupSessionTest {
     }
 
     @Test
+    void testOriginalSessionsUsableAfterMerge() {
+        String sessionKey;
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey = outbound.sessionKey();
+        }
+
+        try (InboundGroupSession firstSession = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+            String exportedKey = firstSession.exportAt(10);
+
+            try (InboundGroupSession secondSession = InboundGroupSession.importSession(exportedKey, MegolmSessionVersion.V2)) {
+                Optional<InboundGroupSession> mergedOpt = secondSession.merge(firstSession);
+
+                assertThat(mergedOpt).isPresent();
+
+                assertThat(firstSession.sessionId()).isNotNull().isNotEmpty();
+                assertThat(secondSession.sessionId()).isNotNull().isNotEmpty();
+                assertThat(firstSession.firstKnownIndex()).isZero();
+                assertThat(secondSession.firstKnownIndex()).isEqualTo(10);
+
+                try (InboundGroupSession merged = mergedOpt.get()) {
+                    assertThat(merged.sessionId()).isEqualTo(firstSession.sessionId());
+                }
+            }
+        }
+    }
+
+    @Test
     void testMergeUnconnectedSessionsReturnsEmpty() {
         String sessionKey1;
         String sessionKey2;
@@ -699,6 +727,12 @@ class InboundGroupSessionTest {
                 .hasSameHashCodeAs(encrypted)
                 .isNotEqualTo("not a MegolmMessage")
                 .isNotEqualTo(null);
+    }
+
+    @Test
+    void testMegolmMessageFromBase64InvalidInput() {
+        assertThatThrownBy(() -> MegolmMessage.fromBase64("!!!invalid-base64!!!"))
+                .isInstanceOf(VodozemacException.class);
     }
 
     @Test

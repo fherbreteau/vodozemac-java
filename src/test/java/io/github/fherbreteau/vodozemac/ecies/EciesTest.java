@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.github.fherbreteau.vodozemac.exception.EciesException;
+import io.github.fherbreteau.vodozemac.exception.KeyException;
 import org.junit.jupiter.api.Test;
 
 class EciesTest {
@@ -239,6 +240,28 @@ class EciesTest {
                 .isNotEqualTo("not a result")
                 .isNotEqualTo(null);
         assertThat(result.toString()).contains("plaintext");
+    }
+
+    @Test
+    void testEciesClosedAfterFailedOutboundChannel() {
+        Ecies ecies = new Ecies();
+        assertThatThrownBy(() -> ecies.establishOutboundChannel("invalid-key", PLAINTEXT))
+                .isInstanceOf(KeyException.class);
+        assertThatThrownBy(ecies::publicKey)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Ecies has been closed");
+        ecies.close();
+    }
+
+    @Test
+    void testEciesClosedAfterFailedInboundChannel() {
+        Ecies ecies = new Ecies();
+        assertThatThrownBy(() -> ecies.establishInboundChannel("malformed-message"))
+                .isInstanceOf(EciesException.class);
+        assertThatThrownBy(ecies::publicKey)
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Ecies has been closed");
+        ecies.close();
     }
 
     @Test
