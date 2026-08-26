@@ -119,6 +119,20 @@ class PkEncryptionTest {
     }
 
     @Test
+    void testEncryptionResourceManagement() {
+        String publicKey = "SCybzXqbfEuzWmcYngO6D60yaMIGLtWjUuAgjgtEXm0";
+        PkEncryption encryption = PkEncryption.fromKey(publicKey);
+
+        encryption.close();
+
+        assertThatThrownBy(() -> encryption.encrypt(new byte[0]))
+                .as("Using closed encryption should throw IllegalStateException")
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("PkEncryption has been closed");
+
+    }
+
+    @Test
     void testPkMessageEqualsHashCodeToString() {
         PkMessage msg = new PkMessage("ct", "mac", "ek");
         PkMessage same = new PkMessage("ct", "mac", "ek");

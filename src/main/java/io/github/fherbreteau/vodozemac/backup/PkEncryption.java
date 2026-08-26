@@ -70,6 +70,7 @@ public final class PkEncryption extends NativeHandle {
      * @throws EncryptionException if encryption fails (e.g. non-contributory key)
      */
     public PkMessage encrypt(byte[] plaintext) {
+        checkNotClosed();
         return nativeEncrypt(nativePtr, plaintext);
     }
 
