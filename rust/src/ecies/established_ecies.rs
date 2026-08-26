@@ -4,7 +4,7 @@ use jni::{EnvUnowned, JValue, jni_sig, jni_str};
 use vodozemac::ecies::{EstablishedEcies, Message};
 
 use crate::errors::throw_ecies_error;
-use crate::helpers::{catch_panic, check_ptr, native_free};
+use crate::helpers::{catch_panic, check_ptr, native_free, string_to_jstring};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEcies_nativePublicKey(
@@ -18,8 +18,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEci
             let ecies = unsafe { &*(ptr as *const EstablishedEcies) };
 
             let public_key = ecies.public_key().to_base64();
-            let result = env.new_string(public_key)?;
-            Ok(result.into_raw())
+            string_to_jstring(env, public_key)
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
@@ -64,8 +63,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEci
             let plaintext = env.convert_byte_array(plaintext)?;
 
             let message = ecies.encrypt(&plaintext).encode();
-            let result = env.new_string(&message)?;
-            Ok(result.into_raw())
+            string_to_jstring(env, message)
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

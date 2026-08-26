@@ -36,8 +36,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
             let session = unsafe { &*(ptr as *const Session) };
 
             let session_id = session.session_id();
-            let jni_string = env.new_string(session_id)?;
-            Ok(jni_string.into_raw())
+            string_to_jstring(env, session_id)
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

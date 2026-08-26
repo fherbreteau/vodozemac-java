@@ -54,8 +54,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
             let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
 
             let secret_key = pk_decryption.secret_key().to_bytes().to_vec();
-            let result = env.new_string(base64_encode(secret_key))?;
-            Ok(result.into_raw())
+            let secret_key_base64 = base64_encode(secret_key);
+            string_to_jstring(env, secret_key_base64)
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
@@ -73,8 +73,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
             let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
 
             let public_key = pk_decryption.public_key().to_base64();
-            let result = env.new_string(public_key)?;
-            Ok(result.into_raw())
+            string_to_jstring(env, public_key)
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

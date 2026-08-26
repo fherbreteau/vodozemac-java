@@ -7,7 +7,7 @@ use vodozemac::Curve25519PublicKey;
 use vodozemac::ecies::{Ecies, EstablishedEcies, InitialMessage};
 
 use crate::errors::{throw_ecies_error, throw_key_error};
-use crate::helpers::{box_to_jlong, catch_panic, check_ptr, native_free};
+use crate::helpers::{box_to_jlong, catch_panic, check_ptr, native_free, string_to_jstring};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeNew(
@@ -48,8 +48,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativePu
             let ecies = unsafe { &*(ptr as *const Ecies) };
 
             let public_key = ecies.public_key().to_base64();
-            let result = env.new_string(public_key)?;
-            Ok(result.into_raw())
+            string_to_jstring(env, public_key)
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

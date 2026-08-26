@@ -58,8 +58,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
-) -> jstring {
-    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+) -> jobject {
+    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let account = unsafe { &*(ptr as *const Account) };
@@ -76,8 +76,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
-) -> jstring {
-    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+) -> jobject {
+    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let account = unsafe { &*(ptr as *const Account) };
@@ -393,8 +393,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     _class: JClass,
     ptr: jlong,
     message: JString,
-) -> jstring {
-    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+) -> jobject {
+    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let account = unsafe { &*(ptr as *const Account) };

@@ -52,8 +52,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
             let session = unsafe { &*(ptr as *const InboundGroupSession) };
 
             let session_id = session.session_id();
-            let jni_string = env.new_string(session_id)?;
-            Ok(jni_string.into_raw())
+            string_to_jstring(env, session_id)
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
@@ -162,10 +161,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
 
             let result = session.export_at(index);
             match result {
-                Some(key) => {
-                    let key_str = env.new_string(key.to_base64())?;
-                    Ok(key_str.into_raw())
-                }
+                Some(key) => string_to_jstring(env, key.to_base64()),
                 None => Ok(std::ptr::null_mut()),
             }
         })
@@ -185,8 +181,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
             let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
 
             let result = session.export_at_first_known_index();
-            let key_str = env.new_string(result.to_base64())?;
-            Ok(key_str.into_raw())
+            string_to_jstring(env, result.to_base64())
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

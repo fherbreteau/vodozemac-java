@@ -4,7 +4,7 @@ use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};
 use vodozemac::sas::{EstablishedSas, Mac, SasBytes};
 
 use crate::errors::{throw_generic_error, throw_invalid_count_error, throw_sas_error};
-use crate::helpers::{catch_panic, check_ptr, native_free};
+use crate::helpers::{catch_panic, check_ptr, native_free, string_to_jstring};
 
 fn to_decimal_array<'local>(
     env: &mut Env<'local>,
@@ -124,8 +124,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
             let info = info.to_string();
 
             let mac = established_sas.calculate_mac(&input, &info);
-            let mac_str = env.new_string(mac.to_base64())?;
-            Ok(mac_str.into_raw())
+            string_to_jstring(env, mac.to_base64())
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
@@ -147,8 +146,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
             let info = info.to_string();
 
             let mac = established_sas.calculate_mac_invalid_base64(&input, &info);
-            let mac_str = env.new_string(mac)?;
-            Ok(mac_str.into_raw())
+            string_to_jstring(env, mac)
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
@@ -193,8 +191,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
             let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
 
             let our_public_key = established_sas.our_public_key().to_base64();
-            let result = env.new_string(&our_public_key)?;
-            Ok(result.into_raw())
+            string_to_jstring(env, our_public_key)
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
@@ -212,8 +209,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
             let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
 
             let their_public_key = established_sas.their_public_key().to_base64();
-            let result = env.new_string(&their_public_key)?;
-            Ok(result.into_raw())
+            string_to_jstring(env, their_public_key)
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
