@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚀 Features
 
+- **macOS Intel CI Target**: Added `darwin-x86_64` build target using `macos-15-intel` runner
+- **Windows ARM64 CI Target**: Added `windows-aarch64` build target using `windows-11-arm` runner
 - **Comprehensive Documentation**: Added complete README.md with usage examples, API reference, and development guide
 - **AssertJ Testing**: Migrated test suite to use AssertJ for fluent assertions
 - **GitHub Actions**: Configured multi-platform CI/CD pipeline with build, test, and package jobs

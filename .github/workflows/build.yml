@@ -27,30 +27,42 @@ jobs:
             target: x86_64-unknown-linux-gnu
             lib_name: libvodozemac_java.so
             artifact_path: rust/target/x86_64-unknown-linux-gnu/release/libvodozemac_java.so
+            distribution: 'temurin'
 
           - name: linux-aarch64
             os: ubuntu-24.04-arm
             target: aarch64-unknown-linux-gnu
             lib_name: libvodozemac_java.so
             artifact_path: rust/target/aarch64-unknown-linux-gnu/release/libvodozemac_java.so
+            distribution: 'temurin'
 
-#          - name: darwin-x86_64
-#            os: macos-14-intel
-#            target: x86_64-apple-darwin
-#            lib_name: libvodozemac_java.dylib
-#            artifact_path: rust/target/x86_64-apple-darwin/release/libvodozemac_java.dylib
+          - name: darwin-x86_64
+            os: macos-15-intel
+            target: x86_64-apple-darwin
+            lib_name: libvodozemac_java.dylib
+            artifact_path: rust/target/x86_64-apple-darwin/release/libvodozemac_java.dylib
+            distribution: 'temurin'
 
           - name: darwin-aarch64
             os: macos-latest
             target: aarch64-apple-darwin
             lib_name: libvodozemac_java.dylib
             artifact_path: rust/target/aarch64-apple-darwin/release/libvodozemac_java.dylib
+            distribution: 'temurin'
 
           - name: windows-x86_64
             os: windows-latest
             target: x86_64-pc-windows-msvc
             lib_name: vodozemac_java.dll
             artifact_path: rust/target/x86_64-pc-windows-msvc/release/vodozemac_java.dll
+            distribution: 'temurin'
+
+          - name: windows-aarch64
+            os: windows-11-arm
+            target: aarch64-pc-windows-msvc
+            lib_name: vodozemac_java.dll
+            artifact_path: rust/target/aarch64-pc-windows-msvc/release/vodozemac_java.dll
+            distribution: 'microsoft'
 
     steps:
       - name: Checkout repository
@@ -59,7 +71,7 @@ jobs:
       - name: Setup Java (pour générer les headers JNI)
         uses: actions/setup-java@v5 # v5
         with:
-          distribution: 'temurin'
+          distribution: ${{matrix.distribution}}
           java-version: ${{ env.JAVA_VERSION }}
 
       - name: Install Rust toolchain
@@ -132,15 +144,17 @@ jobs:
         run: |
           mkdir -p src/main/resources/native/linux-x86_64
           mkdir -p src/main/resources/native/linux-aarch64
-          # mkdir -p src/main/resources/native/darwin-x86_64
+          mkdir -p src/main/resources/native/darwin-x86_64
           mkdir -p src/main/resources/native/darwin-aarch64
           mkdir -p src/main/resources/native/windows-x86_64
+          mkdir -p src/main/resources/native/windows-aarch64
 
           cp downloaded-natives/native-lib-linux-x86_64/*.so src/main/resources/native/linux-x86_64/
           cp downloaded-natives/native-lib-linux-aarch64/*.so src/main/resources/native/linux-aarch64/
-          # cp downloaded-natives/native-lib-darwin-x86_64/*.dylib src/main/resources/native/darwin-x86_64/
+          cp downloaded-natives/native-lib-darwin-x86_64/*.dylib src/main/resources/native/darwin-x86_64/
           cp downloaded-natives/native-lib-darwin-aarch64/*.dylib src/main/resources/native/darwin-aarch64/
           cp downloaded-natives/native-lib-windows-x86_64/*.dll src/main/resources/native/windows-x86_64/
+          cp downloaded-natives/native-lib-windows-aarch64/*.dll src/main/resources/native/windows-aarch64/
 
           echo "📦 Native libraries organized:"
           find src/main/resources/native -type f
@@ -169,18 +183,32 @@ jobs:
           - name: linux-x86_64
             os: ubuntu-latest
             native_artifact: native-lib-linux-x86_64
+            distribution: 'temurin'
+
           - name: linux-aarch64
             os: ubuntu-24.04-arm
             native_artifact: native-lib-linux-aarch64
-#          - name: darwin-x86_64
-#            os: macos-14-intel
-#            native_artifact: native-lib-darwin-x86_64
+            distribution: 'temurin'
+
+          - name: darwin-x86_64
+            os: macos-15-intel
+            native_artifact: native-lib-darwin-x86_64
+            distribution: 'temurin'
+
           - name: darwin-aarch64
             os: macos-latest
             native_artifact: native-lib-darwin-aarch64
+            distribution: 'temurin'
+
           - name: windows-x86_64
             os: windows-latest
             native_artifact: native-lib-windows-x86_64
+            distribution: 'temurin'
+
+          - name: windows-aarch64
+            os: windows-11-arm
+            native_artifact: native-lib-windows-aarch64
+            distribution: 'microsoft'
 
     steps:
       - name: Checkout repository
@@ -189,7 +217,7 @@ jobs:
       - name: Setup Java
         uses: actions/setup-java@v5 # v5
         with:
-          distribution: 'temurin'
+          distribution: ${{matrix.distribution}}
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
 

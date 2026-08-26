@@ -94,8 +94,20 @@ All of the following must pass before committing:
 - **Rust** (stable), Cargo
 - **vodozemac 0.10.0** (Rust crate with features: `libolm-compat`, `experimental-session-config`, `insecure-pk-encryption`)
 - **JNI 0.22.4** (Rust crate)
-- **JUnit 5**, AssertJ, JaCoCo 0.8.15, Checkstyle 13.10.0
+- **JUnit 6**, AssertJ, JaCoCo 0.8.15, Checkstyle 14.0.0
 
-## Cross-compilation
+## Working Files (`docs/`)
 
-`.cargo/config.toml` configures cross-compilation for `x86_64-unknown-linux-gnu` and `aarch64-unknown-linux-gnu` using `clang` + `lld`. The Maven build compiles Rust for the host platform by default; CI workflows handle cross-compilation for multi-platform releases.
+The files `docs/CODE_REVIEW.md` and `docs/IMPLEMENTATION_PLAN.md` are working documents used to track progress during a task. They must remain in the `docs/` folder.
+
+**Constraint**: These files may only be created or updated when the current Git branch is associated with a pull request whose diff contains *only* these two files (no other changes). Before modifying them, verify with:
+
+```bash
+gh pr view --json files --jq '.files[].path'
+```
+
+If the PR includes any files other than `docs/CODE_REVIEW.md` and `docs/IMPLEMENTATION_PLAN.md`, do not create or edit these files — instead, open a separate PR dedicated solely to these working files.
+
+## Native Compilation
+
+All CI targets build natively on matching GitHub-hosted runners (x86_64 and ARM64 for Linux, macOS, and Windows). No cross-compilation configuration is needed. The Maven build compiles Rust for the host platform by default; CI workflows build on each target platform separately.
