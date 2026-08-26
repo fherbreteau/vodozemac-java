@@ -533,7 +533,7 @@ class AccountTest {
                 try (InboundCreationResult inboundResult = bobAccount.createInboundSession(
                         aliceAccount.curve25519Key(), encrypted)) {
                     assertThat(inboundResult).as("Inbound session with default version should be created").isNotNull();
-                    assertThat(new String(inboundResult.plaintext(), java.nio.charset.StandardCharsets.UTF_8))
+                    assertThat(new String(inboundResult.plaintext(), UTF_8))
                                 .isEqualTo(plaintext);
                 }
             }

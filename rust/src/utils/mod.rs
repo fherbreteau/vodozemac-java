@@ -4,7 +4,7 @@ use jni::sys::{jobject, jstring};
 use vodozemac::{base64_decode, base64_encode};
 
 use crate::errors::throw_generic_error;
-use crate::helpers::catch_panic;
+use crate::helpers::{catch_panic, string_to_jstring};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_Vodozemac_nativeBase64Encode(
@@ -17,8 +17,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_Vodozemac_nativeBase
             let src = env.convert_byte_array(src)?;
 
             let dst = base64_encode(src);
-            let result = env.new_string(&dst)?;
-            Ok(result.into_raw())
+            string_to_jstring(env, dst)
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
