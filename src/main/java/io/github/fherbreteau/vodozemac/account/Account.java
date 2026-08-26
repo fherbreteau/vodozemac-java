@@ -1,6 +1,7 @@
 package io.github.fherbreteau.vodozemac.account;
 
 import static io.github.fherbreteau.vodozemac.KeyValidator.validateEncryptionKey;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.util.Map;
 import java.util.Optional;
@@ -14,6 +15,9 @@ import io.github.fherbreteau.vodozemac.olm.InboundCreationResult;
 import io.github.fherbreteau.vodozemac.olm.OlmMessage;
 import io.github.fherbreteau.vodozemac.olm.OlmSession;
 import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
+import io.github.fherbreteau.vodozemac.types.Curve25519PublicKey;
+import io.github.fherbreteau.vodozemac.types.Ed25519PublicKey;
+import io.github.fherbreteau.vodozemac.types.Ed25519Signature;
 
 /**
  * An Olm Account manages all cryptographic keys used on a device.
@@ -57,10 +61,10 @@ public final class Account extends NativeHandle {
     /**
      * Returns the public Ed25519 key of this account.
      *
-     * @return the base64-encoded Ed25519 public key
+     * @return the Ed25519 public key
      * @throws IllegalStateException if this account has been closed
      */
-    public String ed25519Key() {
+    public Ed25519PublicKey ed25519Key() {
         checkNotClosed();
         return nativeEd25519Key(nativePtr);
     }
@@ -68,10 +72,10 @@ public final class Account extends NativeHandle {
     /**
      * Returns the public Curve25519 key of this account.
      *
-     * @return the base64-encoded Curve25519 public key
+     * @return the Curve25519 public key
      * @throws IllegalStateException if this account has been closed
      */
-    public String curve25519Key() {
+    public Curve25519PublicKey curve25519Key() {
         checkNotClosed();
         return nativeCurve25519Key(nativePtr);
     }
@@ -80,10 +84,21 @@ public final class Account extends NativeHandle {
      * Signs the given message using the Ed25519 fingerprint key.
      *
      * @param message the message to sign
-     * @return the base64-encoded signature
+     * @return the signature
      * @throws IllegalStateException if this account has been closed
      */
-    public String sign(String message) {
+    public Ed25519Signature sign(String message) {
+        return sign(message.getBytes(UTF_8));
+    }
+
+    /**
+     * Signs the given message using the Ed25519 fingerprint key.
+     *
+     * @param message the message to sign
+     * @return the signature
+     * @throws IllegalStateException if this account has been closed
+     */
+    public Ed25519Signature sign(byte[] message) {
         checkNotClosed();
         return nativeSign(nativePtr, message);
     }
@@ -111,7 +126,7 @@ public final class Account extends NativeHandle {
      * @throws KeyException            if the keys cannot be decoded
      * @throws SessionCreationException if session creation fails
      */
-    public OlmSession createOutboundSession(String identityKey, String oneTimeKey) {
+    public OlmSession createOutboundSession(Curve25519PublicKey identityKey, Curve25519PublicKey oneTimeKey) {
         return createOutboundSession(OlmSessionVersion.defaultVersion(), identityKey, oneTimeKey);
     }
 
@@ -127,10 +142,10 @@ public final class Account extends NativeHandle {
      * @throws KeyException            if the keys cannot be decoded
      * @throws SessionCreationException if session creation fails
      */
-    public OlmSession createOutboundSession(OlmSessionVersion sessionVersion, String identityKey, String oneTimeKey) {
+    public OlmSession createOutboundSession(OlmSessionVersion sessionVersion, Curve25519PublicKey identityKey, Curve25519PublicKey oneTimeKey) {
         checkNotClosed();
 
-        return nativeCreateOutboundSession(nativePtr, sessionVersion.value(), identityKey, oneTimeKey);
+        return nativeCreateOutboundSession(nativePtr, sessionVersion.value(), identityKey.toBase64(), oneTimeKey.toBase64());
     }
 
     /**
@@ -146,7 +161,7 @@ public final class Account extends NativeHandle {
      * @throws KeyException              if the identity key cannot be decoded
      * @throws SessionCreationException  if session creation fails
      */
-    public InboundCreationResult createInboundSession(String theirIdentityKey, OlmMessage preKeyMessage) {
+    public InboundCreationResult createInboundSession(Curve25519PublicKey theirIdentityKey, OlmMessage preKeyMessage) {
         return createInboundSession(OlmSessionVersion.defaultVersion(), theirIdentityKey, preKeyMessage);
     }
 
@@ -163,11 +178,11 @@ public final class Account extends NativeHandle {
      * @throws KeyException              if the identity key cannot be decoded
      * @throws SessionCreationException  if session creation fails
      */
-    public InboundCreationResult createInboundSession(OlmSessionVersion sessionVersion, String theirIdentityKey,
+    public InboundCreationResult createInboundSession(OlmSessionVersion sessionVersion, Curve25519PublicKey theirIdentityKey,
             OlmMessage preKeyMessage) {
         checkNotClosed();
 
-        return nativeCreateInboundSession(nativePtr, sessionVersion.value(), theirIdentityKey, preKeyMessage.toString());
+        return nativeCreateInboundSession(nativePtr, sessionVersion.value(), theirIdentityKey.toBase64(), preKeyMessage.toString());
     }
 
     /**
@@ -210,7 +225,7 @@ public final class Account extends NativeHandle {
      * @return a map of key ID to base64-encoded Curve25519 public key
      * @throws IllegalStateException if this account has been closed
      */
-    public Map<String, String> unpublishedOneTimeKeys() {
+    public Map<String, Curve25519PublicKey> unpublishedOneTimeKeys() {
         checkNotClosed();
         return nativeOneTimeKeys(nativePtr);
     }
@@ -225,7 +240,7 @@ public final class Account extends NativeHandle {
      *         or an empty {@link Optional} if there was no previous key
      * @throws IllegalStateException if this account has been closed
      */
-    public Optional<String> generateFallbackKey() {
+    public Optional<Curve25519PublicKey> generateFallbackKey() {
         checkNotClosed();
         return Optional.ofNullable(nativeGenerateFallbackKey(nativePtr));
     }
@@ -239,7 +254,7 @@ public final class Account extends NativeHandle {
      * @return a map of key ID to base64-encoded Curve25519 public key
      * @throws IllegalStateException if this account has been closed
      */
-    public Map<String, String> unpublishedFallbackKey() {
+    public Map<String, Curve25519PublicKey> unpublishedFallbackKey() {
         checkNotClosed();
         return nativeFallbackKey(nativePtr);
     }
@@ -404,9 +419,9 @@ public final class Account extends NativeHandle {
 
     private native IdentityKeys nativeIdentityKeys(long ptr);
 
-    private native String nativeCurve25519Key(long ptr);
+    private native Curve25519PublicKey nativeCurve25519Key(long ptr);
 
-    private native String nativeEd25519Key(long ptr);
+    private native Ed25519PublicKey nativeEd25519Key(long ptr);
 
     private native long nativeMaxNumberOfOneTimeKeys(long ptr);
 
@@ -420,17 +435,17 @@ public final class Account extends NativeHandle {
 
     private native OneTimeKeyGenerationResult nativeGenerateOneTimeKeys(long ptr, long count);
 
-    private native Map<String, String> nativeOneTimeKeys(long ptr);
+    private native Map<String, Curve25519PublicKey> nativeOneTimeKeys(long ptr);
 
-    private native String nativeGenerateFallbackKey(long ptr);
+    private native Curve25519PublicKey nativeGenerateFallbackKey(long ptr);
 
-    private native Map<String, String> nativeFallbackKey(long ptr);
+    private native Map<String, Curve25519PublicKey> nativeFallbackKey(long ptr);
 
     private native boolean nativeForgetFallbackKey(long ptr);
 
     private native void nativeMarkKeysAsPublished(long ptr);
 
-    private native String nativeSign(long ptr, String message);
+    private native Ed25519Signature nativeSign(long ptr, byte[] message);
 
     private native String nativePickle(long ptr);
 

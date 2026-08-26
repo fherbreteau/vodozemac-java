@@ -39,7 +39,7 @@ jobs:
           workspaces: rust
 
       - name: Compile Java classes (for Rust JNI tests)
-        run: mvn compile -DskipTests -DskipRustBuild=true
+        run: mvn compile -DskipTests
 
       - name: Rust tests
         working-directory: rust

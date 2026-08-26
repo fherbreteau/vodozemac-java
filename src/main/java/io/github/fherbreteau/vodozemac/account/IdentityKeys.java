@@ -2,6 +2,9 @@ package io.github.fherbreteau.vodozemac.account;
 
 import java.util.Objects;
 
+import io.github.fherbreteau.vodozemac.types.Curve25519PublicKey;
+import io.github.fherbreteau.vodozemac.types.Ed25519PublicKey;
+
 /**
  * Holds the two public identity keys of an {@link Account}.
  * <p>
@@ -15,8 +18,8 @@ import java.util.Objects;
  * @author François HERBRETEAU
  */
 public class IdentityKeys {
-    private final String ed25519;
-    private final String curve25519;
+    private final Ed25519PublicKey ed25519;
+    private final Curve25519PublicKey curve25519;
 
     /**
      * Constructs a new {@code IdentityKeys} object.
@@ -24,7 +27,7 @@ public class IdentityKeys {
      * @param ed25519    the base64-encoded Ed25519 public key
      * @param curve25519 the base64-encoded Curve25519 public key
      */
-    public IdentityKeys(String ed25519, String curve25519) {
+    IdentityKeys(Ed25519PublicKey ed25519, Curve25519PublicKey curve25519) {
         this.ed25519 = ed25519;
         this.curve25519 = curve25519;
     }
@@ -34,7 +37,7 @@ public class IdentityKeys {
      *
      * @return the base64-encoded Ed25519 public key
      */
-    public String fingerprintKey() {
+    public Ed25519PublicKey fingerprintKey() {
         return ed25519;
     }
 
@@ -43,7 +46,7 @@ public class IdentityKeys {
      *
      * @return the base64-encoded Curve25519 public key
      */
-    public String identityKey() {
+    public Curve25519PublicKey identityKey() {
         return curve25519;
     }
 

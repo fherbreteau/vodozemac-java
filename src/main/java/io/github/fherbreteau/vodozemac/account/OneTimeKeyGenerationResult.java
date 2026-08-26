@@ -3,6 +3,8 @@ package io.github.fherbreteau.vodozemac.account;
 import java.util.List;
 import java.util.Objects;
 
+import io.github.fherbreteau.vodozemac.types.Curve25519PublicKey;
+
 /**
  * Result of generating one-time keys on an {@link Account}.
  * <p>
@@ -18,8 +20,8 @@ import java.util.Objects;
  * @see Account#generateOneTimeKeys(long)
  */
 public class OneTimeKeyGenerationResult {
-    private final List<String> created;
-    private final List<String> removed;
+    private final List<Curve25519PublicKey> created;
+    private final List<Curve25519PublicKey> removed;
 
     /**
      * Constructs a new {@code OneTimeKeyGenerationResult}.
@@ -27,7 +29,7 @@ public class OneTimeKeyGenerationResult {
      * @param created the public parts of the one-time keys that were created
      * @param removed the public parts of the one-time keys that were discarded
      */
-    public OneTimeKeyGenerationResult(List<String> created, List<String> removed) {
+    OneTimeKeyGenerationResult(List<Curve25519PublicKey> created, List<Curve25519PublicKey> removed) {
         this.created = created;
         this.removed = removed;
     }
@@ -39,7 +41,7 @@ public class OneTimeKeyGenerationResult {
      *
      * @return a list of newly created one-time key strings
      */
-    public List<String> created() {
+    public List<Curve25519PublicKey> created() {
         return created;
     }
 
@@ -51,7 +53,7 @@ public class OneTimeKeyGenerationResult {
      *
      * @return a list of discarded one-time key strings
      */
-    public List<String> removed() {
+    public List<Curve25519PublicKey> removed() {
         return removed;
     }
 

@@ -26,3 +26,6 @@
 /.metals/
 /.bloop/
 /.sonarlint/
+
+# JVM crash logs
+hs_err_pid*.log

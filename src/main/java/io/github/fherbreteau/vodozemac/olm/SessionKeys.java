@@ -2,6 +2,8 @@ package io.github.fherbreteau.vodozemac.olm;
 
 import java.util.Objects;
 
+import io.github.fherbreteau.vodozemac.types.Curve25519PublicKey;
+
 /**
  * The set of Curve25519 public keys that were used to establish an Olm
  * session.
@@ -24,11 +26,11 @@ import java.util.Objects;
  */
 public class SessionKeys {
     private final String sessionId;
-    private final String identityKey;
-    private final String baseKey;
-    private final String oneTimeKey;
+    private final Curve25519PublicKey identityKey;
+    private final Curve25519PublicKey baseKey;
+    private final Curve25519PublicKey oneTimeKey;
 
-    SessionKeys(String sessionId, String identityKey, String baseKey, String oneTimeKey) {
+    SessionKeys(String sessionId, Curve25519PublicKey identityKey, Curve25519PublicKey baseKey, Curve25519PublicKey oneTimeKey) {
         this.sessionId = sessionId;
         this.identityKey = identityKey;
         this.baseKey = baseKey;
@@ -52,7 +54,7 @@ public class SessionKeys {
      *
      * @return the identity key as a base64 string
      */
-    public String identityKey() {
+    public Curve25519PublicKey identityKey() {
         return identityKey;
     }
 
@@ -62,7 +64,7 @@ public class SessionKeys {
      *
      * @return the base key as a base64 string
      */
-    public String baseKey() {
+    public Curve25519PublicKey baseKey() {
         return baseKey;
     }
 
@@ -73,7 +75,7 @@ public class SessionKeys {
      *
      * @return the one-time key as a base64 string
      */
-    public String oneTimeKey() {
+    public Curve25519PublicKey oneTimeKey() {
         return oneTimeKey;
     }
 

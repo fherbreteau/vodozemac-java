@@ -7,6 +7,9 @@ import io.github.fherbreteau.vodozemac.account.OneTimeKeyGenerationResult;
 import io.github.fherbreteau.vodozemac.olm.InboundCreationResult;
 import io.github.fherbreteau.vodozemac.olm.OlmMessage;
 import io.github.fherbreteau.vodozemac.olm.OlmSession;
+import io.github.fherbreteau.vodozemac.olm.SessionKeys;
+import io.github.fherbreteau.vodozemac.types.Curve25519PublicKey;
+import io.github.fherbreteau.vodozemac.types.Ed25519Signature;
 
 public final class SampleOlm {
 
@@ -19,16 +22,24 @@ public final class SampleOlm {
             // Extract Alice Identity keys
             System.out.println("Alice: Fingerprint key: " + aliceAccount.identityKeys().fingerprintKey());
             System.out.println("Alice: Identity Key: " + aliceAccount.identityKeys().identityKey());
-            System.out.println("Alice: Signature: " + aliceAccount.sign("Hello Matrix!"));
+            Ed25519Signature aliceSignature = aliceAccount.sign("Hello Matrix!");
+            System.out.println("Alice: Signature: " + aliceSignature);
+            boolean isValid = aliceAccount.ed25519Key().verify("Hello Matrix!", aliceSignature);
+            System.out.println("Alice: Signature Valid: " + isValid);
 
             // Extract Bob Identity keys
             System.out.println("Bob  : Fingerprint key: " + bobAccount.identityKeys().fingerprintKey());
             System.out.println("Bob  : Ed25519: " + bobAccount.identityKeys().identityKey());
-            System.out.println("Bob  : Signature: " + bobAccount.sign("Hello Matrix!"));
+            Ed25519Signature bobSignature = bobAccount.sign("Hello Matrix!");
+            System.out.println("Bob  : Signature: " + bobSignature);
+            isValid = bobAccount.ed25519Key().verify("Hello Matrix!", bobSignature);
+            System.out.println("Alice: Signature Valid: " + isValid);
 
             // Generate 1 one-time key for Bob
             OneTimeKeyGenerationResult bobOneTimeKeys = bobAccount.generateOneTimeKeys(1L);
-            String bobOneTimeKey = bobOneTimeKeys.created().iterator().next();
+            Curve25519PublicKey bobOneTimeKey = bobOneTimeKeys.created().iterator().next();
+
+            System.out.println("Bob  : One-time key: " + bobOneTimeKey);
 
             bobAccount.markKeysAsPublished();
 
@@ -37,6 +48,12 @@ public final class SampleOlm {
             String alicePickleSession;
             try (OlmSession outboundOlmSession = aliceAccount.createOutboundSession(bobAccount.curve25519Key(), bobOneTimeKey)) {
                 System.out.println("Alice: Outbound olm session's session id: " + outboundOlmSession.sessionId());
+
+                SessionKeys sessionKeys = outboundOlmSession.sessionKeys();
+                System.out.println("Alice: session keys session id: " + sessionKeys.sessionId());
+                System.out.println("Alice: session keys identity key: " + sessionKeys.identityKey());
+                System.out.println("Alice: session keys base key: " + sessionKeys.baseKey());
+                System.out.println("Alice: session keys one-time key: " + sessionKeys.oneTimeKey());
 
                 String message = "Hello Bob";
                 encrypted = outboundOlmSession.encrypt(message.getBytes());

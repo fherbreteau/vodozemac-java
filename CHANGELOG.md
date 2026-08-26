@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚀 Features
 
+- **Cryptographic Key Types**: Added `Ed25519PublicKey`, `Ed25519Signature`, and `Curve25519PublicKey` typed value classes in `io.github.fherbreteau.vodozemac.types`, backed by a new Rust JNI module (`rust/src/types/mod.rs`). Keys are now typed throughout the Account, IdentityKeys, OneTimeKeyGenerationResult, and SessionKeys APIs instead of raw base64 `String`s.
+- **Signature Verification**: `Ed25519PublicKey.verify(message, signature)` enables verifying Ed25519 signatures from other devices.
 - **macOS Intel CI Target**: Added `darwin-x86_64` build target using `macos-15-intel` runner
 - **Windows ARM64 CI Target**: Added `windows-aarch64` build target using `windows-11-arm` runner
 - **Comprehensive Documentation**: Added complete README.md with usage examples, API reference, and development guide
