@@ -5,4 +5,5 @@ mod helpers;
 mod megolm;
 mod olm;
 mod sas;
+mod types;
 mod utils;
