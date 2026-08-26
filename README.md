@@ -22,7 +22,7 @@ Vodozemac Java provides Java Native Interface (JNI) bindings for the [Vodozemac]
 - **🌍 Cross-Platform**: Linux (x86_64, ARM64), macOS (Intel, Apple Silicon), Windows (x86_64, ARM64)
 - **📦 Maven Integration**: Automatic Rust compilation and native library packaging
 - **🗑️ Memory Safety**: Proper resource management with Java's `AutoCloseable`
-- **🧪 Comprehensive Testing**: AssertJ-based test suite with 142 test cases
+- **🧪 Comprehensive Testing**: AssertJ-based test suite with 149 test cases
 - **🔧 GitHub CI/CD**: Multi-platform build and test pipeline
 
 ## 📋 Requirements
@@ -63,23 +63,30 @@ Add to your `pom.xml`:
 
 ```java
 import io.github.fherbreteau.vodozemac.account.Account;
+import io.github.fherbreteau.vodozemac.types.Curve25519PublicKey;
+import io.github.fherbreteau.vodozemac.types.Ed25519PublicKey;
+import io.github.fherbreteau.vodozemac.types.Ed25519Signature;
 
 public class MatrixCryptoExample {
     public static void main(String[] args) {
         // Create a new cryptographic account
         try (Account account = new Account()) {
             // Generate cryptographic keys
-            String curve25519Key = account.curve25519Key();
-            String ed25519Key = account.ed25519Key();
+            Curve25519PublicKey curve25519Key = account.curve25519Key();
+            Ed25519PublicKey ed25519Key = account.ed25519Key();
 
-            System.out.println("🔑 Curve25519 Key: " + curve25519Key);
-            System.out.println("🔑 Ed25519 Key: " + ed25519Key);
+            System.out.println("🔑 Curve25519 Key: " + curve25519Key.toBase64());
+            System.out.println("🔑 Ed25519 Key: " + ed25519Key.toBase64());
 
             // Sign a message
             String message = "Hello Matrix!";
-            String signature = account.sign(message);
+            Ed25519Signature signature = account.sign(message);
 
-            System.out.println("📝 Signature: " + signature);
+            System.out.println("📝 Signature: " + signature.toBase64());
+
+            // Verify the signature
+            boolean isValid = ed25519Key.verify(message, signature);
+            System.out.println("✅ Signature valid: " + isValid);
         } // Account automatically closed and resources freed
     }
 }
@@ -92,14 +99,14 @@ The `Account` implements `AutoCloseable` for safe resource management:
 ```java
 // Recommended: Use try-with-resources
 try (Account account = new Account()) {
-    String key = account.curve25519Key();
+    Curve25519PublicKey key = account.curve25519Key();
     // Use the account...
 } // Automatically freed when block exits
 
 // Manual management also supported
 Account account = new Account();
 try {
-    String key = account.ed25519Key();
+    Ed25519PublicKey key = account.ed25519Key();
 } finally {
     account.close(); // Explicit cleanup
 }
@@ -114,14 +121,14 @@ Main class for Olm account management — identity keys, one-time keys, fallback
 | Method | Description |
 |--------|-------------|
 | `IdentityKeys identityKeys()` | Get both Ed25519 and Curve25519 public keys |
-| `String ed25519Key()` | Get Ed25519 public key (base64) |
-| `String curve25519Key()` | Get Curve25519 public key (base64) |
-| `String sign(String message)` | Sign a message with Ed25519 key |
+| `Ed25519PublicKey ed25519Key()` | Get Ed25519 public key |
+| `Curve25519PublicKey curve25519Key()` | Get Curve25519 public key |
+| `Ed25519Signature sign(String message)` | Sign a message with Ed25519 key |
 | `long maxNumberOfOneTimeKeys()` | Get max one-time keys to store |
 | `OneTimeKeyGenerationResult generateOneTimeKeys(long count)` | Generate one-time keys |
 | `long storedOneTimeKeyCount()` | Get number of stored one-time keys |
 | `Map unpublishedOneTimeKeys()` | Get unpublished one-time keys |
-| `Optional<String> generateFallbackKey()` | Generate a fallback key |
+| `Optional<Curve25519PublicKey> generateFallbackKey()` | Generate a fallback key |
 | `Map unpublishedFallbackKey()` | Get unpublished fallback key |
 | `boolean forgetFallbackKey()` | Forget previously used fallback key |
 | `void markKeysAsPublished()` | Mark keys as published |
@@ -178,9 +185,9 @@ The set of Curve25519 public keys that were used to establish an Olm session.
 | Method | Description |
 |--------|-------------|
 | `String sessionId()` | Get the globally unique session ID (SHA-256 of the three keys) |
-| `String identityKey()` | Get the long-term Curve25519 identity key of the session initiator |
-| `String baseKey()` | Get the ephemeral Curve25519 base key created by the initiator |
-| `String oneTimeKey()` | Get the one-time Curve25519 key used to establish the session |
+| `Curve25519PublicKey identityKey()` | Get the long-term Curve25519 identity key of the session initiator |
+| `Curve25519PublicKey baseKey()` | Get the ephemeral Curve25519 base key created by the initiator |
+| `Curve25519PublicKey oneTimeKey()` | Get the one-time Curve25519 key used to establish the session |
 
 ### OutboundGroupSession
 
@@ -316,6 +323,40 @@ An encrypted message produced by `PkEncryption`, consisting of three base64-enco
 | `String mac()` | Get the base64-encoded MAC (does not authenticate the ciphertext) |
 | `String ephemeralKey()` | Get the base64-encoded ephemeral Curve25519 public key |
 
+### Cryptographic Key Types
+
+Typed wrappers around base64-encoded cryptographic keys, providing validation on construction
+and type-safe usage throughout the API. Located in `io.github.fherbreteau.vodozemac.types`.
+
+#### Ed25519PublicKey
+
+An Ed25519 public key used for signature verification.
+
+| Method | Description |
+|--------|-------------|
+| `static Ed25519PublicKey fromBase64(String base64)` | Decode and validate a base64 key |
+| `String toBase64()` | Get the base64-encoded key |
+| `boolean verify(String message, Ed25519Signature signature)` | Verify a signature (returns `false` on failure) |
+| `boolean verify(byte[] message, Ed25519Signature signature)` | Verify a signature over raw bytes |
+
+#### Ed25519Signature
+
+An Ed25519 signature produced by `Account.sign()`.
+
+| Method | Description |
+|--------|-------------|
+| `static Ed25519Signature fromBase64(String base64)` | Decode and validate a base64 signature |
+| `String toBase64()` | Get the base64-encoded signature |
+
+#### Curve25519PublicKey
+
+A Curve25519 public key used for X25519 key agreement.
+
+| Method | Description |
+|--------|-------------|
+| `static Curve25519PublicKey fromBase64(String base64)` | Decode and validate a base64 key |
+| `String toBase64()` | Get the base64-encoded key |
+
 ### Exceptions
 
 All exceptions extend `VodozemacException` (which extends `RuntimeException`):
@@ -372,6 +413,8 @@ vodozemac-java/
 │       ├── ecies/
 │       │   ├── ecies.rs        # Ecies JNI functions
 │       │   └── established_ecies.rs # EstablishedEcies JNI functions
+│       ├── types/
+│       │   └── mod.rs          # Ed25519PublicKey, Ed25519Signature, Curve25519PublicKey JNI
 │       └── backup/
 │           ├── encryption.rs   # PkEncryption JNI functions
 │           └── decryption.rs   # PkDecryption JNI functions
@@ -383,6 +426,7 @@ vodozemac-java/
 │   │   ├── sas/                # Sas, EstablishedSas, SasBytes
 │   │   ├── ecies/              # Ecies, EstablishedEcies, CheckCode, OutboundCreationResult, InboundCreationResult
 │   │   ├── backup/             # PkEncryption, PkDecryption, PkMessage
+│   │   ├── types/              # Ed25519PublicKey, Ed25519Signature, Curve25519PublicKey
 │   │   ├── exception/          # VodozemacException, PickleException, DecryptionException, SessionCreationException, KeyException, SignatureException, SasException, EciesException, EncryptionException
 │   │   ├── NativeHandle.java   # Base class for native pointer lifecycle
 │   │   ├── KeyValidator.java   # 32-byte key validation utility
@@ -482,6 +526,7 @@ mvn test
 - ✅ **SAS**: Key establishment, emoji/decimal generation, MAC calculation and verification
 - ✅ **ECIES**: Outbound/inbound channel establishment, encrypt/decrypt, check code
 - ✅ **PK Encryption**: Encrypt/decrypt round-trip, secret key loading, legacy libolm unpickle
+- ✅ **Cryptographic Key Types**: Ed25519PublicKey, Ed25519Signature, Curve25519PublicKey validation, equals/hashCode/toString, signature verification
 - ✅ **Utility Functions**: Base64 encode/decode, vodozemac version, session keys, session config
 - ✅ **Error Handling**: Typed exceptions (Pickle, Decryption, SessionCreation, Key, Signature, Sas, Ecies, Encryption)
 - ✅ **Key Validation**: Invalid key length, invalid base64, version mismatch

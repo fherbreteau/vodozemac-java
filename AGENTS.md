@@ -71,6 +71,7 @@ All of the following must pass before committing:
 | `sas` | `sas/` | Sas, EstablishedSas, SasBytes |
 | `ecies` | `ecies/` | Ecies, EstablishedEcies, CheckCode, result types |
 | `backup` | `backup/` | PkEncryption (stateless), PkDecryption (native handle), PkMessage |
+| `types` | `types/mod.rs` | Ed25519PublicKey, Ed25519Signature, Curve25519PublicKey (value classes, no native handle) |
 | `exception` | `errors.rs` | Exception hierarchy (VodozemacException base) |
 
 ### Key Patterns
