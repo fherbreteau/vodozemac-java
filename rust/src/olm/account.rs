@@ -12,6 +12,7 @@ use crate::helpers::{
     box_to_jlong, check_ptr, from_json, json_to_jstring, native_free,
     olm_session_config_from_version, string_to_jstring, wrap,
 };
+use crate::types::{to_java_curve25519, to_java_ed25519, to_java_signature};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeNew(
@@ -37,11 +38,11 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
         let account = unsafe { &*(ptr as *const Account) };
 
         let identity_key = account.identity_keys();
-        let ed25519 = env.new_string(identity_key.ed25519.to_base64())?;
-        let curve25519 = env.new_string(identity_key.curve25519.to_base64())?;
+        let ed25519 = to_java_ed25519(env, &(identity_key.ed25519))?;
+        let curve25519 = to_java_curve25519(env, &(identity_key.curve25519))?;
         let identity_keys = env.new_object(
             jni_str!("io/github/fherbreteau/vodozemac/account/IdentityKeys"),
-            jni_sig!((ed25519: java.lang.String, curve25519: java.lang.String) -> void),
+            jni_sig!((ed25519: io.github.fherbreteau.vodozemac.types.Ed25519PublicKey, curve25519: io.github.fherbreteau.vodozemac.types.Curve25519PublicKey) -> void),
             &[JValue::Object(&ed25519), JValue::Object(&curve25519)],
         )?;
         Ok(identity_keys.into_raw())
@@ -54,14 +55,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
-) -> jstring {
-    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+) -> jobject {
+    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
 
-        let key = account.curve25519_key().to_base64();
-        let jni_string = env.new_string(key)?;
-        Ok(jni_string.into_raw())
+        let curve25519 = to_java_curve25519(env, &(account.curve25519_key()))?;
+        Ok(curve25519.into_raw())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -71,14 +71,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
-) -> jstring {
-    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+) -> jobject {
+    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
 
-        let key = account.ed25519_key().to_base64();
-        let jni_string = env.new_string(key)?;
-        Ok(jni_string.into_raw())
+        let ed25519 = to_java_ed25519(env, &(account.ed25519_key()))?;
+        Ok(ed25519.into_raw())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -202,12 +201,13 @@ fn key_vec_to_java_list<'local>(
     let array_list = env.new_object(jni_str!("java/util/ArrayList"), jni_sig!(() -> void), &[])?;
 
     for key in keys {
-        let key_str = env.new_string(key.to_base64())?;
+        let key = to_java_curve25519(env, key)?;
+
         env.call_method(
             &array_list,
             jni_str!("add"),
             jni_sig!((e: java.lang.Object) -> jboolean),
-            &[JValue::Object(&key_str)],
+            &[JValue::Object(&key)],
         )?;
     }
 
@@ -257,12 +257,12 @@ fn key_map_to_result<'local>(
 
     for (key_id, public_key) in keys {
         let key_str = env.new_string(key_id.to_base64())?;
-        let value_str = env.new_string(public_key.to_base64())?;
+        let value = to_java_curve25519(env, public_key)?;
         env.call_method(
             &hash_map,
             jni_str!("put"),
             jni_sig!((k:java.lang.Object, v:java.lang.Object) -> java.lang.Object),
-            &[JValue::Object(&key_str), JValue::Object(&value_str)],
+            &[JValue::Object(&key_str), JValue::Object(&value)],
         )?;
     }
 
@@ -299,7 +299,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
         let result = account.generate_fallback_key();
         match result {
             Some(key) => {
-                let key_str = env.new_string(key.to_base64())?;
+                let key_str = to_java_curve25519(env, &key)?;
                 Ok(key_str.into_raw() as jobject)
             }
             None => Ok(std::ptr::null_mut()),
@@ -362,16 +362,17 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
-    message: JString,
-) -> jstring {
-    let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
+    message: JByteArray,
+) -> jobject {
+    let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         check_ptr(env, ptr)?;
         let account = unsafe { &*(ptr as *const Account) };
-        let msg: String = message.to_string();
+        let message = env.convert_byte_array(message)?;
 
-        let signature = account.sign(&msg).to_base64();
-        let jni_string = env.new_string(signature)?;
-        Ok(jni_string.into_raw())
+        let signature = account.sign(&message);
+        let signature = to_java_signature(env, &signature)?;
+
+        Ok(signature.into_raw())
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

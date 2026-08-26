@@ -8,6 +8,7 @@ use crate::errors::{throw_decryption_error, throw_generic_error, throw_pickle_er
 use crate::helpers::{
     box_to_jlong, check_ptr, from_json, json_to_jstring, native_free, string_to_jstring, wrap,
 };
+use crate::types::to_java_curve25519;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativeFree(
@@ -51,13 +52,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
 
         let session_keys = session.session_keys();
         let session_id = env.new_string(session_keys.session_id())?;
-        let identity_key = env.new_string(session_keys.identity_key.to_base64())?;
-        let base_key = env.new_string(session_keys.base_key.to_base64())?;
-        let one_time_key = env.new_string(session_keys.one_time_key.to_base64())?;
+        let identity_key = to_java_curve25519(env, &(session_keys.identity_key))?;
+        let base_key = to_java_curve25519(env, &(session_keys.base_key))?;
+        let one_time_key = to_java_curve25519(env, &(session_keys.one_time_key))?;
 
         let result = env.new_object(
             jni_str!("io/github/fherbreteau/vodozemac/olm/SessionKeys"),
-            jni_sig!((sessionId: java.lang.String, identityKey: java.lang.String, baseKey: java.lang.String, oneTimeKey: java.lang.String) -> void),
+            jni_sig!((sessionId: java.lang.String, identityKey: io.github.fherbreteau.vodozemac.types.Curve25519PublicKey, baseKey: io.github.fherbreteau.vodozemac.types.Curve25519PublicKey, oneTimeKey: io.github.fherbreteau.vodozemac.types.Curve25519PublicKey) -> void),
             &[JValue::Object(&session_id), JValue::Object(&identity_key), JValue::Object(&base_key), JValue::Object(&one_time_key)],
         )?;
 
