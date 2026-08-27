@@ -4,6 +4,7 @@ use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};
 use vodozemac::{Curve25519PublicKey, Ed25519PublicKey, Ed25519Signature};
 
 use crate::errors::{throw_key_error, throw_signature_error};
+use crate::helpers::catch_panic;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_types_Ed25519PublicKey_nativeValidate(
@@ -12,10 +13,12 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_types_Ed25519PublicK
     base64: JString,
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
-        let base64 = base64.to_string();
+        catch_panic(env, |env| {
+            let base64 = base64.to_string();
 
-        let _ = Ed25519PublicKey::from_base64(&base64).map_err(|e| throw_key_error(env, e))?;
-        Ok(())
+            let _ = Ed25519PublicKey::from_base64(&base64).map_err(|e| throw_key_error(env, e))?;
+            Ok(())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -29,20 +32,22 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_types_Ed25519PublicK
     signature: JString,
 ) -> jboolean {
     let outcome = env.with_env(|env| -> Result<jboolean, jni::errors::Error> {
-        let public_key = public_key.to_string();
-        let message = env.convert_byte_array(message)?;
-        let signature = signature.to_string();
+        catch_panic(env, |env| {
+            let public_key = public_key.to_string();
+            let message = env.convert_byte_array(message)?;
+            let signature = signature.to_string();
 
-        let public_key =
-            Ed25519PublicKey::from_base64(&public_key).map_err(|e| throw_key_error(env, e))?;
-        let signature =
-            Ed25519Signature::from_base64(&signature).map_err(|e| throw_signature_error(env, e))?;
+            let public_key =
+                Ed25519PublicKey::from_base64(&public_key).map_err(|e| throw_key_error(env, e))?;
+            let signature = Ed25519Signature::from_base64(&signature)
+                .map_err(|e| throw_signature_error(env, e))?;
 
-        let _ = public_key
-            .verify(&message, &signature)
-            .map_err(|e| throw_signature_error(env, e));
+            let _ = public_key
+                .verify(&message, &signature)
+                .map_err(|e| throw_signature_error(env, e));
 
-        Ok(true)
+            Ok(true)
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -54,10 +59,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_types_Ed25519Signatu
     base64: JString,
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
-        let base64 = base64.to_string();
+        catch_panic(env, |env| {
+            let base64 = base64.to_string();
 
-        let _ = Ed25519Signature::from_base64(&base64).map_err(|e| throw_signature_error(env, e));
-        Ok(())
+            let _ =
+                Ed25519Signature::from_base64(&base64).map_err(|e| throw_signature_error(env, e));
+            Ok(())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -69,9 +77,11 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_types_Curve25519Publ
     base64: JString,
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
-        let base64 = base64.to_string();
-        let _ = Curve25519PublicKey::from_base64(&base64).map_err(|e| throw_key_error(env, e));
-        Ok(())
+        catch_panic(env, |env| {
+            let base64 = base64.to_string();
+            let _ = Curve25519PublicKey::from_base64(&base64).map_err(|e| throw_key_error(env, e));
+            Ok(())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
