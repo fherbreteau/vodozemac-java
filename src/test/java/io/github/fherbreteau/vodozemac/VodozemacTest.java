@@ -1,9 +1,11 @@
 package io.github.fherbreteau.vodozemac;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.security.SecureRandom;
 
+import io.github.fherbreteau.vodozemac.exception.VodozemacException;
 import org.junit.jupiter.api.Test;
 
 class VodozemacTest {
@@ -30,5 +32,11 @@ class VodozemacTest {
 
         assertThat(version).isNotNull()
             .isEqualTo("0.10.0");
+    }
+
+    @Test
+    void testBase64DecodeInvalidInput() {
+        assertThatThrownBy(() -> Vodozemac.base64Decode("!!!invalid-base64!!!"))
+                .isInstanceOf(VodozemacException.class);
     }
 }

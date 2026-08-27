@@ -5,6 +5,7 @@ import static io.github.fherbreteau.vodozemac.KeyValidator.validateEncryptionKey
 import java.util.Optional;
 
 import io.github.fherbreteau.vodozemac.NativeHandle;
+import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
 import io.github.fherbreteau.vodozemac.exception.DecryptionException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
@@ -25,6 +26,10 @@ import io.github.fherbreteau.vodozemac.exception.SignatureException;
  * @author François HERBRETEAU
  */
 public final class InboundGroupSession extends NativeHandle {
+
+    static {
+        NativeLibraryLoader.loadLibrary();
+    }
 
     /**
      * Creates a new inbound group session from a session key received over
@@ -342,5 +347,5 @@ public final class InboundGroupSession extends NativeHandle {
 
     private static native long nativeUnpickleLegacy(String pickleData, byte[] pickleKey);
 
-    private static native long nativeImport(String sessionKey, long version);
+    private static native long nativeImport(String sessionKey, int version);
 }

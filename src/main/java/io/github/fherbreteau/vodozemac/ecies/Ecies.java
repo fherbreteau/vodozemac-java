@@ -110,9 +110,11 @@ public final class Ecies extends NativeHandle {
      */
     public OutboundCreationResult establishOutboundChannel(String theirPublicKey, byte[] initialPlaintext) {
         checkNotClosed();
-        OutboundCreationResult result = nativeEstablishOutboundChannel(nativePtr, theirPublicKey, initialPlaintext);
-        nativePtr = 0;
-        return result;
+        try {
+            return nativeEstablishOutboundChannel(nativePtr, theirPublicKey, initialPlaintext);
+        } finally {
+            nativePtr = 0;
+        }
     }
 
     /**
@@ -140,9 +142,11 @@ public final class Ecies extends NativeHandle {
      */
     public InboundCreationResult establishInboundChannel(String message) {
         checkNotClosed();
-        InboundCreationResult result = nativeEstablishInboundChannel(nativePtr, message);
-        nativePtr = 0;
-        return result;
+        try {
+            return nativeEstablishInboundChannel(nativePtr, message);
+        } finally {
+            nativePtr = 0;
+        }
     }
 
     private static native long nativeNew();

@@ -28,7 +28,7 @@ public final class NativeLibraryLoader {
     private NativeLibraryLoader() {
     }
 
-    private static boolean loaded = false;
+    private static volatile boolean loaded = false;
 
     private static final String OS_LINUX = "linux";
     private static final String OS_DARWIN = "darwin";

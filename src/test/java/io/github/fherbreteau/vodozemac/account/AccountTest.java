@@ -287,7 +287,7 @@ class AccountTest {
         Curve25519PublicKey originalCurve25519Key;
         Ed25519PublicKey originalEd25519Key;
         Ed25519Signature originalSignature;
-        DehydratedDeviceResult dehydratexDevice;
+        DehydratedDeviceResult dehydratedDevice;
         byte[] key = new byte[32];
         random.nextBytes(key);
 
@@ -296,17 +296,17 @@ class AccountTest {
             originalEd25519Key = originalAccount.ed25519Key();
             originalSignature = originalAccount.sign("Test message for pickling");
 
-            dehydratexDevice = originalAccount.toDehydratedDevice(key);
+            dehydratedDevice = originalAccount.toDehydratedDevice(key);
 
             // Verify that the dehydrated device is not null and not empty
-            assertThat(dehydratexDevice)
+            assertThat(dehydratedDevice)
                     .as("Dehydrated device should not be null")
                     .isNotNull()
                     .extracting(DehydratedDeviceResult::ciphertext, STRING)
                     .as("Dehydrated device ciphertext should not be null or empty")
                     .isNotNull()
                     .isNotEmpty();
-            assertThat(dehydratexDevice)
+            assertThat(dehydratedDevice)
                     .as("Dehydrated device should not be null")
                     .isNotNull()
                     .extracting(DehydratedDeviceResult::nonce, STRING)
@@ -315,8 +315,8 @@ class AccountTest {
                     .isNotEmpty();
         }
 
-        try (Account rehydratedDevice = Account.fromDehydratedDevice(dehydratexDevice.ciphertext(),
-                dehydratexDevice.nonce(), key)) {
+        try (Account rehydratedDevice = Account.fromDehydratedDevice(dehydratedDevice.ciphertext(),
+                dehydratedDevice.nonce(), key)) {
             Curve25519PublicKey rehydratedCurve25519Key = rehydratedDevice.curve25519Key();
             Ed25519PublicKey rehydratedEd25519Key = rehydratedDevice.ed25519Key();
 
@@ -530,11 +530,12 @@ class AccountTest {
                 String plaintext = "Hello Bob";
                 OlmMessage encrypted = outboundSession.encrypt(plaintext.getBytes(UTF_8));
 
-                InboundCreationResult inboundResult = bobAccount.createInboundSession(
-                        aliceAccount.curve25519Key(), encrypted);
-                assertThat(inboundResult).as("Inbound session with default version should be created").isNotNull();
-                assertThat(new String(inboundResult.plaintext(), java.nio.charset.StandardCharsets.UTF_8))
-                        .isEqualTo(plaintext);
+                try (InboundCreationResult inboundResult = bobAccount.createInboundSession(
+                        aliceAccount.curve25519Key(), encrypted)) {
+                    assertThat(inboundResult).as("Inbound session with default version should be created").isNotNull();
+                    assertThat(new String(inboundResult.plaintext(), UTF_8))
+                                .isEqualTo(plaintext);
+                }
             }
         }
     }

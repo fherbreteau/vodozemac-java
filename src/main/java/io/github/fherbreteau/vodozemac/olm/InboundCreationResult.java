@@ -14,7 +14,7 @@ import java.util.Objects;
  * @author François HERBRETEAU
  * @see io.github.fherbreteau.vodozemac.account.Account#createInboundSession(io.github.fherbreteau.vodozemac.olm.OlmSessionVersion, String, io.github.fherbreteau.vodozemac.olm.OlmMessage)
  */
-public class InboundCreationResult {
+public class InboundCreationResult implements AutoCloseable {
     private final OlmSession session;
     private final byte[] plaintext;
 
@@ -40,6 +40,11 @@ public class InboundCreationResult {
      */
     public byte[] plaintext() {
         return plaintext.clone();
+    }
+
+    @Override
+    public void close() {
+        session.close();
     }
 
     @Override

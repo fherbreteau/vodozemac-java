@@ -131,7 +131,7 @@ class NativeHandleTest {
     @Test
     void testNativeLibraryIsLoaded() {
         assertThat(NativeLibraryLoader.isLoaded())
-                .as("Native Libray is Loaded")
+                .as("Native Library is Loaded")
                 .isTrue();
     }
 }

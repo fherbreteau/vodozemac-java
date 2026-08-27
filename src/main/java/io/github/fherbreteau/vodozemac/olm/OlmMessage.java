@@ -7,7 +7,7 @@ import java.util.Objects;
  * <p>
  * An {@code OlmMessage} is produced by {@link OlmSession#encrypt(byte[])} and
  * consumed by {@link OlmSession#decrypt(OlmMessage)} and
- * {@link io.github.fherbreau.vodozemac.account.Account#createInboundSession(
+ * {@link io.github.fherbreteau.vodozemac.account.Account#createInboundSession(
    String, OlmMessage)}.
  * <p>
  * The message will either be a {@link MessageType#PRE_KEY pre-key message} or

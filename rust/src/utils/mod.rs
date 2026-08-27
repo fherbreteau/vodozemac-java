@@ -4,6 +4,7 @@ use jni::sys::{jobject, jstring};
 use vodozemac::{base64_decode, base64_encode};
 
 use crate::errors::throw_generic_error;
+use crate::helpers::{catch_panic, string_to_jstring};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_Vodozemac_nativeBase64Encode(
@@ -12,11 +13,12 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_Vodozemac_nativeBase
     src: JByteArray,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
-        let src = env.convert_byte_array(src)?;
+        catch_panic(env, |env| {
+            let src = env.convert_byte_array(src)?;
 
-        let dst = base64_encode(src);
-        let result = env.new_string(&dst)?;
-        Ok(result.into_raw())
+            let dst = base64_encode(src);
+            string_to_jstring(env, dst)
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -28,11 +30,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_Vodozemac_nativeBase
     src: JString,
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
-        let src = src.to_string();
+        catch_panic(env, |env| {
+            let src = src.to_string();
 
-        let dst = base64_decode(&src).map_err(|e| throw_generic_error(env, e))?;
-        let result = env.byte_array_from_slice(&dst)?;
-        Ok(result.into_raw())
+            let dst = base64_decode(&src).map_err(|e| throw_generic_error(env, e))?;
+            let result = env.byte_array_from_slice(&dst)?;
+            Ok(result.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -43,8 +47,10 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_Vodozemac_nativeVers
     _class: JClass,
 ) -> jstring {
     let outcome = env.with_env(|env| -> Result<jstring, jni::errors::Error> {
-        let version = env.new_string(vodozemac::VERSION)?;
-        Ok(version.into_raw())
+        catch_panic(env, |env| {
+            let version = env.new_string(vodozemac::VERSION)?;
+            Ok(version.into_raw())
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }

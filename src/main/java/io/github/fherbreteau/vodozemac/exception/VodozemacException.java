@@ -5,7 +5,7 @@ package io.github.fherbreteau.vodozemac.exception;
  * <p>
  * All specific exception types ({@link PickleException}, {@link DecryptionException},
  * {@link SessionCreationException}, {@link KeyException}, {@link SignatureException},
- * {@link SasException})
+ * {@link SasException}, {@link ConversionException}, {@link EciesException}, {@link EncryptionException})
  * extend this class, allowing callers to catch all vodozemac errors with a single
  * catch clause if desired.
  *
