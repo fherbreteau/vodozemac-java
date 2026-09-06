@@ -19,7 +19,6 @@ jobs:
     permissions:
       contents: read
       packages: read
-      pull-requests: write
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
@@ -78,9 +77,6 @@ jobs:
       - name: Generate coverage report
         run: python3 .github/scripts/coverage-report.py
 
-      - name: Post coverage comment
-        if: github.event_name == 'pull_request'
-        uses: marocchino/sticky-pull-request-comment@5770ad5eb8f42dd2c4f34da00c94c5381e49af88 # v3
-        with:
-          recreate: true
-          path: coverage-report.md
+      - name: Publish coverage summary
+        if: always() && hashFiles('coverage-report.md') != ''
+        run: cat coverage-report.md >> "$GITHUB_STEP_SUMMARY"

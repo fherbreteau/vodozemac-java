@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a combined Rust + Java coverage report as markdown for PR comments."""
+"""Generate a combined Rust + Java coverage report as markdown for the GitHub job summary."""
 
 import sys
 import xml.etree.ElementTree as ET
