@@ -28,6 +28,8 @@ import io.github.fherbreteau.vodozemac.exception.SignatureException;
  */
 public final class InboundGroupSession extends NativeHandle {
 
+    private static final String PICKLE_DATA = "pickleData";
+
     static {
         NativeLibraryLoader.loadLibrary();
     }
@@ -248,7 +250,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws PickleException if the data cannot be deserialized
      */
     public static InboundGroupSession unpickle(String pickleData) {
-        Objects.requireNonNull(pickleData, "pickleData");
+        Objects.requireNonNull(pickleData, PICKLE_DATA);
         long nativePtr = nativeUnpickle(pickleData);
         return new InboundGroupSession(nativePtr);
     }
@@ -264,7 +266,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static InboundGroupSession unpickle(String pickleData, byte[] key) {
-        Objects.requireNonNull(pickleData, "pickleData");
+        Objects.requireNonNull(pickleData, PICKLE_DATA);
         Objects.requireNonNull(key, "key");
         validateEncryptionKey(key);
         long nativePtr = nativeEncryptedUnpickle(pickleData, key);
@@ -281,7 +283,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static InboundGroupSession unpickleLegacy(String pickleData, byte[] pickleKey) {
-        Objects.requireNonNull(pickleData, "pickleData");
+        Objects.requireNonNull(pickleData, PICKLE_DATA);
         Objects.requireNonNull(pickleKey, "pickleKey");
         long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
         return new InboundGroupSession(nativePtr);

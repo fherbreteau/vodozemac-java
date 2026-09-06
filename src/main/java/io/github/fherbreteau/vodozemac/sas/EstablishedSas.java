@@ -28,6 +28,10 @@ import io.github.fherbreteau.vodozemac.exception.SasException;
  */
 public final class EstablishedSas extends NativeHandle {
 
+    private static final String INPUT = "input";
+
+    private static final String INFO = "info";
+
     static {
         NativeLibraryLoader.loadLibrary();
     }
@@ -49,7 +53,7 @@ public final class EstablishedSas extends NativeHandle {
      * @throws IllegalStateException if this {@code EstablishedSas} has been closed
      */
     public SasBytes bytes(String info) {
-        Objects.requireNonNull(info, "info");
+        Objects.requireNonNull(info, INFO);
         checkNotClosed();
         return nativeBytes(nativePtr, info);
     }
@@ -69,7 +73,7 @@ public final class EstablishedSas extends NativeHandle {
      * @throws SasException         if the requested count exceeds the maximum
      */
     public byte[] bytesRaw(String info, int count) {
-        Objects.requireNonNull(info, "info");
+        Objects.requireNonNull(info, INFO);
         checkNotClosed();
         return nativeBytesRaw(nativePtr, info, count);
     }
@@ -87,8 +91,8 @@ public final class EstablishedSas extends NativeHandle {
      * @throws IllegalStateException if this {@code EstablishedSas} has been closed
      */
     public String calculateMac(String input, String info) {
-        Objects.requireNonNull(input, "input");
-        Objects.requireNonNull(info, "info");
+        Objects.requireNonNull(input, INPUT);
+        Objects.requireNonNull(info, INFO);
         checkNotClosed();
         return nativeCalculateMac(nativePtr, input, info);
     }
@@ -108,8 +112,8 @@ public final class EstablishedSas extends NativeHandle {
      * @throws IllegalStateException if this {@code EstablishedSas} has been closed
      */
     public String calculateMacInvalidBase64(String input, String info) {
-        Objects.requireNonNull(input, "input");
-        Objects.requireNonNull(info, "info");
+        Objects.requireNonNull(input, INPUT);
+        Objects.requireNonNull(info, INFO);
         checkNotClosed();
         return nativeCalculateMacInvalidBase64(nativePtr, input, info);
     }
@@ -128,8 +132,8 @@ public final class EstablishedSas extends NativeHandle {
      * @throws SasException          if the MAC verification fails
      */
     public void verifyMac(String input, String info, String mac) {
-        Objects.requireNonNull(input, "input");
-        Objects.requireNonNull(info, "info");
+        Objects.requireNonNull(input, INPUT);
+        Objects.requireNonNull(info, INFO);
         Objects.requireNonNull(mac, "mac");
         checkNotClosed();
         nativeVerifyMac(nativePtr, input, info, mac);
