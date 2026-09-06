@@ -132,11 +132,29 @@ class SasTest {
     }
 
     @Test
-    void testSasBytesEqualityAndHashCode() {
+    void testSasBytesEqualityAndHashCodeToString() {
         SasBytes bytes = new SasBytes(new byte[0], new int[0], new String[0]);
 
         assertThat(bytes)
                 .isNotEqualTo(new Object())
                 .doesNotHaveSameHashCodeAs(new Object());
+
+        assertThat(bytes.toString()).contains("rawBytes", "emojiIndices", "decimals");
+    }
+
+    @Test
+    void testSasBytesEqualityWithSameData() {
+        SasBytes bytes = new SasBytes(new byte[]{1, 2, 3, 4, 5, 6}, new int[]{10, 20, 30, 40, 50, 60, 70},
+                new String[]{"1234", "5678", "9012"});
+        SasBytes same = new SasBytes(new byte[]{1, 2, 3, 4, 5, 6}, new int[]{10, 20, 30, 40, 50, 60, 70},
+                new String[]{"1234", "5678", "9012"});
+        SasBytes differentBytes = new SasBytes(new byte[]{6, 5, 4, 3, 2, 1}, new int[]{10, 20, 30, 40, 50, 60, 70},
+                new String[]{"1234", "5678", "9012"});
+
+        assertThat(bytes)
+                .isEqualTo(same)
+                .hasSameHashCodeAs(same)
+                .isNotEqualTo(differentBytes)
+                .isNotEqualTo(null);
     }
 }

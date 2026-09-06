@@ -3,6 +3,9 @@ package io.github.fherbreteau.vodozemac.types;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.nio.charset.StandardCharsets;
+
+import io.github.fherbreteau.vodozemac.account.Account;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.SignatureException;
 import org.junit.jupiter.api.Test;
@@ -86,5 +89,38 @@ class TypesTest {
 
         assertThat(key.verify("invalid", signature)).isFalse();
 
+    }
+
+    @Test
+    void testSignatureVerificationWithBothOverloads() {
+        try (Account account = new Account()) {
+            Ed25519Signature signature = account.sign("Hello Matrix!");
+
+            assertThat(account.ed25519Key().verify("Hello Matrix!", signature)).isTrue();
+            assertThat(account.ed25519Key().verify("Hello Matrix!".getBytes(StandardCharsets.UTF_8), signature)).isTrue();
+        }
+    }
+
+    @Test
+    void testSignatureVerificationWithTamperedSignature() {
+        try (Account account = new Account()) {
+            Ed25519PublicKey key = account.ed25519Key();
+            Ed25519Signature signature = account.sign("Hello Matrix!");
+            Ed25519Signature tampered = Ed25519Signature.fromBase64("tmKC0y1NtWISC0OnUgGwBNqCGuyD3FmK+3dnA/143ijpI6ivPMU7AD+12fCwKszIbiPLcDz331eFjKvSzRsyAQ");
+
+            assertThat(key.verify("Hello Matrix!", tampered)).isFalse();
+            assertThat(key.verify("Hello Matrix!", signature)).isTrue();
+            assertThat(key.verify("Hello Matrix!".getBytes(StandardCharsets.UTF_8), signature)).isTrue();
+        }
+    }
+
+    @Test
+    void testFromBase64WithNullInput() {
+        assertThatThrownBy(() -> Curve25519PublicKey.fromBase64(null))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> Ed25519PublicKey.fromBase64(null))
+                .isInstanceOf(NullPointerException.class);
+        assertThatThrownBy(() -> Ed25519Signature.fromBase64(null))
+                .isInstanceOf(NullPointerException.class);
     }
 }
