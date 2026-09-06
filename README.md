@@ -592,4 +592,4 @@ For issues, questions, or feature requests:
 
 ---
 
-**© 2024-2026 François Herbreteau | [GitHub](https://github.com/fherbreteau) | [Matrix](https://matrix.to/#/@fherbreteau:matrix.org)**
+**© 2025-2026 François Herbreteau | [GitHub](https://github.com/fherbreteau) | [Matrix](https://matrix.to/#/@fherbreteau:matrix.org)**
