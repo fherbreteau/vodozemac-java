@@ -284,4 +284,21 @@ class EciesTest {
             assertThat(result.toString()).contains("ecies", "initialMessage");
         }
     }
+
+    @Test
+    void testEstablishedEciesEqualsHashCode() {
+        try (Ecies alice1 = new Ecies(); Ecies bob1 = new Ecies();
+                Ecies alice2 = new Ecies(); Ecies bob2 = new Ecies();
+                OutboundCreationResult result = alice1.establishOutboundChannel(bob1.publicKey(), PLAINTEXT);
+                OutboundCreationResult other = alice2.establishOutboundChannel(bob2.publicKey(), PLAINTEXT)) {
+            EstablishedEcies ecies = result.establishedEcies();
+            EstablishedEcies otherEcies = other.establishedEcies();
+
+            assertThat(ecies).isEqualTo(ecies)
+                    .hasSameHashCodeAs(ecies)
+                    .isNotEqualTo(otherEcies)
+                    .isNotEqualTo("not an ecies")
+                    .isNotEqualTo(null);
+        }
+    }
 }
