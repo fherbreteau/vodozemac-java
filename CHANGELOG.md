@@ -21,7 +21,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Linux ARM64 Cross-Compilation**: Fixed incorrect Rust target in Maven profile (aarch64-apple-darwin → aarch64-unknown-linux-gnu)
 - **JNI 0.22+ Compatibility**: Updated Rust code to use proper EnvUnowned and with_env() pattern
-- **Native Library Loading**: Enhanced NativeLibraryLoader with fallback path resolution
+- **Native Library Loading**: Enhanced NativeLibraryLoader with fallback path resolution and null-safety on system properties
+
+### 🛡️ Security & Hardening
+
+- **JNI Lifecycle Hardening**: Panic-guarded `native_free`, pointer validation ordering, `catch_panic` safety on all JNI entry points, and `RawBox` guards replacing `forget`
+- **Java API Finalization**: Input validation via `Objects.requireNonNull` on public APIs, `final` value classes with `equals`/`hashCode`/`toString`, session protocol version support (`OlmSessionVersion`, `MegolmSessionVersion`)
+- **CI/CD Hardening**: SHA-pinned GitHub Actions, concurrency groups, security scanning (CodeQL, Trivy, `cargo-audit`), Maven wrapper checksum verification, and all six native platforms assembled in release artifacts
+- **Rust Release Profile**: Enabled `lto`, single `codegen-units`, and `strip` for release builds
 
 ### 📚 Documentation
 
@@ -37,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🧪 Testing
 
-- **Test Coverage**: Added 6 comprehensive test cases covering all major functionality
+- **Test Coverage**: Added comprehensive test cases covering all major functionality (167 test cases)
 - **AssertJ Migration**: Enhanced tests with fluent assertions and better error messages
 - **Test Properties**: Added key validation and property testing
 
@@ -128,5 +135,5 @@ For questions about this changelog or versioning:
 
 ---
 
-**Last Updated**: 2024-07-30
+**Last Updated**: 2026-09-07
 **Maintainer**: François Herbreteau

@@ -22,7 +22,7 @@ Vodozemac Java provides Java Native Interface (JNI) bindings for the [Vodozemac]
 - **🌍 Cross-Platform**: Linux (x86_64, ARM64), macOS (Intel, Apple Silicon), Windows (x86_64, ARM64)
 - **📦 Maven Integration**: Automatic Rust compilation and native library packaging
 - **🗑️ Memory Safety**: Proper resource management with Java's `AutoCloseable`
-- **🧪 Comprehensive Testing**: AssertJ-based test suite with 149 test cases
+- **🧪 Comprehensive Testing**: AssertJ-based test suite with 167 test cases
 - **🔧 GitHub CI/CD**: Multi-platform build and test pipeline
 
 ## 📋 Requirements
@@ -123,13 +123,14 @@ Main class for Olm account management — identity keys, one-time keys, fallback
 | `IdentityKeys identityKeys()` | Get both Ed25519 and Curve25519 public keys |
 | `Ed25519PublicKey ed25519Key()` | Get Ed25519 public key |
 | `Curve25519PublicKey curve25519Key()` | Get Curve25519 public key |
-| `Ed25519Signature sign(String message)` | Sign a message with Ed25519 key |
+| `Ed25519Signature sign(String message)` | Sign a string message with Ed25519 key |
+| `Ed25519Signature sign(byte[] message)` | Sign raw bytes with Ed25519 key |
 | `long maxNumberOfOneTimeKeys()` | Get max one-time keys to store |
 | `OneTimeKeyGenerationResult generateOneTimeKeys(long count)` | Generate one-time keys |
 | `long storedOneTimeKeyCount()` | Get number of stored one-time keys |
-| `Map unpublishedOneTimeKeys()` | Get unpublished one-time keys |
+| `Map<String, Curve25519PublicKey> unpublishedOneTimeKeys()` | Get unpublished one-time keys |
 | `Optional<Curve25519PublicKey> generateFallbackKey()` | Generate a fallback key |
-| `Map unpublishedFallbackKey()` | Get unpublished fallback key |
+| `Map<String, Curve25519PublicKey> unpublishedFallbackKey()` | Get unpublished fallback key |
 | `boolean forgetFallbackKey()` | Forget previously used fallback key |
 | `void markKeysAsPublished()` | Mark keys as published |
 | `OlmSession createOutboundSession(...)` | Create an outbound Olm session |
@@ -167,7 +168,7 @@ Produced by `OlmSession.encrypt()` and consumed by `OlmSession.decrypt()` and
 |--------|-------------|
 | `MessageType type()` | Get the message type (pre-key or normal) |
 | `String body()` | Get the base64-encoded ciphertext body |
-| `String toString()` | Get the JSON representation for Matrix wire format |
+| `String toJson()` | Get the JSON representation for Matrix wire format |
 
 ### MessageType
 
@@ -199,7 +200,7 @@ Megolm outbound group session for multi-recipient encrypted communication.
 | `int messageIndex()` | Get current message index |
 | `String sessionKey()` | Get the session key for sharing with recipients |
 | `MegolmSessionVersion sessionConfig()` | Get the session protocol version |
-| `String encrypt(byte[] plaintext)` | Encrypt a message (returns base64) |
+| `MegolmMessage encrypt(byte[] plaintext)` | Encrypt a message and return a typed `MegolmMessage` |
 | `String pickle()` / `pickle(byte[] key)` | Serialize session |
 | `static OutboundGroupSession unpickle(...)` | Restore from pickle |
 | `static OutboundGroupSession unpickleLegacy(...)` | Restore from libolm legacy pickle |
@@ -212,9 +213,9 @@ Megolm inbound group session for receiving encrypted group messages.
 |--------|-------------|
 | `String sessionId()` | Get the session ID |
 | `int firstKnownIndex()` | Get the first known message index |
-| `DecryptedMessage decrypt(String message)` | Decrypt a message |
-| `String exportAt(int index)` | Export session key at a given index |
-| `String exportAtFirstKnownIndex()` | Export session key at first known index |
+| `DecryptedMessage decrypt(MegolmMessage message)` | Decrypt a `MegolmMessage` |
+| `Optional<String> exportAt(int index)` | Export session key at a given index |
+| `Optional<String> exportAtFirstKnownIndex()` | Export session key at first known index |
 | `boolean advanceTo(int index)` | Advance the session to a given index |
 | `boolean connected(InboundGroupSession other)` | Check if two sessions are connected |
 | `SessionOrdering compare(InboundGroupSession other)` | Compare two sessions |
@@ -223,6 +224,28 @@ Megolm inbound group session for receiving encrypted group messages.
 | `String pickle()` / `pickle(byte[] key)` | Serialize session |
 | `static InboundGroupSession unpickle(...)` | Restore from pickle |
 | `static InboundGroupSession unpickleLegacy(...)` | Restore from libolm legacy pickle |
+
+### MegolmMessage
+
+An encrypted Megolm message produced by `OutboundGroupSession.encrypt()` and consumed by
+`InboundGroupSession.decrypt()`.
+
+| Method | Description |
+|--------|-------------|
+| `String ciphertext()` | Get the base64-encoded ciphertext |
+| `int messageIndex()` | Get the message index this message was encrypted at |
+| `String mac()` | Get the base64-encoded MAC |
+| `Ed25519Signature signature()` | Get the Ed25519 signature of the ciphertext |
+| `static MegolmMessage fromBase64(String base64)` | Decode and validate a base64-encoded message |
+
+### DecryptedMessage
+
+The result of a successful Megolm decryption.
+
+| Method | Description |
+|--------|-------------|
+| `byte[] plaintext()` | Get the decrypted plaintext bytes |
+| `int messageIndex()` | Get the message index the message was encrypted at |
 
 ### Sas
 
@@ -311,6 +334,7 @@ The decryption component of the PK Encryption module, holding a Curve25519 secre
 | `String secretKey()` | Get the base64-encoded Curve25519 secret key |
 | `String publicKey()` | Get the base64-encoded Curve25519 public key |
 | `byte[] decrypt(PkMessage message)` | Decrypt a `PkMessage` |
+| `String pickleLegacy(byte[] pickleKey)` | Serialize to libolm legacy pickle format |
 | `static PkDecryption unpickleLegacy(String pickleData, byte[] pickleKey)` | Restore from a libolm legacy pickle |
 
 ### PkMessage
@@ -371,6 +395,7 @@ All exceptions extend `VodozemacException` (which extends `RuntimeException`):
 | `SasException` | SAS MAC verification failures or byte generation errors |
 | `EciesException` | ECIES channel establishment or decryption errors |
 | `EncryptionException` | PK encryption failures (e.g. non-contributory key) |
+| `ConversionException` | Rust types that could not be parsed into Java types |
 
 ### Vodozemac
 
@@ -392,13 +417,15 @@ vodozemac-java/
 │   └── workflows/              # GitHub Actions CI/CD
 │       ├── build.yml           # 6-platform native build + Maven package + test
 │       ├── test.yml            # Test pipeline
-│       └── release.yml         # Release pipeline
+│       ├── release.yml         # Release pipeline
+│       └── security.yml        # Security scanning (CodeQL, Trivy)
 ├── rust/                       # Rust JNI bindings
 │   ├── Cargo.toml              # Rust project configuration
 │   └── src/
 │       ├── lib.rs              # Module declarations
 │       ├── errors.rs           # JNI error mapping helpers
 │       ├── helpers.rs          # Shared utilities (wrap, version config)
+│       ├── classes.rs          # JNI class lookup path contract
 │       ├── utils/
 │       │   └── mod.rs          # Vodozemac utility (base64, version) JNI
 │       ├── olm/
@@ -406,7 +433,8 @@ vodozemac-java/
 │       │   └── session.rs       # OlmSession JNI functions
 │       ├── megolm/
 │       │   ├── inbound_group_session.rs   # InboundGroupSession JNI
-│       │   └── outbound_group_session.rs # OutboundGroupSession JNI
+│       │   ├── outbound_group_session.rs # OutboundGroupSession JNI
+│       │   └── message.rs      # MegolmMessage/DecryptedMessage construction
 │       ├── sas/
 │       │   ├── sas.rs          # Sas JNI functions
 │       │   └── established_sas.rs # EstablishedSas JNI functions
@@ -422,13 +450,14 @@ vodozemac-java/
 │   ├── main/java/io/github/fherbreteau/vodozemac/
 │   │   ├── account/            # Account, IdentityKeys, OneTimeKeyGenerationResult, DehydratedDeviceResult
 │   │   ├── olm/                # OlmSession, OlmSessionVersion, OlmMessage, MessageType, SessionKeys, InboundCreationResult
-│   │   ├── megolm/             # InboundGroupSession, OutboundGroupSession, MegolmSessionVersion, SessionOrdering, DecryptedMessage
+│   │   ├── megolm/             # InboundGroupSession, OutboundGroupSession, MegolmSessionVersion, MegolmMessage, SessionOrdering, DecryptedMessage
 │   │   ├── sas/                # Sas, EstablishedSas, SasBytes
 │   │   ├── ecies/              # Ecies, EstablishedEcies, CheckCode, OutboundCreationResult, InboundCreationResult
 │   │   ├── backup/             # PkEncryption, PkDecryption, PkMessage
 │   │   ├── types/              # Ed25519PublicKey, Ed25519Signature, Curve25519PublicKey
-│   │   ├── exception/          # VodozemacException, PickleException, DecryptionException, SessionCreationException, KeyException, SignatureException, SasException, EciesException, EncryptionException
+│   │   ├── exception/          # VodozemacException, PickleException, DecryptionException, SessionCreationException, KeyException, SignatureException, SasException, EciesException, EncryptionException, ConversionException
 │   │   ├── NativeHandle.java   # Base class for native pointer lifecycle
+│   │   ├── SessionVersion.java # Shared version lookup for session/message enums
 │   │   ├── KeyValidator.java   # 32-byte key validation utility
 │   │   ├── Vodozemac.java      # Utility class (base64, version)
 │   │   └── NativeLibraryLoader.java
@@ -563,4 +592,4 @@ For issues, questions, or feature requests:
 
 ---
 
-**© 2024 François Herbreteau | [GitHub](https://github.com/fherbreteau) | [Matrix](https://matrix.to/#/@fherbreteau:matrix.org)**
+**© 2024-2026 François Herbreteau | [GitHub](https://github.com/fherbreteau) | [Matrix](https://matrix.to/#/@fherbreteau:matrix.org)**
