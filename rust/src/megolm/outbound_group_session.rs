@@ -1,8 +1,6 @@
 use jni::EnvUnowned;
 use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jint, jlong, jobject, jstring};
-use jni::{JValue, jni_sig, jni_str};
-use vodozemac::base64_encode;
 use vodozemac::megolm::{GroupSession, GroupSessionPickle};
 
 use crate::errors::throw_pickle_error;
@@ -10,10 +8,7 @@ use crate::helpers::{
     box_to_jlong, catch_panic, check_ptr, from_json, json_to_jstring,
     megolm_session_config_from_version, native_free, string_to_jstring, wrap,
 };
-
-// ============================================================================
-// Megolm: OutboundGroupSession (wraps vodozemac::megolm::GroupSession)
-// ============================================================================
+use crate::megolm::to_java_megolm_message;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeNew(
@@ -117,22 +112,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
             let plaintext_bytes = env.convert_byte_array(plaintext)?;
 
             let message = session.encrypt(&plaintext_bytes);
-            let ciphertext = env.new_string(base64_encode(message.ciphertext()))?;
-            let mac = env.new_string(base64_encode(message.mac()))?;
-            let signature = env.new_string(message.signature().to_base64())?;
-            let base64 = env.new_string(message.to_base64())?;
-
-            let result = env.new_object(
-                jni_str!("io/github/fherbreteau/vodozemac/megolm/MegolmMessage"),
-                jni_sig!((base64: java.lang.String, ciphertext: java.lang.String, messageIndex: int, mac: java.lang.String, signature: java.lang.String) -> void),
-                &[
-                    JValue::Object(&base64),
-                    JValue::Object(&ciphertext),
-                    JValue::Int(message.message_index() as jint),
-                    JValue::Object(&mac),
-                    JValue::Object(&signature),
-                ],
-            )?;
+            let result = to_java_megolm_message(env, &message)?;
             Ok(result.into_raw())
         })
     });

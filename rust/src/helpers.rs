@@ -4,11 +4,11 @@ use serde::{Deserialize, Serialize};
 use vodozemac::megolm::SessionConfig as MegolmSessionConfig;
 use vodozemac::olm::SessionConfig as OlmSessionConfig;
 
-use crate::errors::{throw_generic_error, throw_pickle_error};
+use crate::errors::{throw_conversion_error, throw_pickle_error};
 
 pub(crate) fn wrap<T>(env: &mut Env, v: Vec<T>) -> Result<[T; 32], jni::errors::Error> {
     v.try_into().map_err(|vec: Vec<T>| {
-        throw_generic_error(
+        throw_conversion_error(
             env,
             format!("Expected 32-byte key, got {} bytes", vec.len()),
         )
@@ -22,7 +22,7 @@ pub(crate) fn olm_session_config_from_version(
     match version {
         1 => Ok(OlmSessionConfig::version_1()),
         2 => Ok(OlmSessionConfig::version_2()),
-        _ => Err(throw_generic_error(
+        _ => Err(throw_conversion_error(
             env,
             format!("Invalid session config version: {version}"),
         )),
@@ -36,7 +36,7 @@ pub(crate) fn megolm_session_config_from_version(
     match version {
         1 => Ok(MegolmSessionConfig::version_1()),
         2 => Ok(MegolmSessionConfig::version_2()),
-        _ => Err(throw_generic_error(
+        _ => Err(throw_conversion_error(
             env,
             format!("Invalid session config version: {version}"),
         )),
@@ -44,12 +44,13 @@ pub(crate) fn megolm_session_config_from_version(
 }
 
 pub(crate) fn native_free<T>(env: &mut Env, ptr: jlong) {
-    if check_ptr(env, ptr).is_err() {
-        return;
-    }
-    unsafe {
-        let _ = Box::from_raw(ptr as *mut T);
-    }
+    let _ = catch_panic(env, |env| {
+        check_ptr(env, ptr)?;
+        unsafe {
+            drop(Box::from_raw(ptr as *mut T));
+        }
+        Ok(())
+    });
 }
 
 pub(crate) fn json_to_jstring<T: Serialize>(
@@ -79,7 +80,7 @@ pub(crate) fn box_to_jlong<T>(value: T) -> jlong {
 
 pub(crate) fn check_ptr(env: &mut Env, ptr: jlong) -> Result<(), jni::errors::Error> {
     if ptr == 0 {
-        return Err(throw_generic_error(env, "Null native pointer"));
+        return Err(throw_conversion_error(env, "Null native pointer"));
     }
     Ok(())
 }
@@ -91,7 +92,33 @@ where
     let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| f(&mut *env)));
     match result {
         Ok(inner) => inner,
-        Err(e) => Err(throw_generic_error(env, format!("Rust panic: {e:?}"))),
+        Err(e) => Err(throw_conversion_error(env, format!("Rust panic: {e:?}"))),
+    }
+}
+
+pub(crate) struct RawBox<T> {
+    ptr: *mut T,
+}
+
+impl<T> RawBox<T> {
+    pub(crate) fn new(value: T) -> Self {
+        Self {
+            ptr: Box::into_raw(Box::new(value)),
+        }
+    }
+
+    pub(crate) fn as_jlong(&self) -> jlong {
+        self.ptr as jlong
+    }
+
+    pub(crate) fn leak(self) {
+        std::mem::forget(self);
+    }
+}
+
+impl<T> Drop for RawBox<T> {
+    fn drop(&mut self) {
+        unsafe { drop(Box::from_raw(self.ptr)) };
     }
 }
 

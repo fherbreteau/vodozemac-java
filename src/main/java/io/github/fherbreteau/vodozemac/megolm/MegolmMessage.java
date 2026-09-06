@@ -3,6 +3,7 @@ package io.github.fherbreteau.vodozemac.megolm;
 import java.util.Objects;
 
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
+import io.github.fherbreteau.vodozemac.types.Ed25519Signature;
 
 /**
  * A structured Megolm message, containing the ciphertext, message index,
@@ -23,7 +24,7 @@ import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
  * @see OutboundGroupSession#encrypt(byte[])
  * @see InboundGroupSession#decrypt(MegolmMessage)
  */
-public class MegolmMessage {
+public final class MegolmMessage {
 
     static {
         NativeLibraryLoader.loadLibrary();
@@ -33,9 +34,9 @@ public class MegolmMessage {
     private final String ciphertext;
     private final int messageIndex;
     private final String mac;
-    private final String signature;
+    private final Ed25519Signature signature;
 
-    MegolmMessage(String base64, String ciphertext, int messageIndex, String mac, String signature) {
+    MegolmMessage(String base64, String ciphertext, int messageIndex, String mac, Ed25519Signature signature) {
         this.base64 = base64;
         this.ciphertext = ciphertext;
         this.messageIndex = messageIndex;
@@ -73,11 +74,11 @@ public class MegolmMessage {
     }
 
     /**
-     * Returns the base64-encoded Ed25519 signature of the message.
+     * Returns the Ed25519 signature of the message.
      *
-     * @return the signature as a base64 string
+     * @return the signature
      */
-    public String signature() {
+    public Ed25519Signature signature() {
         return signature;
     }
 

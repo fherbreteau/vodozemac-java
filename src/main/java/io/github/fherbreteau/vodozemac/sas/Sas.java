@@ -1,5 +1,7 @@
 package io.github.fherbreteau.vodozemac.sas;
 
+import java.util.Objects;
+
 import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
@@ -65,6 +67,7 @@ public final class Sas extends NativeHandle {
      *         decoded
      */
     public EstablishedSas diffieHellman(String theirPublicKey) {
+        Objects.requireNonNull(theirPublicKey, "theirPublicKey");
         checkNotClosed();
         try {
             return nativeDiffieHellman(nativePtr, theirPublicKey);

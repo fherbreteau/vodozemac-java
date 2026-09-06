@@ -1,23 +1,26 @@
-use std::mem::forget;
-
 use jni::objects::{JClass, JString};
 use jni::sys::{jlong, jobject, jstring};
-use jni::{EnvUnowned, JValue, jni_sig, jni_str};
+use jni::{EnvUnowned, JValue, jni_sig};
 use vodozemac::Curve25519PublicKey;
-use vodozemac::sas::{EstablishedSas, Sas};
+use vodozemac::sas::Sas;
 
+use crate::classes::ESTABLISHED_SAS;
 use crate::errors::throw_key_error;
-use crate::helpers::{box_to_jlong, catch_panic, check_ptr, native_free, string_to_jstring};
+use crate::helpers::{
+    RawBox, box_to_jlong, catch_panic, check_ptr, native_free, string_to_jstring,
+};
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeNew(
     mut env: EnvUnowned,
     _class: JClass,
 ) -> jlong {
-    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
-        let sas = Sas::new();
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
+        catch_panic(env, |_env| {
+            let sas = Sas::new();
 
-        Ok(box_to_jlong(sas))
+            Ok(box_to_jlong(sas))
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -58,14 +61,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeDiffie
             let established_sas = sas
                 .diffie_hellman(their_public_key)
                 .map_err(|e| throw_key_error(env, e))?;
-            let established_sas = Box::new(established_sas);
-            let established_sas_ptr = &*established_sas as *const EstablishedSas as jlong;
+            let established_sas_box = RawBox::new(established_sas);
             let result = env.new_object(
-                jni_str!("io/github/fherbreteau/vodozemac/sas/EstablishedSas"),
+                ESTABLISHED_SAS,
                 jni_sig!((nativePtr: long) -> void),
-                &[JValue::Long(established_sas_ptr)],
+                &[JValue::Long(established_sas_box.as_jlong())],
             )?;
-            forget(established_sas);
+            established_sas_box.leak();
             Ok(result.into_raw())
         })
     });

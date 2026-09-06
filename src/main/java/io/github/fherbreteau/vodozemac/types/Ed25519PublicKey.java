@@ -5,7 +5,8 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import java.util.Objects;
 
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
-import io.github.fherbreteau.vodozemac.exception.VodozemacException;
+import io.github.fherbreteau.vodozemac.exception.KeyException;
+import io.github.fherbreteau.vodozemac.exception.SignatureException;
 
 /**
  * Represents an Ed25519 public key used for signature verification.
@@ -29,7 +30,15 @@ public final class Ed25519PublicKey {
         this.base64 = base64;
     }
 
+    /**
+     * Creates an {@code Ed25519PublicKey} from a base64-encoded key string.
+     *
+     * @param base64 the base64-encoded Ed25519 public key
+     * @return a new {@code Ed25519PublicKey}
+     * @throws KeyException if the input is not a valid base64-encoded Ed25519 public key
+     */
     public static Ed25519PublicKey fromBase64(String base64) {
+        Objects.requireNonNull(base64, "base64");
         nativeValidate(base64);
         return new Ed25519PublicKey(base64);
     }
@@ -38,16 +47,32 @@ public final class Ed25519PublicKey {
         return base64;
     }
 
+    /**
+     * Verifies the signature of the given message.
+     *
+     * @param message   the signed message
+     * @param signature the signature to verify
+     * @return {@code true} if the signature is valid for the message,
+     *         {@code false} otherwise
+     * @throws SignatureException if the signature is not a valid base64-encoded signature
+     */
     public boolean verify(String message, Ed25519Signature signature) {
         return verify(message.getBytes(UTF_8), signature);
     }
 
+    /**
+     * Verifies the signature of the given message.
+     *
+     * @param message   the signed message
+     * @param signature the signature to verify
+     * @return {@code true} if the signature is valid for the message,
+     *         {@code false} otherwise
+     * @throws SignatureException if the signature is not a valid base64-encoded signature
+     */
     public boolean verify(byte[] message, Ed25519Signature signature) {
-        try {
-            return nativeVerify(base64, message, signature.toBase64());
-        } catch (VodozemacException _) {
-            return false;
-        }
+        Objects.requireNonNull(message, "message");
+        Objects.requireNonNull(signature, "signature");
+        return nativeVerify(base64, message, signature.toBase64());
     }
 
     @Override

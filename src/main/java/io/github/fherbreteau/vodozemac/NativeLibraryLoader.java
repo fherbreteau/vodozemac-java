@@ -50,8 +50,8 @@ public final class NativeLibraryLoader {
             return;
         }
 
-        String osName = System.getProperty("os.name").toLowerCase();
-        String osArch = System.getProperty("os.arch").toLowerCase();
+        String osName = toLowerCase(System.getProperty("os.name"));
+        String osArch = toLowerCase(System.getProperty("os.arch"));
 
         String platform = detectPlatform(osName, osArch);
         String libName = detectLibName(osName);
@@ -73,6 +73,10 @@ public final class NativeLibraryLoader {
                 throw new RuntimeException("Failed to load native library for " + platform, e2);
             }
         }
+    }
+
+    private static String toLowerCase(String value) {
+        return value == null ? null : value.toLowerCase();
     }
 
     private static String detectPlatform(String osName, String osArch) {

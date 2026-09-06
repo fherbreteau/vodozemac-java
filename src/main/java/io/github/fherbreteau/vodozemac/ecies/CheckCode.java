@@ -23,7 +23,7 @@ import java.util.Objects;
  *
  * @author François HERBRETEAU
  */
-public class CheckCode {
+public final class CheckCode {
 
     private final byte[] bytes;
 
@@ -67,5 +67,13 @@ public class CheckCode {
     @Override
     public int hashCode() {
         return Objects.hash(Arrays.hashCode(bytes), digit);
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+            " bytes='" + bytes + "'" +
+            ", digit='" + digit + "'" +
+            "}";
     }
 }

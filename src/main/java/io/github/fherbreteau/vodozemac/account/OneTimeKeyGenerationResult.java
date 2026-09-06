@@ -19,7 +19,7 @@ import io.github.fherbreteau.vodozemac.types.Curve25519PublicKey;
  * @author François HERBRETEAU
  * @see Account#generateOneTimeKeys(long)
  */
-public class OneTimeKeyGenerationResult {
+public final class OneTimeKeyGenerationResult {
     private final List<Curve25519PublicKey> created;
     private final List<Curve25519PublicKey> removed;
 

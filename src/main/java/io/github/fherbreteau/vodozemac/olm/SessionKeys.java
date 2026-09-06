@@ -24,7 +24,7 @@ import io.github.fherbreteau.vodozemac.types.Curve25519PublicKey;
  * @author François HERBRETEAU
  * @see OlmSession#sessionKeys()
  */
-public class SessionKeys {
+public final class SessionKeys {
     private final String sessionId;
     private final Curve25519PublicKey identityKey;
     private final Curve25519PublicKey baseKey;

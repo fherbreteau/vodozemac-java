@@ -1,5 +1,7 @@
 package io.github.fherbreteau.vodozemac;
 
+import java.util.Objects;
+
 /**
  * Entry point and utility class for the vodozemac library.
  * <p>
@@ -30,6 +32,7 @@ public final class Vodozemac {
      * @return the base64-encoded representation, without padding
      */
     public static String base64Encode(byte[] src) {
+        Objects.requireNonNull(src, "src");
         return nativeBase64Encode(src);
     }
 
@@ -43,6 +46,7 @@ public final class Vodozemac {
      * @throws io.github.fherbreteau.vodozemac.exception.VodozemacException if the input is not valid base64
      */
     public static byte[] base64Decode(String src) {
+        Objects.requireNonNull(src, "src");
         return nativeBase64Decode(src);
     }
 

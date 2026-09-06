@@ -440,6 +440,16 @@ class AccountTest {
     void testEncryptedPickleWithNullKeyThrowsException() {
         try (Account account = new Account()) {
             assertThatThrownBy(() -> account.pickle(null))
+                    .as("Pickle with null key should throw NullPointerException")
+                    .isInstanceOf(NullPointerException.class)
+                    .hasMessageContaining("key");
+        }
+    }
+
+    @Test
+    void testEncryptedPickleWithInvalidKeySizeThrowsException() {
+        try (Account account = new Account()) {
+            assertThatThrownBy(() -> account.pickle(new byte[16]))
                     .as("Pickle with invalid key size should throw KeyException")
                     .isInstanceOf(KeyException.class)
                     .hasMessageContaining("256-bit (32-byte)");

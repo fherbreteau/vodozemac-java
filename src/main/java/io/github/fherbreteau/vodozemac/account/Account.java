@@ -4,6 +4,7 @@ import static io.github.fherbreteau.vodozemac.KeyValidator.validateEncryptionKey
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import io.github.fherbreteau.vodozemac.NativeHandle;
@@ -88,6 +89,7 @@ public final class Account extends NativeHandle {
      * @throws IllegalStateException if this account has been closed
      */
     public Ed25519Signature sign(String message) {
+        Objects.requireNonNull(message, "message");
         return sign(message.getBytes(UTF_8));
     }
 
@@ -99,6 +101,7 @@ public final class Account extends NativeHandle {
      * @throws IllegalStateException if this account has been closed
      */
     public Ed25519Signature sign(byte[] message) {
+        Objects.requireNonNull(message, "message");
         checkNotClosed();
         return nativeSign(nativePtr, message);
     }
@@ -143,6 +146,9 @@ public final class Account extends NativeHandle {
      * @throws SessionCreationException if session creation fails
      */
     public OlmSession createOutboundSession(OlmSessionVersion sessionVersion, Curve25519PublicKey identityKey, Curve25519PublicKey oneTimeKey) {
+        Objects.requireNonNull(sessionVersion, "sessionVersion");
+        Objects.requireNonNull(identityKey, "identityKey");
+        Objects.requireNonNull(oneTimeKey, "oneTimeKey");
         checkNotClosed();
 
         return nativeCreateOutboundSession(nativePtr, sessionVersion.value(), identityKey.toBase64(), oneTimeKey.toBase64());
@@ -180,9 +186,12 @@ public final class Account extends NativeHandle {
      */
     public InboundCreationResult createInboundSession(OlmSessionVersion sessionVersion, Curve25519PublicKey theirIdentityKey,
             OlmMessage preKeyMessage) {
+        Objects.requireNonNull(sessionVersion, "sessionVersion");
+        Objects.requireNonNull(theirIdentityKey, "theirIdentityKey");
+        Objects.requireNonNull(preKeyMessage, "preKeyMessage");
         checkNotClosed();
 
-        return nativeCreateInboundSession(nativePtr, sessionVersion.value(), theirIdentityKey.toBase64(), preKeyMessage.toString());
+        return nativeCreateInboundSession(nativePtr, sessionVersion.value(), theirIdentityKey.toBase64(), preKeyMessage.toJson());
     }
 
     /**
@@ -306,6 +315,7 @@ public final class Account extends NativeHandle {
      * @throws KeyException         if the key is not 32 bytes
      */
     public String pickle(byte[] key) {
+        Objects.requireNonNull(key, "key");
         checkNotClosed();
         validateEncryptionKey(key);
         return nativeEncryptedPickle(nativePtr, key);
@@ -326,7 +336,9 @@ public final class Account extends NativeHandle {
      * @throws PickleException     if the pickle could not be created
      */
     public String pickleLegacy(byte[] pickleKey) {
+        Objects.requireNonNull(pickleKey, "pickleKey");
         checkNotClosed();
+        validateEncryptionKey(pickleKey);
         return nativePickleLegacy(nativePtr, pickleKey);
     }
 
@@ -338,6 +350,7 @@ public final class Account extends NativeHandle {
      * @throws PickleException if the data cannot be deserialized
      */
     public static Account unpickle(String pickleData) {
+        Objects.requireNonNull(pickleData, "pickleData");
         long nativePtr = nativeUnpickle(pickleData);
         return new Account(nativePtr);
     }
@@ -353,6 +366,8 @@ public final class Account extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static Account unpickle(String pickleData, byte[] key) {
+        Objects.requireNonNull(pickleData, "pickleData");
+        Objects.requireNonNull(key, "key");
         validateEncryptionKey(key);
         long nativePtr = nativeEncryptedUnpickle(pickleData, key);
         return new Account(nativePtr);
@@ -368,6 +383,8 @@ public final class Account extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static Account unpickleLegacy(String pickleData, byte[] pickleKey) {
+        Objects.requireNonNull(pickleData, "pickleData");
+        Objects.requireNonNull(pickleKey, "pickleKey");
         long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
         return new Account(nativePtr);
     }
@@ -394,6 +411,7 @@ public final class Account extends NativeHandle {
      * @throws PickleException       if creating the dehydrated device fails
      */
     public DehydratedDeviceResult toDehydratedDevice(byte[] key) {
+        Objects.requireNonNull(key, "key");
         checkNotClosed();
         validateEncryptionKey(key);
         return nativeToDehydratedDevice(nativePtr, key);
@@ -410,6 +428,9 @@ public final class Account extends NativeHandle {
      * @throws PickleException if the dehydrated device cannot be decrypted
      */
     public static Account fromDehydratedDevice(String ciphertext, String nonce, byte[] key) {
+        Objects.requireNonNull(ciphertext, "ciphertext");
+        Objects.requireNonNull(nonce, "nonce");
+        Objects.requireNonNull(key, "key");
         validateEncryptionKey(key);
         long nativePtr = nativeFromDehydratedDevice(ciphertext, nonce, key);
         return new Account(nativePtr);

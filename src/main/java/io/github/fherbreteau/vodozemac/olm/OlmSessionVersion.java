@@ -46,7 +46,7 @@ public enum OlmSessionVersion implements SessionVersion {
      *
      * @param version the version number (1 for V1, 2 for V2)
      * @return the associated session version
-     * @throws io.github.fherbreteau.vodozemac.exception.VodozemacException if no version matches the given value
+     * @throws io.github.fherbreteau.vodozemac.exception.ConversionException if no version matches the given value
      */
     public static OlmSessionVersion fromVersion(int version) {
         return SessionVersion.fromVersion(values(), version, "version");

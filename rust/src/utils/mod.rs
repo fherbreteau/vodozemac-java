@@ -3,7 +3,7 @@ use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jobject, jstring};
 use vodozemac::{base64_decode, base64_encode};
 
-use crate::errors::throw_generic_error;
+use crate::errors::throw_conversion_error;
 use crate::helpers::{catch_panic, string_to_jstring};
 
 #[unsafe(no_mangle)]
@@ -33,7 +33,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_Vodozemac_nativeBase
         catch_panic(env, |env| {
             let src = src.to_string();
 
-            let dst = base64_decode(&src).map_err(|e| throw_generic_error(env, e))?;
+            let dst = base64_decode(&src).map_err(|e| throw_conversion_error(env, e))?;
             let result = env.byte_array_from_slice(&dst)?;
             Ok(result.into_raw())
         })

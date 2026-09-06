@@ -2,6 +2,8 @@ package io.github.fherbreteau.vodozemac.megolm;
 
 import static io.github.fherbreteau.vodozemac.KeyValidator.validateEncryptionKey;
 
+import java.util.Objects;
+
 import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
@@ -118,13 +120,14 @@ public final class OutboundGroupSession extends NativeHandle {
      * The resulting ciphertext is MAC-ed, signed with the group session's
      * Ed25519 key pair, and returned as a structured {@link MegolmMessage}.
      *
-     * @param plainText the plaintext to encrypt
+     * @param plaintext the plaintext to encrypt
      * @return the encrypted message as a {@link MegolmMessage}
      * @throws IllegalStateException if this session has been closed
      */
-    public MegolmMessage encrypt(byte[] plainText) {
+    public MegolmMessage encrypt(byte[] plaintext) {
+        Objects.requireNonNull(plaintext, "plaintext");
         checkNotClosed();
-        return nativeEncrypt(nativePtr, plainText);
+        return nativeEncrypt(nativePtr, plaintext);
     }
 
     /**
@@ -148,6 +151,7 @@ public final class OutboundGroupSession extends NativeHandle {
      * @throws KeyException         if the key is not 32 bytes
      */
     public String pickle(byte[] key) {
+        Objects.requireNonNull(key, "key");
         checkNotClosed();
         validateEncryptionKey(key);
         return nativeEncryptedPickle(nativePtr, key);
@@ -162,6 +166,7 @@ public final class OutboundGroupSession extends NativeHandle {
      * @throws PickleException if the data cannot be deserialized
      */
     public static OutboundGroupSession unpickle(String pickleData) {
+        Objects.requireNonNull(pickleData, "pickleData");
         long nativePtr = nativeUnpickle(pickleData);
         return new OutboundGroupSession(nativePtr);
     }
@@ -177,6 +182,8 @@ public final class OutboundGroupSession extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static OutboundGroupSession unpickle(String pickleData, byte[] key) {
+        Objects.requireNonNull(pickleData, "pickleData");
+        Objects.requireNonNull(key, "key");
         validateEncryptionKey(key);
         long nativePtr = nativeEncryptedUnpickle(pickleData, key);
         return new OutboundGroupSession(nativePtr);
@@ -192,6 +199,8 @@ public final class OutboundGroupSession extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static OutboundGroupSession unpickleLegacy(String pickleData, byte[] pickleKey) {
+        Objects.requireNonNull(pickleData, "pickleData");
+        Objects.requireNonNull(pickleKey, "pickleKey");
         long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
         return new OutboundGroupSession(nativePtr);
     }

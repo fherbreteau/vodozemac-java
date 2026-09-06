@@ -3,6 +3,7 @@ package io.github.fherbreteau.vodozemac.types;
 import java.util.Objects;
 
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
+import io.github.fherbreteau.vodozemac.exception.SignatureException;
 
 /**
  * Represents an Ed25519 signature.
@@ -25,7 +26,15 @@ public final class Ed25519Signature {
         this.base64 = base64;
     }
 
+    /**
+     * Creates an {@code Ed25519Signature} from a base64-encoded signature string.
+     *
+     * @param base64 the base64-encoded Ed25519 signature
+     * @return a new {@code Ed25519Signature}
+     * @throws SignatureException if the input is not a valid base64-encoded Ed25519 signature
+     */
     public static Ed25519Signature fromBase64(String base64) {
+        Objects.requireNonNull(base64, "base64");
         nativeValidate(base64);
         return new Ed25519Signature(base64);
     }
