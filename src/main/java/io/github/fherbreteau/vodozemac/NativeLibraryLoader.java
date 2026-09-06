@@ -9,6 +9,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -76,7 +77,7 @@ public final class NativeLibraryLoader {
     }
 
     private static String toLowerCase(String value) {
-        return value == null ? null : value.toLowerCase();
+        return Objects.requireNonNull(value).toLowerCase();
     }
 
     private static String detectPlatform(String osName, String osArch) {
