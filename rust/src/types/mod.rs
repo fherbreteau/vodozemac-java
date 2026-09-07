@@ -87,38 +87,47 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_types_Curve25519Publ
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
 
-pub(crate) fn to_java_curve25519<'local>(
-    env: &mut Env<'local>,
-    public_key: &Curve25519PublicKey,
-) -> Result<JObject<'local>, jni::errors::Error> {
-    let curve25519_str = env.new_string(public_key.to_base64())?;
-    env.new_object(
-        jni_str!("io/github/fherbreteau/vodozemac/types/Curve25519PublicKey"),
-        jni_sig!((base64: java.lang.String) -> void),
-        &[JValue::Object(&curve25519_str)],
-    )
+pub(crate) trait JniBase64Value {
+    const JNI_CLASS: &'static jni::strings::JNIStr;
+
+    fn to_base64(&self) -> String;
 }
 
-pub(crate) fn to_java_ed25519<'local>(
-    env: &mut Env<'local>,
-    public_key: &Ed25519PublicKey,
-) -> Result<JObject<'local>, jni::errors::Error> {
-    let curve25519_str = env.new_string(public_key.to_base64())?;
-    env.new_object(
-        jni_str!("io/github/fherbreteau/vodozemac/types/Ed25519PublicKey"),
-        jni_sig!((base64: java.lang.String) -> void),
-        &[JValue::Object(&curve25519_str)],
-    )
+impl JniBase64Value for Curve25519PublicKey {
+    const JNI_CLASS: &'static jni::strings::JNIStr =
+        jni_str!("io/github/fherbreteau/vodozemac/types/Curve25519PublicKey");
+
+    fn to_base64(&self) -> String {
+        Curve25519PublicKey::to_base64(self)
+    }
 }
 
-pub(crate) fn to_java_signature<'local>(
+impl JniBase64Value for Ed25519PublicKey {
+    const JNI_CLASS: &'static jni::strings::JNIStr =
+        jni_str!("io/github/fherbreteau/vodozemac/types/Ed25519PublicKey");
+
+    fn to_base64(&self) -> String {
+        Ed25519PublicKey::to_base64(self)
+    }
+}
+
+impl JniBase64Value for Ed25519Signature {
+    const JNI_CLASS: &'static jni::strings::JNIStr =
+        jni_str!("io/github/fherbreteau/vodozemac/types/Ed25519Signature");
+
+    fn to_base64(&self) -> String {
+        Ed25519Signature::to_base64(self)
+    }
+}
+
+pub(crate) fn to_java_base64_value<'local, T: JniBase64Value>(
     env: &mut Env<'local>,
-    signature: &Ed25519Signature,
+    value: &T,
 ) -> Result<JObject<'local>, jni::errors::Error> {
-    let signature_str = env.new_string(signature.to_base64())?;
+    let encoded = env.new_string(value.to_base64())?;
     env.new_object(
-        jni_str!("io/github/fherbreteau/vodozemac/types/Ed25519Signature"),
+        T::JNI_CLASS,
         jni_sig!((base64: java.lang.String) -> void),
-        &[JValue::Object(&signature_str)],
+        &[JValue::Object(&encoded)],
     )
 }

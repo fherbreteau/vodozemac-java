@@ -17,7 +17,7 @@ use crate::helpers::{
     RawBox, box_to_jlong, catch_panic, check_ptr, from_json, json_to_jstring, native_free,
     olm_session_config_from_version, string_to_jstring, wrap,
 };
-use crate::types::{to_java_curve25519, to_java_ed25519, to_java_signature};
+use crate::types::to_java_base64_value;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nativeNew(
@@ -64,7 +64,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
             check_ptr(env, ptr)?;
             let account = unsafe { &*(ptr as *const Account) };
 
-            let curve25519 = to_java_curve25519(env, &(account.curve25519_key()))?;
+            let curve25519 = to_java_base64_value(env, &(account.curve25519_key()))?;
             Ok(curve25519.into_raw())
         })
     });
@@ -82,7 +82,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
             check_ptr(env, ptr)?;
             let account = unsafe { &*(ptr as *const Account) };
 
-            let ed25519 = to_java_ed25519(env, &(account.ed25519_key()))?;
+            let ed25519 = to_java_base64_value(env, &(account.ed25519_key()))?;
             Ok(ed25519.into_raw())
         })
     });
@@ -220,7 +220,7 @@ fn key_vec_to_java_list<'local>(
     let array_list = env.new_object(JAVA_ARRAY_LIST, jni_sig!(() -> void), &[])?;
 
     for key in keys {
-        let key = to_java_curve25519(env, key)?;
+        let key = to_java_base64_value(env, key)?;
 
         env.call_method(
             &array_list,
@@ -278,7 +278,7 @@ fn key_map_to_result<'local>(
 
     for (key_id, public_key) in keys {
         let key_str = env.new_string(key_id.to_base64())?;
-        let value = to_java_curve25519(env, public_key)?;
+        let value = to_java_base64_value(env, public_key)?;
         env.call_method(
             &hash_map,
             jni_str!("put"),
@@ -323,7 +323,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
             let result = account.generate_fallback_key();
             match result {
                 Some(key) => {
-                    let key_str = to_java_curve25519(env, &key)?;
+                    let key_str = to_java_base64_value(env, &key)?;
                     Ok(key_str.into_raw() as jobject)
                 }
                 None => Ok(std::ptr::null_mut()),
@@ -402,7 +402,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
             let msg = env.convert_byte_array(message)?;
 
             let signature = account.sign(&msg);
-            let signature = to_java_signature(env, &signature)?;
+            let signature = to_java_base64_value(env, &signature)?;
             Ok(signature.into_raw())
         })
     });

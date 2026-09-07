@@ -9,7 +9,7 @@ use vodozemac::base64_encode;
 use vodozemac::megolm::MegolmMessage;
 
 use crate::classes::{DECRYPTED_MESSAGE, MEGOLM_MESSAGE};
-use crate::types::to_java_signature;
+use crate::types::to_java_base64_value;
 
 pub(crate) fn to_java_megolm_message<'local>(
     env: &mut Env<'local>,
@@ -17,7 +17,7 @@ pub(crate) fn to_java_megolm_message<'local>(
 ) -> Result<JObject<'local>, jni::errors::Error> {
     let ciphertext = env.new_string(base64_encode(message.ciphertext()))?;
     let mac = env.new_string(base64_encode(message.mac()))?;
-    let signature = to_java_signature(env, message.signature())?;
+    let signature = to_java_base64_value(env, message.signature())?;
     let base64 = env.new_string(message.to_base64())?;
 
     env.new_object(
