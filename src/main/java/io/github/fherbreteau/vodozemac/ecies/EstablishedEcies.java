@@ -1,6 +1,9 @@
 package io.github.fherbreteau.vodozemac.ecies;
 
+import java.util.Objects;
+
 import io.github.fherbreteau.vodozemac.NativeHandle;
+import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
 import io.github.fherbreteau.vodozemac.exception.EciesException;
 
 /**
@@ -29,6 +32,10 @@ import io.github.fherbreteau.vodozemac.exception.EciesException;
  * @author François HERBRETEAU
  */
 public final class EstablishedEcies extends NativeHandle {
+
+    static {
+        NativeLibraryLoader.loadLibrary();
+    }
 
     EstablishedEcies(long nativePtr) {
         super(nativePtr);
@@ -74,6 +81,7 @@ public final class EstablishedEcies extends NativeHandle {
      * @throws IllegalStateException if this {@code EstablishedEcies} has been closed
      */
     public String encrypt(byte[] plaintext) {
+        Objects.requireNonNull(plaintext, "plaintext");
         checkNotClosed();
         return nativeEncrypt(nativePtr, plaintext);
     }
@@ -93,8 +101,22 @@ public final class EstablishedEcies extends NativeHandle {
      *         message, a replayed message, or a key mismatch
      */
     public byte[] decrypt(String message) {
+        Objects.requireNonNull(message, "message");
         checkNotClosed();
         return nativeDecrypt(nativePtr, message);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof EstablishedEcies that)) {
+            return false;
+        }
+        return Objects.equals(nativePtr, that.nativePtr);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(nativePtr);
     }
 
     private native String nativePublicKey(long ptr);

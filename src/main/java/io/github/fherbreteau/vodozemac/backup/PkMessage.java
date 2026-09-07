@@ -23,7 +23,7 @@ import java.util.Objects;
  * @see PkEncryption#encrypt(byte[])
  * @see PkDecryption#decrypt(PkMessage)
  */
-public class PkMessage {
+public final class PkMessage {
 
     private final String ciphertext;
     private final String mac;

@@ -165,7 +165,7 @@ class EciesTest {
     }
 
     @Test
-    void testCheckCodeEqualsAndHashCode() {
+    void testCheckCodeEqualsAndHashCodeToString() {
         CheckCode code = new CheckCode(new byte[]{1, 2, 3}, 42);
 
         assertThat(code)
@@ -182,6 +182,8 @@ class EciesTest {
 
         assertThat(code.asBytes()).isEqualTo(new byte[]{1, 2, 3});
         assertThat(code.toDigit()).isEqualTo(42);
+
+        assertThat(code.toString()).contains("bytes", "digit");
     }
 
     @Test
@@ -229,17 +231,20 @@ class EciesTest {
 
     @Test
     void testInboundCreationResultEqualsHashCodeToString() {
-        InboundCreationResult result = new InboundCreationResult(0L, PLAINTEXT);
-        InboundCreationResult same = new InboundCreationResult(0L, PLAINTEXT);
-        InboundCreationResult different = new InboundCreationResult(0L, "different".getBytes(UTF_8));
+        try (Ecies alice1 = new Ecies(); Ecies bob1 = new Ecies();
+                Ecies alice2 = new Ecies(); Ecies bob2 = new Ecies();
+                OutboundCreationResult outbound1 = alice1.establishOutboundChannel(bob1.publicKey(), PLAINTEXT);
+                OutboundCreationResult outbound2 = alice2.establishOutboundChannel(bob2.publicKey(), PLAINTEXT);
+                InboundCreationResult result = bob1.establishInboundChannel(outbound1.initialMessage());
+                InboundCreationResult other = bob2.establishInboundChannel(outbound2.initialMessage())) {
 
-        assertThat(result).isEqualTo(result)
-                .isEqualTo(same)
-                .hasSameHashCodeAs(same)
-                .isNotEqualTo(different)
-                .isNotEqualTo("not a result")
-                .isNotEqualTo(null);
-        assertThat(result.toString()).contains("plaintext");
+            assertThat(result).isEqualTo(result)
+                    .hasSameHashCodeAs(result)
+                    .isNotEqualTo(other)
+                    .isNotEqualTo("not a result")
+                    .isNotEqualTo(null);
+            assertThat(result.toString()).contains("ecies", "plaintext");
+        }
     }
 
     @Test
@@ -266,16 +271,34 @@ class EciesTest {
 
     @Test
     void testOutboundCreationResultEqualsHashCodeToString() {
-        OutboundCreationResult result = new OutboundCreationResult(0L, "msg");
-        OutboundCreationResult same = new OutboundCreationResult(0L, "msg");
-        OutboundCreationResult different = new OutboundCreationResult(0L, "other");
+        try (Ecies alice1 = new Ecies(); Ecies bob1 = new Ecies();
+                Ecies alice2 = new Ecies(); Ecies bob2 = new Ecies();
+                OutboundCreationResult result = alice1.establishOutboundChannel(bob1.publicKey(), PLAINTEXT);
+                OutboundCreationResult other = alice2.establishOutboundChannel(bob2.publicKey(), PLAINTEXT)) {
 
-        assertThat(result).isEqualTo(result)
-                .isEqualTo(same)
-                .hasSameHashCodeAs(same)
-                .isNotEqualTo(different)
-                .isNotEqualTo("not a result")
-                .isNotEqualTo(null);
-        assertThat(result.toString()).contains("initialMessage");
+            assertThat(result).isEqualTo(result)
+                    .hasSameHashCodeAs(result)
+                    .isNotEqualTo(other)
+                    .isNotEqualTo("not a result")
+                    .isNotEqualTo(null);
+            assertThat(result.toString()).contains("ecies", "initialMessage");
+        }
+    }
+
+    @Test
+    void testEstablishedEciesEqualsHashCode() {
+        try (Ecies alice1 = new Ecies(); Ecies bob1 = new Ecies();
+                Ecies alice2 = new Ecies(); Ecies bob2 = new Ecies();
+                OutboundCreationResult result = alice1.establishOutboundChannel(bob1.publicKey(), PLAINTEXT);
+                OutboundCreationResult other = alice2.establishOutboundChannel(bob2.publicKey(), PLAINTEXT)) {
+            EstablishedEcies ecies = result.establishedEcies();
+            EstablishedEcies otherEcies = other.establishedEcies();
+
+            assertThat(ecies).isEqualTo(ecies)
+                    .hasSameHashCodeAs(ecies)
+                    .isNotEqualTo(otherEcies)
+                    .isNotEqualTo("not an ecies")
+                    .isNotEqualTo(null);
+        }
     }
 }

@@ -11,7 +11,7 @@ import io.github.fherbreteau.vodozemac.exception.ConversionException;
  * <p>
  * Provides a shared {@link #fromVersion(Enum[], int, String)} utility that
  * resolves a numeric version to its corresponding enum constant, throwing
- * a {@link VodozemacException} when no match is found.
+ * a {@link ConversionException} when no match is found.
  *
  * @author François HERBRETEAU
  */
@@ -34,7 +34,7 @@ public interface SessionVersion {
      * @param <E>     the enum type, which must also implement
      *                {@link SessionVersion}
      * @return the enum constant whose {@link #value()} matches the given version
-     * @throws VodozemacException if no constant matches the given version
+     * @throws ConversionException if no constant matches the given version
      */
     static <E extends Enum<E> & SessionVersion> E fromVersion(E[] values, int version, String label) {
         return Stream.of(values)

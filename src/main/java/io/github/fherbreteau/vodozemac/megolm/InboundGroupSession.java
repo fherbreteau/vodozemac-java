@@ -2,6 +2,7 @@ package io.github.fherbreteau.vodozemac.megolm;
 
 import static io.github.fherbreteau.vodozemac.KeyValidator.validateEncryptionKey;
 
+import java.util.Objects;
 import java.util.Optional;
 
 import io.github.fherbreteau.vodozemac.NativeHandle;
@@ -27,6 +28,8 @@ import io.github.fherbreteau.vodozemac.exception.SignatureException;
  */
 public final class InboundGroupSession extends NativeHandle {
 
+    private static final String PICKLE_DATA = "pickleData";
+
     static {
         NativeLibraryLoader.loadLibrary();
     }
@@ -51,6 +54,8 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws io.github.fherbreteau.vodozemac.exception.VodozemacException if the session key is invalid
      */
     public InboundGroupSession(String sessionKey, MegolmSessionVersion version) {
+        Objects.requireNonNull(sessionKey, "sessionKey");
+        Objects.requireNonNull(version, "version");
         super(nativeNew(sessionKey, version.value()));
     }
 
@@ -99,6 +104,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws SignatureException       if the message signature is invalid
      */
     public DecryptedMessage decrypt(MegolmMessage message) {
+        Objects.requireNonNull(message, "message");
         checkNotClosed();
         return nativeDecrypt(nativePtr, message.toString());
     }
@@ -124,6 +130,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws KeyException         if the key is not 32 bytes
      */
     public String pickle(byte[] key) {
+        Objects.requireNonNull(key, "key");
         checkNotClosed();
         validateEncryptionKey(key);
         return nativeEncryptedPickle(nativePtr, key);
@@ -141,9 +148,10 @@ public final class InboundGroupSession extends NativeHandle {
      *         if the session has been ratcheted beyond the given index
      * @throws IllegalStateException if this session has been closed
      */
-    public String exportAt(int index) {
+    public Optional<String> exportAt(int index) {
         checkNotClosed();
-        return nativeExportAt(nativePtr, index);
+        String result = nativeExportAt(nativePtr, index);
+        return Optional.ofNullable(result);
     }
 
     /**
@@ -155,9 +163,10 @@ public final class InboundGroupSession extends NativeHandle {
      * @return the exported session key as a base64 string
      * @throws IllegalStateException if this session has been closed
      */
-    public String exportAtFirstKnownIndex() {
+    public Optional<String> exportAtFirstKnownIndex() {
         checkNotClosed();
-        return nativeExportAtFirstKnownIndex(nativePtr);
+        String result = nativeExportAtFirstKnownIndex(nativePtr);
+        return Optional.ofNullable(result);
     }
 
     /**
@@ -241,6 +250,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws PickleException if the data cannot be deserialized
      */
     public static InboundGroupSession unpickle(String pickleData) {
+        Objects.requireNonNull(pickleData, PICKLE_DATA);
         long nativePtr = nativeUnpickle(pickleData);
         return new InboundGroupSession(nativePtr);
     }
@@ -256,6 +266,8 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static InboundGroupSession unpickle(String pickleData, byte[] key) {
+        Objects.requireNonNull(pickleData, PICKLE_DATA);
+        Objects.requireNonNull(key, "key");
         validateEncryptionKey(key);
         long nativePtr = nativeEncryptedUnpickle(pickleData, key);
         return new InboundGroupSession(nativePtr);
@@ -271,6 +283,8 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static InboundGroupSession unpickleLegacy(String pickleData, byte[] pickleKey) {
+        Objects.requireNonNull(pickleData, PICKLE_DATA);
+        Objects.requireNonNull(pickleKey, "pickleKey");
         long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
         return new InboundGroupSession(nativePtr);
     }
@@ -311,6 +325,8 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws io.github.fherbreteau.vodozemac.exception.KeyException if the session key is invalid
      */
     public static InboundGroupSession importSession(String sessionKey, MegolmSessionVersion version) {
+        Objects.requireNonNull(sessionKey, "sessionKey");
+        Objects.requireNonNull(version, "version");
         long nativePtr = nativeImport(sessionKey, version.value());
         return new InboundGroupSession(nativePtr);
     }

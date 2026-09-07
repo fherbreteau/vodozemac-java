@@ -90,5 +90,5 @@ We appreciate the security community's efforts in making our software more secur
 
 ---
 
-**Last Updated**: 2024-07-30
+**Last Updated**: 2026-08-13
 **Contact**: fherbreteau@gmail.com

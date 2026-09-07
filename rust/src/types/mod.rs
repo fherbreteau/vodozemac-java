@@ -42,11 +42,12 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_types_Ed25519PublicK
             let signature = Ed25519Signature::from_base64(&signature)
                 .map_err(|e| throw_signature_error(env, e))?;
 
-            let _ = public_key
-                .verify(&message, &signature)
-                .map_err(|e| throw_signature_error(env, e));
+            let result = public_key.verify(&message, &signature);
 
-            Ok(true)
+            match result {
+                Ok(_) => Ok(true),
+                Err(_) => Ok(false),
+            }
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

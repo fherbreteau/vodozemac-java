@@ -1,4 +1,5 @@
 mod backup;
+mod classes;
 mod ecies;
 mod errors;
 mod helpers;

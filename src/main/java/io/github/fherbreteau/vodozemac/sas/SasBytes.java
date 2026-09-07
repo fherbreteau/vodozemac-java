@@ -14,7 +14,7 @@ import java.util.Objects;
  * @author François HERBRETEAU
  * @see EstablishedSas#bytes(String)
  */
-public class SasBytes {
+public final class SasBytes {
 
     private final byte[] rawBytes;
 
@@ -71,6 +71,15 @@ public class SasBytes {
 
     @Override
     public int hashCode() {
-        return Objects.hash(Arrays.hashCode(rawBytes));
+        return Arrays.hashCode(rawBytes);
+    }
+
+    @Override
+    public String toString() {
+        return "{" +
+            " rawBytes='" + rawBytes + "'" +
+            ", emojiIndices='" + emojiIndices + "'" +
+            ", decimals='" + decimals + "'" +
+            "}";
     }
 }

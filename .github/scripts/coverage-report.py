@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate a combined Rust + Java coverage report as markdown for PR comments."""
+"""Generate a combined Rust + Java coverage report as markdown for the GitHub job summary."""
 
 import sys
 import xml.etree.ElementTree as ET
@@ -79,10 +79,15 @@ def pct(covered, total):
     return 100.0 * covered / total
 
 
+def icon(p):
+    if p == 100:
+        return "white_check_mark"
+    return "x" if p < 50 else "warning"
+
+
 def fmt_pct(covered, total):
     p = pct(covered, total)
-    icon = "white_check_mark" if p == 100 else ("x" if p < 50 else "warning")
-    return f"{covered}/{total} ({p:.1f}%) :{icon}:"
+    return f"{covered}/{total} ({p:.1f}%) :{icon(p)}:"
 
 
 def generate_markdown(rust_data, java_data):

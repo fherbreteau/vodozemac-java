@@ -7,6 +7,7 @@ import static org.assertj.core.api.InstanceOfAssertFactories.type;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.util.Iterator;
 
 import io.github.fherbreteau.vodozemac.account.Account;
 import io.github.fherbreteau.vodozemac.account.OneTimeKeyGenerationResult;
@@ -331,21 +332,32 @@ class OlmSessionTest {
     void testInboundCreationResultEqualsHashCodeToString() {
         try (Account aliceAccount = new Account();
                 Account bobAccount = new Account()) {
-            OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            Curve25519PublicKey bobOneTimeKey = result.created().iterator().next();
+            OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(2L);
+            Iterator<Curve25519PublicKey> createdKeys = result.created().iterator();
+            Curve25519PublicKey firstOneTimeKey = createdKeys.next();
+            Curve25519PublicKey secondOneTimeKey = createdKeys.next();
             bobAccount.markKeysAsPublished();
 
-            try (OlmSession session = aliceAccount.createOutboundSession(
-                    bobAccount.curve25519Key(), bobOneTimeKey)) {
-                OlmMessage encrypted = session.encrypt("Hello".getBytes(StandardCharsets.UTF_8));
-                InboundCreationResult inbound = bobAccount.createInboundSession(
-                        aliceAccount.curve25519Key(), encrypted);
+            try (OlmSession session1 = aliceAccount.createOutboundSession(
+                    bobAccount.curve25519Key(), firstOneTimeKey);
+                    OlmSession session2 = aliceAccount.createOutboundSession(
+                            bobAccount.curve25519Key(), secondOneTimeKey)) {
+                OlmMessage encrypted1 = session1.encrypt("Hello".getBytes(StandardCharsets.UTF_8));
+                OlmMessage encrypted2 = session2.encrypt("Hello".getBytes(StandardCharsets.UTF_8));
 
-                assertThat(inbound).isEqualTo(inbound)
-                        .isNotEqualTo("not a result")
-                        .isNotEqualTo(null);
-                assertThat(inbound.toString()).contains("plaintext");
-                assertThat(inbound.hashCode()).isNotZero();
+                try (InboundCreationResult inbound1 = bobAccount.createInboundSession(
+                        aliceAccount.curve25519Key(), encrypted1);
+                        InboundCreationResult inbound2 = bobAccount.createInboundSession(
+                                aliceAccount.curve25519Key(), encrypted2)) {
+
+                    assertThat(inbound1).isEqualTo(inbound1)
+                            .hasSameHashCodeAs(inbound1)
+                            .isNotEqualTo(inbound2)
+                            .isNotEqualTo("not a result")
+                            .isNotEqualTo(null);
+                    assertThat(inbound1.toString()).contains("plaintext");
+                    assertThat(inbound1.hashCode()).isNotZero();
+                }
             }
         }
     }

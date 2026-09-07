@@ -1,9 +1,10 @@
+use jni::EnvUnowned;
 use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jlong, jobject};
-use jni::{EnvUnowned, JValue, jni_sig, jni_str};
+use vodozemac::Curve25519PublicKey;
 use vodozemac::pk_encryption::PkEncryption;
-use vodozemac::{Curve25519PublicKey, base64_encode};
 
+use super::to_java_pk_message;
 use crate::errors::{throw_encryption_error, throw_key_error};
 use crate::helpers::{box_to_jlong, catch_panic, check_ptr, native_free};
 
@@ -39,20 +40,10 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkEncryption_
             let encryption = unsafe { &*(ptr as *const PkEncryption) };
             let data = env.convert_byte_array(plaintext)?;
 
-            let result = encryption.encrypt(&data)
+            let result = encryption
+                .encrypt(&data)
                 .map_err(|e| throw_encryption_error(env, e))?;
-            let ciphertext = env.new_string(base64_encode(result.ciphertext))?;
-            let mac = env.new_string(base64_encode(result.mac))?;
-            let ephemeral_key = env.new_string(result.ephemeral_key.to_base64())?;
-
-            let result = env.new_object(
-                jni_str!("io/github/fherbreteau/vodozemac/backup/PkMessage"),
-                 jni_sig!((ciphertext: java.lang.String, mac: java.lang.String, ephemeralKey: java.lang.String) -> void),
-                 &[
-                    JValue::Object(&ciphertext),
-                    JValue::Object(&mac),
-                    JValue::Object(&ephemeral_key)])?;
-
+            let result = to_java_pk_message(env, &result)?;
             Ok(result.into_raw())
         })
     });

@@ -2,6 +2,7 @@ package io.github.fherbreteau.vodozemac.megolm;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
@@ -12,6 +13,7 @@ import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
 import io.github.fherbreteau.vodozemac.exception.SignatureException;
 import io.github.fherbreteau.vodozemac.exception.VodozemacException;
+import io.github.fherbreteau.vodozemac.types.Ed25519Signature;
 import org.junit.jupiter.api.Test;
 
 class InboundGroupSessionTest {
@@ -187,16 +189,18 @@ class InboundGroupSessionTest {
 
             assertThat(inbound.exportAt(3))
                     .as("Export at index below first known index should return null")
-                    .isNull();
+                    .isEmpty();
 
             assertThat(inbound.exportAt(5))
                     .as("Export at first known index should return a non-null key")
-                    .isNotNull()
+                    .isPresent()
+                    .get(STRING)
                     .isNotEmpty();
 
             assertThat(inbound.exportAt(15))
                     .as("Export at index above first known index should return a non-null key")
-                    .isNotNull()
+                    .isPresent()
+                    .get(STRING)
                     .isNotEmpty();
         }
     }
@@ -209,11 +213,12 @@ class InboundGroupSessionTest {
         }
 
         try (InboundGroupSession inbound = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
-            String exported = inbound.exportAtFirstKnownIndex();
+            Optional<String> exported = inbound.exportAtFirstKnownIndex();
 
             assertThat(exported)
                     .as("Export at first known index should return a non-null key")
-                    .isNotNull()
+                    .isPresent()
+                    .get(STRING)
                     .isNotEmpty();
 
             assertThat(exported)
@@ -222,11 +227,12 @@ class InboundGroupSessionTest {
 
             inbound.advanceTo(10);
 
-            String exportedAfterAdvance = inbound.exportAtFirstKnownIndex();
+            Optional<String> exportedAfterAdvance = inbound.exportAtFirstKnownIndex();
 
             assertThat(exportedAfterAdvance)
                     .as("Export at first known index after advance should return a non-null key")
-                    .isNotNull()
+                    .isPresent()
+                    .get(STRING)
                     .isNotEmpty();
 
             assertThat(exportedAfterAdvance)
@@ -245,7 +251,7 @@ class InboundGroupSessionTest {
         }
 
         try (InboundGroupSession inbound = new InboundGroupSession(sessionKey)) {
-            String exportedKey = inbound.exportAt(10);
+            String exportedKey = inbound.exportAt(10).orElseThrow();
 
             try (InboundGroupSession imported = InboundGroupSession.importSession(exportedKey)) {
                 assertThat(imported)
@@ -278,7 +284,7 @@ class InboundGroupSessionTest {
         }
 
         try (InboundGroupSession inbound = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
-            String exportedKey = inbound.exportAt(10);
+            String exportedKey = inbound.exportAt(10).orElseThrow();
 
             try (InboundGroupSession imported = InboundGroupSession.importSession(exportedKey, MegolmSessionVersion.V2)) {
                 DecryptedMessage decrypted = imported.decrypt(encryptedAt10);
@@ -497,7 +503,7 @@ class InboundGroupSessionTest {
         }
 
         try (InboundGroupSession firstSession = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
-            String exportedKey = firstSession.exportAt(10);
+            String exportedKey = firstSession.exportAt(10).orElseThrow();
 
             try (InboundGroupSession secondSession = InboundGroupSession.importSession(exportedKey, MegolmSessionVersion.V2)) {
                 assertThat(firstSession.compare(secondSession))
@@ -539,7 +545,7 @@ class InboundGroupSessionTest {
         }
 
         try (InboundGroupSession firstSession = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
-            String exportedKey = firstSession.exportAt(10);
+            String exportedKey = firstSession.exportAt(10).orElseThrow();
 
             try (InboundGroupSession secondSession = InboundGroupSession.importSession(exportedKey, MegolmSessionVersion.V2)) {
                 Optional<InboundGroupSession> mergedOpt = secondSession.merge(firstSession);
@@ -717,7 +723,7 @@ class InboundGroupSessionTest {
 
         assertThat(encrypted.ciphertext()).as("ciphertext should not be null").isNotNull().isNotEmpty().isBase64();
         assertThat(encrypted.mac()).as("mac should not be null").isNotNull().isNotEmpty().isBase64();
-        assertThat(encrypted.signature()).as("signature should not be null").isNotNull().isNotEmpty().isBase64();
+        assertThat(encrypted.signature()).as("signature should not be null").isNotNull().extracting(Ed25519Signature::toBase64, STRING).isNotEmpty().isBase64();
         assertThat(encrypted.messageIndex()).as("message index should be 0").isZero();
         assertThat(encrypted.toString()).as("toString should be base64").isNotNull().isNotEmpty().isBase64();
 
@@ -737,11 +743,13 @@ class InboundGroupSessionTest {
 
     @Test
     void testMegolmMessageEqualsHashCodeToString() {
-        MegolmMessage msg = new MegolmMessage("b65", "ct", 1, "mac", "si");
-        MegolmMessage differentCt = new MegolmMessage("b64", "ct2", 1, "mac", "si");
-        MegolmMessage differentMi = new MegolmMessage("b64", "ct", 2, "mac", "si");
-        MegolmMessage differentMac = new MegolmMessage("b64", "ct", 1, "mac2", "si");
-        MegolmMessage differentSi = new MegolmMessage("b64", "ct", 1, "mac", "si2");
+        Ed25519Signature si1 = Ed25519Signature.fromBase64("SucffO/oXYCEPa2lSLPiutmbbN+F3fKMd4Bps8ONOQJ/QjjwlpuXL/ag0kfa9vC0LeH0b+Y7/Qy+83jpExuUCQ");
+        Ed25519Signature si2 = Ed25519Signature.fromBase64("tmKC0y1NtWISC0OnUgGwBNqCGuyD3FmK+3dnA/143ijpI6ivPMU7AD+12fCwKszIbiPLcDz331eFjKvSzRsyAQ");
+        MegolmMessage msg = new MegolmMessage("b64", "ct", 1, "mac", si1);
+        MegolmMessage differentCt = new MegolmMessage("b64", "ct2", 1, "mac", si1);
+        MegolmMessage differentMi = new MegolmMessage("b64", "ct", 2, "mac", si1);
+        MegolmMessage differentMac = new MegolmMessage("b64", "ct", 1, "mac2", si1);
+        MegolmMessage differentSi = new MegolmMessage("b64", "ct", 1, "mac", si2);
 
         assertThat(msg)
                 .isNotEqualTo(differentCt)

@@ -17,7 +17,7 @@ import io.github.fherbreteau.vodozemac.types.Ed25519PublicKey;
  *
  * @author François HERBRETEAU
  */
-public class IdentityKeys {
+public final class IdentityKeys {
     private final Ed25519PublicKey ed25519;
     private final Curve25519PublicKey curve25519;
 

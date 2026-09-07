@@ -3,6 +3,7 @@ package io.github.fherbreteau.vodozemac.types;
 import java.util.Objects;
 
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
+import io.github.fherbreteau.vodozemac.exception.KeyException;
 
 /**
  * Represents a Curve25519 public key used for X25519 key agreement.
@@ -25,7 +26,15 @@ public final class Curve25519PublicKey {
         this.base64 = base64;
     }
 
+    /**
+     * Creates a {@code Curve25519PublicKey} from a base64-encoded key string.
+     *
+     * @param base64 the base64-encoded Curve25519 public key
+     * @return a new {@code Curve25519PublicKey}
+     * @throws KeyException if the input is not a valid base64-encoded Curve25519 public key
+     */
     public static Curve25519PublicKey fromBase64(String base64) {
+        Objects.requireNonNull(base64, "base64");
         nativeValidate(base64);
         return new Curve25519PublicKey(base64);
     }
@@ -41,10 +50,10 @@ public final class Curve25519PublicKey {
 
     @Override
     public boolean equals(Object o) {
-        if (!(o instanceof Curve25519PublicKey signature)) {
+        if (!(o instanceof Curve25519PublicKey publicKey)) {
             return false;
         }
-        return Objects.equals(base64, signature.base64);
+        return Objects.equals(base64, publicKey.base64);
     }
 
     @Override

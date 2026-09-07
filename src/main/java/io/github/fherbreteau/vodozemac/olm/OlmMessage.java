@@ -25,7 +25,7 @@ import java.util.Objects;
  * @see OlmSession#decrypt(OlmMessage)
  * @see MessageType
  */
-public class OlmMessage {
+public final class OlmMessage {
     private final String body;
     private final MessageType type;
 
@@ -75,8 +75,16 @@ public class OlmMessage {
      *
      * @return a JSON string representation of this message
      */
-    @Override
-    public String toString() {
+    public String toJson() {
         return String.format("{\"body\":\"%s\",\"type\":%d}", body, type.value());
     }
+
+    @Override
+    public String toString() {
+        return "{" +
+            " body='" + body + "'" +
+            ", type='" + type + "'" +
+            "}";
+    }
+
 }

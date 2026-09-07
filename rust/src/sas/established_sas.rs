@@ -1,46 +1,11 @@
-use jni::objects::{JByteArray, JClass, JIntArray, JObjectArray, JString};
+use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jint, jlong, jobject, jstring};
-use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};
-use vodozemac::sas::{EstablishedSas, Mac, SasBytes};
+use jni::{Env, EnvUnowned};
+use vodozemac::sas::{EstablishedSas, Mac};
 
-use crate::errors::{throw_generic_error, throw_invalid_count_error, throw_sas_error};
+use super::to_java_sas_bytes;
+use crate::errors::{throw_conversion_error, throw_invalid_count_error, throw_sas_error};
 use crate::helpers::{catch_panic, check_ptr, native_free, string_to_jstring};
-
-fn to_decimal_array<'local>(
-    env: &mut Env<'local>,
-    bytes: &SasBytes,
-) -> Result<JObjectArray<'local, JString<'local>>, jni::errors::Error> {
-    let decimals_array = JObjectArray::<JString>::new(env, 3, JString::null())?;
-    let (d1, d2, d3) = bytes.decimals();
-
-    for (i, d) in [d1, d2, d3].iter().enumerate() {
-        let jstr = env.new_string(d.to_string())?;
-        decimals_array.set_element(env, i, &jstr)?;
-    }
-    Ok(decimals_array)
-}
-
-fn to_emoji_array<'local>(
-    env: &mut Env<'local>,
-    bytes: &SasBytes,
-) -> Result<JIntArray<'local>, jni::errors::Error> {
-    let emoji_array = env.new_int_array(7)?;
-    let jints = bytes.emoji_indices().map(|b| b as i32);
-
-    emoji_array.set_region(env, 0, &jints)?;
-    Ok(emoji_array)
-}
-
-fn to_raw_byte_array<'local>(
-    env: &mut Env<'local>,
-    bytes: &SasBytes,
-) -> Result<JByteArray<'local>, jni::errors::Error> {
-    let bytes_array = env.new_byte_array(6)?;
-    let jbytes = bytes.as_bytes().map(|b| b as i8);
-
-    bytes_array.set_region(env, 0, &jbytes)?;
-    Ok(bytes_array)
-}
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_nativeBytes(
@@ -56,15 +21,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
             let info = info.to_string();
 
             let bytes = established_sas.bytes(&info);
-            let decimals = to_decimal_array(env, &bytes)?;
-            let emoji_indices = to_emoji_array(env, &bytes)?;
-            let raw_bytes = to_raw_byte_array(env, &bytes)?;
-
-            let result = env.new_object(
-                jni_str!("io/github/fherbreteau/vodozemac/sas/SasBytes"),
-                jni_sig!((rawBytes:byte[], emojiIndices: int[] , decimals: java.lang.String[] ) -> void),
-                &[JValue::Object(&raw_bytes), JValue::Object(&emoji_indices), JValue::Object(&decimals)],
-            )?;
+            let result = to_java_sas_bytes(env, &bytes)?;
             Ok(result.into_raw())
         })
     });
@@ -95,7 +52,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
             check_ptr(env, ptr)?;
             let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
             let info = info.to_string();
-            let count = usize::try_from(count).map_err(|e| throw_generic_error(env, e))?;
+            let count = usize::try_from(count).map_err(|e| throw_conversion_error(env, e))?;
 
             let bytes = established_sas
                 .bytes_raw(&info, count)
@@ -168,7 +125,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
             let input = input.to_string();
             let info = info.to_string();
             let mac =
-                Mac::from_base64(&mac.to_string()).map_err(|e| throw_generic_error(env, e))?;
+                Mac::from_base64(&mac.to_string()).map_err(|e| throw_conversion_error(env, e))?;
 
             established_sas
                 .verify_mac(&input, &info, &mac)

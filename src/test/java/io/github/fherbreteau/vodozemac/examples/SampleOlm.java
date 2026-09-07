@@ -29,7 +29,7 @@ public final class SampleOlm {
 
             // Extract Bob Identity keys
             System.out.println("Bob  : Fingerprint key: " + bobAccount.identityKeys().fingerprintKey());
-            System.out.println("Bob  : Ed25519: " + bobAccount.identityKeys().identityKey());
+            System.out.println("Bob  : Identity Key: " + bobAccount.identityKeys().identityKey());
             Ed25519Signature bobSignature = bobAccount.sign("Hello Matrix!");
             System.out.println("Bob  : Signature: " + bobSignature);
             isValid = bobAccount.ed25519Key().verify("Hello Matrix!", bobSignature);

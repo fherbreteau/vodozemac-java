@@ -1,8 +1,9 @@
+use jni::EnvUnowned;
 use jni::objects::{JByteArray, JClass, JString};
-use jni::sys::{jint, jlong, jobject, jstring};
-use jni::{EnvUnowned, JValue, jni_sig, jni_str};
+use jni::sys::{jlong, jobject, jstring};
 use vodozemac::ecies::{EstablishedEcies, Message};
 
+use super::to_java_check_code;
 use crate::errors::throw_ecies_error;
 use crate::helpers::{catch_panic, check_ptr, native_free, string_to_jstring};
 
@@ -36,13 +37,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEci
             let ecies = unsafe { &*(ptr as *const EstablishedEcies) };
 
             let check_code = ecies.check_code();
-            let bytes: JByteArray = env.byte_array_from_slice(check_code.as_bytes())?;
-            let digit = jint::from(check_code.to_digit());
-            let result = env.new_object(
-                jni_str!("io/github/fherbreteau/vodozemac/ecies/CheckCode"),
-                jni_sig!((bytes: byte[], digit: int) -> void),
-                &[JValue::Object(&bytes), JValue::Int(digit)],
-            )?;
+            let result = to_java_check_code(env, check_code)?;
             Ok(result.into_raw())
         })
     });

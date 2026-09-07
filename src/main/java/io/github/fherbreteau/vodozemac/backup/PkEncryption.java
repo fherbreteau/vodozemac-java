@@ -1,5 +1,7 @@
 package io.github.fherbreteau.vodozemac.backup;
 
+import java.util.Objects;
+
 import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
 import io.github.fherbreteau.vodozemac.exception.EncryptionException;
@@ -54,6 +56,7 @@ public final class PkEncryption extends NativeHandle {
      * @throws KeyException if the key is not a valid Curve25519 public key
      */
     public static PkEncryption fromKey(String key) {
+        Objects.requireNonNull(key, "key");
         long nativePtr = nativeFromKey(key);
         return new PkEncryption(nativePtr);
     }
@@ -70,6 +73,7 @@ public final class PkEncryption extends NativeHandle {
      * @throws EncryptionException if encryption fails (e.g. non-contributory key)
      */
     public PkMessage encrypt(byte[] plaintext) {
+        Objects.requireNonNull(plaintext, "plaintext");
         checkNotClosed();
         return nativeEncrypt(nativePtr, plaintext);
     }

@@ -5,7 +5,7 @@ use vodozemac::pk_encryption::{Message, PkDecryption};
 use vodozemac::{Curve25519PublicKey, Curve25519SecretKey, base64_decode, base64_encode};
 
 use crate::errors::{
-    throw_decryption_error, throw_generic_error, throw_key_error, throw_pickle_error,
+    throw_conversion_error, throw_decryption_error, throw_key_error, throw_pickle_error,
 };
 use crate::helpers::{box_to_jlong, catch_panic, check_ptr, native_free, string_to_jstring, wrap};
 
@@ -14,10 +14,12 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
     mut env: EnvUnowned,
     _class: JClass,
 ) -> jlong {
-    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
-        let pk_decryption = PkDecryption::new();
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
+        catch_panic(env, |_env| {
+            let pk_decryption = PkDecryption::new();
 
-        Ok(box_to_jlong(pk_decryption))
+            Ok(box_to_jlong(pk_decryption))
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -30,7 +32,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let bytes = base64_decode(key.to_string()).map_err(|e| throw_generic_error(env, e))?;
+            let bytes =
+                base64_decode(key.to_string()).map_err(|e| throw_conversion_error(env, e))?;
             let bytes: [u8; 32] = wrap(env, bytes)?;
             let secret_key = Curve25519SecretKey::from_slice(&bytes);
 
@@ -92,9 +95,9 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
-            let ciphertext =
-                base64_decode(ciphertext.to_string()).map_err(|e| throw_generic_error(env, e))?;
-            let mac = base64_decode(mac.to_string()).map_err(|e| throw_generic_error(env, e))?;
+            let ciphertext = base64_decode(ciphertext.to_string())
+                .map_err(|e| throw_conversion_error(env, e))?;
+            let mac = base64_decode(mac.to_string()).map_err(|e| throw_conversion_error(env, e))?;
             let ephemeral_key = Curve25519PublicKey::from_base64(&ephemeral_key.to_string())
                 .map_err(|e| throw_key_error(env, e))?;
 

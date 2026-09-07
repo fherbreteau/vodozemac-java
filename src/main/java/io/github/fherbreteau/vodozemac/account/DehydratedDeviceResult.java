@@ -12,7 +12,7 @@ import java.util.Objects;
  * @see Account#toDehydratedDevice(byte[])
  * @see Account#fromDehydratedDevice(String, String, byte[])
  */
-public class DehydratedDeviceResult {
+public final class DehydratedDeviceResult {
     private final String ciphertext;
     private final String nonce;
 

@@ -2,15 +2,19 @@ use jni::objects::{JByteArray, JClass, JObject, JString};
 use jni::sys::{jboolean, jint, jlong, jobject, jstring};
 use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};
 use std::collections::HashMap;
-use std::mem::forget;
-use vodozemac::olm::{Account, AccountPickle, OlmMessage, Session};
+use vodozemac::olm::{Account, AccountPickle, OlmMessage};
 use vodozemac::{Curve25519PublicKey, KeyId};
 
+use super::to_java_identity_keys;
+use crate::classes::{
+    DEHYDRATED_DEVICE_RESULT, JAVA_ARRAY_LIST, JAVA_HASH_MAP, OLM_INBOUND_CREATION_RESULT,
+    OLM_SESSION, ONE_TIME_KEY_GENERATION_RESULT,
+};
 use crate::errors::{
-    throw_generic_error, throw_key_error, throw_pickle_error, throw_session_creation_error,
+    throw_conversion_error, throw_key_error, throw_pickle_error, throw_session_creation_error,
 };
 use crate::helpers::{
-    box_to_jlong, catch_panic, check_ptr, from_json, json_to_jstring, native_free,
+    RawBox, box_to_jlong, catch_panic, check_ptr, from_json, json_to_jstring, native_free,
     olm_session_config_from_version, string_to_jstring, wrap,
 };
 use crate::types::{to_java_curve25519, to_java_ed25519, to_java_signature};
@@ -20,10 +24,12 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
     mut env: EnvUnowned,
     _class: JClass,
 ) -> jlong {
-    let outcome = env.with_env(|_env| -> Result<jlong, jni::errors::Error> {
-        let account = Account::new();
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
+        catch_panic(env, |_env| {
+            let account = Account::new();
 
-        Ok(box_to_jlong(account))
+            Ok(box_to_jlong(account))
+        })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()
 }
@@ -39,14 +45,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
             check_ptr(env, ptr)?;
             let account = unsafe { &*(ptr as *const Account) };
 
-            let identity_key = account.identity_keys();
-            let ed25519 = to_java_ed25519(env, &(identity_key.ed25519))?;
-            let curve25519 = to_java_curve25519(env, &(identity_key.curve25519))?;
-            let identity_keys = env.new_object(
-                jni_str!("io/github/fherbreteau/vodozemac/account/IdentityKeys"),
-                jni_sig!((ed25519: io.github.fherbreteau.vodozemac.types.Ed25519PublicKey, curve25519: io.github.fherbreteau.vodozemac.types.Curve25519PublicKey) -> void),
-                &[JValue::Object(&ed25519), JValue::Object(&curve25519)],
-            )?;
+            let identity_keys = account.identity_keys();
+            let identity_keys = to_java_identity_keys(env, &identity_keys)?;
             Ok(identity_keys.into_raw())
         })
     });
@@ -102,7 +102,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 
             let max_number_of_one_time_keys = account.max_number_of_one_time_keys();
             let result = jlong::try_from(max_number_of_one_time_keys)
-                .map_err(|e| throw_generic_error(env, e))?;
+                .map_err(|e| throw_conversion_error(env, e))?;
             Ok(result)
         })
     });
@@ -130,14 +130,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
             let session = account
                 .create_outbound_session(session_config, decoded_identity_key, decoded_one_time_key)
                 .map_err(|e| throw_session_creation_error(env, e))?;
-            let session_box = Box::new(session);
-            let session_ptr = &*session_box as *const Session as jlong;
+            let session_box = RawBox::new(session);
             let result = env.new_object(
-                jni_str!("io/github/fherbreteau/vodozemac/olm/OlmSession"),
+                OLM_SESSION,
                 jni_sig!((nativePtr: long) -> void),
-                &[JValue::Long(session_ptr)],
+                &[JValue::Long(session_box.as_jlong())],
             )?;
-            forget(session_box);
+            session_box.leak();
             Ok(result.into_raw())
         })
     });
@@ -177,15 +176,17 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
                 .create_inbound_session(session_config, their_identity_key, &pre_key_message)
                 .map_err(|e| throw_session_creation_error(env, e))?;
 
-            let session_box = Box::new(result.session);
-            let session_ptr = &*session_box as *const Session as jlong;
+            let session_box = RawBox::new(result.session);
             let plaintext_bytes = env.byte_array_from_slice(&result.plaintext)?;
             let result = env.new_object(
-                jni_str!("io/github/fherbreteau/vodozemac/olm/InboundCreationResult"),
+                OLM_INBOUND_CREATION_RESULT,
                 jni_sig!((sessionPtr: long, plaintext: byte[]) -> void),
-                &[JValue::Long(session_ptr), JValue::Object(&plaintext_bytes)],
+                &[
+                    JValue::Long(session_box.as_jlong()),
+                    JValue::Object(&plaintext_bytes),
+                ],
             )?;
-            forget(session_box);
+            session_box.leak();
             Ok(result.into_raw())
         })
     });
@@ -205,7 +206,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 
             let stored_one_time_key_count = account.stored_one_time_key_count();
             let result = jlong::try_from(stored_one_time_key_count)
-                .map_err(|e| throw_generic_error(env, e))?;
+                .map_err(|e| throw_conversion_error(env, e))?;
             Ok(result)
         })
     });
@@ -216,7 +217,7 @@ fn key_vec_to_java_list<'local>(
     env: &mut Env<'local>,
     keys: &[Curve25519PublicKey],
 ) -> Result<JObject<'local>, jni::errors::Error> {
-    let array_list = env.new_object(jni_str!("java/util/ArrayList"), jni_sig!(() -> void), &[])?;
+    let array_list = env.new_object(JAVA_ARRAY_LIST, jni_sig!(() -> void), &[])?;
 
     for key in keys {
         let key = to_java_curve25519(env, key)?;
@@ -240,7 +241,7 @@ fn key_generation_to_result<'local>(
     let removed_list = key_vec_to_java_list(env, &result.removed)?;
 
     env.new_object(
-        jni_str!("io/github/fherbreteau/vodozemac/account/OneTimeKeyGenerationResult"),
+        ONE_TIME_KEY_GENERATION_RESULT,
         jni_sig!((created: java.util.List, removed: java.util.List) -> void),
         &[JValue::Object(&created_list), JValue::Object(&removed_list)],
     )
@@ -259,7 +260,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let account = unsafe { &mut *(ptr as *mut Account) };
-            let count = usize::try_from(count).map_err(|e| throw_generic_error(env, e))?;
+            let count = usize::try_from(count).map_err(|e| throw_conversion_error(env, e))?;
 
             let result = account.generate_one_time_keys(count);
             let result = key_generation_to_result(env, result)?;
@@ -273,7 +274,7 @@ fn key_map_to_result<'local>(
     env: &mut Env<'local>,
     keys: &HashMap<KeyId, Curve25519PublicKey>,
 ) -> Result<JObject<'local>, jni::errors::Error> {
-    let hash_map = env.new_object(jni_str!("java/util/HashMap"), jni_sig!(() -> void), &[])?;
+    let hash_map = env.new_object(JAVA_HASH_MAP, jni_sig!(() -> void), &[])?;
 
     for (key_id, public_key) in keys {
         let key_str = env.new_string(key_id.to_base64())?;
@@ -566,7 +567,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
             let nonce = env.new_string(pickle_data.nonce)?;
 
             let dehydrated_device = env.new_object(
-                jni_str!("io/github/fherbreteau/vodozemac/account/DehydratedDeviceResult"),
+                DEHYDRATED_DEVICE_RESULT,
                 jni_sig!((ciphertext: java.lang.String, nonce: java.lang.String) -> void),
                 &[JValue::Object(&ciphertext), JValue::Object(&nonce)],
             )?;

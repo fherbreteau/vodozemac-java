@@ -13,7 +13,7 @@ import java.util.Objects;
  * @author François HERBRETEAU
  * @see Ecies#establishInboundChannel(String)
  */
-public class InboundCreationResult implements AutoCloseable {
+public final class InboundCreationResult implements AutoCloseable {
 
     private final EstablishedEcies ecies;
 
@@ -65,17 +65,18 @@ public class InboundCreationResult implements AutoCloseable {
         if (!(o instanceof InboundCreationResult that)) {
             return false;
         }
-        return Objects.deepEquals(plaintext, that.plaintext);
+        return Objects.equals(ecies, that.ecies) && Objects.deepEquals(plaintext, that.plaintext);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(plaintext);
+        return Objects.hash(ecies, Arrays.hashCode(plaintext));
     }
 
     @Override
     public String toString() {
         return "{" +
+            " ecies=" + ecies + " ," +
             " plaintext='" + Arrays.toString(plaintext) + "'" +
             "}";
     }

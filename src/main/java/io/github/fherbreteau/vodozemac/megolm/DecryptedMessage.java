@@ -12,9 +12,9 @@ import java.util.Objects;
  * should be encrypted with a unique message index per session.
  *
  * @author François HERBRETEAU
- * @see InboundGroupSession#decrypt(String)
+ * @see InboundGroupSession#decrypt(MegolmMessage)
  */
-public class DecryptedMessage {
+public final class DecryptedMessage {
     private final byte[] plaintext;
     private final int messageIndex;
 
@@ -24,7 +24,7 @@ public class DecryptedMessage {
      * @param plaintext     the decrypted plaintext of the message
      * @param messageIndex  the message index at which the message was encrypted
      */
-    public DecryptedMessage(byte[] plaintext, int messageIndex) {
+    DecryptedMessage(byte[] plaintext, int messageIndex) {
         this.plaintext = plaintext;
         this.messageIndex = messageIndex;
     }

@@ -1,15 +1,14 @@
+use jni::EnvUnowned;
 use jni::objects::{JByteArray, JClass, JString};
 use jni::sys::{jboolean, jint, jlong, jobject, jstring};
-use jni::{EnvUnowned, JValue, jni_sig, jni_str};
-use vodozemac::base64_encode;
 use vodozemac::olm::{OlmMessage, Session, SessionPickle};
 
-use crate::errors::{throw_decryption_error, throw_generic_error, throw_pickle_error};
+use super::{to_java_olm_message, to_java_session_keys};
+use crate::errors::{throw_decryption_error, throw_encryption_error, throw_pickle_error};
 use crate::helpers::{
     box_to_jlong, catch_panic, check_ptr, from_json, json_to_jstring, native_free,
     string_to_jstring, wrap,
 };
-use crate::types::to_java_curve25519;
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativeFree(
@@ -54,15 +53,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
             let session = unsafe { &*(ptr as *const Session) };
 
             let session_keys = session.session_keys();
-            let session_id = env.new_string(session_keys.session_id())?;
-            let identity_key = to_java_curve25519(env, &(session_keys.identity_key))?;
-            let base_key = to_java_curve25519(env, &(session_keys.base_key))?;
-            let one_time_key = to_java_curve25519(env, &(session_keys.one_time_key))?;
-            let result = env.new_object(
-                jni_str!("io/github/fherbreteau/vodozemac/olm/SessionKeys"),
-                jni_sig!((sessionId: java.lang.String, identityKey: io.github.fherbreteau.vodozemac.types.Curve25519PublicKey, baseKey: io.github.fherbreteau.vodozemac.types.Curve25519PublicKey, oneTimeKey: io.github.fherbreteau.vodozemac.types.Curve25519PublicKey) -> void),
-                &[JValue::Object(&session_id), JValue::Object(&identity_key), JValue::Object(&base_key), JValue::Object(&one_time_key)],
-            )?;
+            let result = to_java_session_keys(env, &session_keys)?;
             Ok(result.into_raw())
         })
     });
@@ -119,14 +110,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
 
             let olm_message = session
                 .encrypt(&plaintext_bytes)
-                .map_err(|e| throw_generic_error(env, e))?;
-            let (message_type, ciphertext) = olm_message.to_parts();
-            let body = env.new_string(base64_encode(ciphertext))?;
-            let result = env.new_object(
-                jni_str!("io/github/fherbreteau/vodozemac/olm/OlmMessage"),
-                jni_sig!((messageType: int, body: java.lang.String) -> void),
-                &[JValue::Int(message_type as i32), JValue::Object(&body)],
-            )?;
+                .map_err(|e| throw_encryption_error(env, e))?;
+            let result = to_java_olm_message(env, &olm_message)?;
             Ok(result.into_raw())
         })
     });
@@ -308,5 +293,59 @@ mod tests {
             )
             .expect("Should create inbound session");
         assert_eq!(decrypted.plaintext, plaintext);
+    }
+
+    #[test]
+    fn test_session_encrypt_decrypt_with_v2_config() {
+        let alice = Account::new();
+        let mut bob = Account::new();
+        let _ = bob.generate_one_time_keys(1);
+        let bob_keys = bob.one_time_keys();
+        let bob_identity = bob.curve25519_key();
+        let bob_one_time = *bob_keys.values().next().unwrap();
+
+        let mut alice_session = alice
+            .create_outbound_session(SessionConfig::version_2(), bob_identity, bob_one_time)
+            .expect("Should create the outbound session");
+        assert_eq!(alice_session.session_config().version(), 2);
+
+        let first = alice_session
+            .encrypt(b"first message")
+            .expect("Should encrypt the Pre Key message");
+        let pre_key_message = match first {
+            OlmMessage::PreKey(pk) => pk,
+            OlmMessage::Normal(_) => panic!("First message should be pre-key"),
+        };
+
+        let mut bob_session = bob
+            .create_inbound_session(
+                SessionConfig::version_2(),
+                alice.curve25519_key(),
+                &pre_key_message,
+            )
+            .expect("Should create inbound session");
+        assert_eq!(bob_session.session.session_config().version(), 2);
+
+        let reply = bob_session
+            .session
+            .encrypt(b"reply")
+            .expect("Should encrypt the reply");
+        let decrypted_reply = alice_session
+            .decrypt(&reply)
+            .expect("Should decrypt the reply");
+        assert_eq!(decrypted_reply, b"reply");
+
+        let second = alice_session
+            .encrypt(b"second message")
+            .expect("Should encrypt a normal message");
+        assert!(
+            matches!(second, OlmMessage::Normal(_)),
+            "Messages should be normal once a message has been received"
+        );
+        let decrypted = bob_session
+            .session
+            .decrypt(&second)
+            .expect("Should decrypt the normal message");
+        assert_eq!(decrypted, b"second message");
     }
 }

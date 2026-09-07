@@ -67,8 +67,8 @@ This project and everyone participating in it is governed by our [Code of Conduc
 
 ### Prerequisites
 
-- **Java 17+**
-- **Maven 3.8+**
+- **Java 25+**
+- **Maven 3.6.3+**
 - **Rust toolchain** (stable)
 - **Git**
 
@@ -201,7 +201,7 @@ All tests passing (6/6), GitHub Actions workflow verified.
 mvn test
 
 # Run specific test
-mvn test -Dtest=VodozemacAccountTest
+mvn test -Dtest=AccountTest
 
 # Run tests with coverage
 mvn jacoco:prepare-agent test jacoco:report
@@ -225,7 +225,7 @@ mvn jacoco:prepare-agent test jacoco:report
 ### Maintainers
 
 - **François Herbreteau**: [@fherbreteau](https://github.com/fherbreteau)
-- **Contributors**: See [CONTRIBUTORS](CONTRIBUTORS)
+- **Contributors**: See the [contributors graph](https://github.com/fherbreteau/vodozemac-java/graphs/contributors)
 
 ## 🎓 Learning Resources
 

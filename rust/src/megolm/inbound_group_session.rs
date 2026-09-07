@@ -1,5 +1,3 @@
-use std::mem::forget;
-
 use jni::objects::{JByteArray, JClass, JObject, JString};
 use jni::sys::{jboolean, jint, jlong, jobject, jstring};
 use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};
@@ -8,17 +6,16 @@ use vodozemac::megolm::{
     SessionOrdering,
 };
 
+use super::to_java_decrypted_message;
+use crate::classes::{JAVA_LONG, SESSION_ORDERING};
 use crate::errors::{
-    throw_decode_error, throw_generic_error, throw_megolm_decryption_error, throw_pickle_error,
+    throw_conversion_error, throw_decode_error, throw_megolm_decryption_error, throw_pickle_error,
     throw_session_key_decode_error,
 };
 use crate::helpers::{
-    box_to_jlong, catch_panic, check_ptr, from_json, json_to_jstring,
+    RawBox, box_to_jlong, catch_panic, check_ptr, from_json, json_to_jstring,
     megolm_session_config_from_version, native_free, string_to_jstring, wrap,
 };
-
-// Megolm: InboundGroupSession (wraps vodozemac::megolm::InboundGroupSession)
-// ============================================================================
 
 #[unsafe(no_mangle)]
 pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeNew(
@@ -94,15 +91,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
                 .decrypt(&megolm_message)
                 .map_err(|e| throw_megolm_decryption_error(env, e))?;
 
-            let plaintext_bytes = env.byte_array_from_slice(&decrypted.plaintext)?;
-            let result = env.new_object(
-                jni_str!("io/github/fherbreteau/vodozemac/megolm/DecryptedMessage"),
-                jni_sig!((plaintext: byte[], messageIndex: int) -> void),
-                &[
-                    JValue::Object(&plaintext_bytes),
-                    JValue::Int(decrypted.message_index as jint),
-                ],
-            )?;
+            let result =
+                to_java_decrypted_message(env, &decrypted.plaintext, decrypted.message_index)?;
             Ok(result.into_raw())
         })
     });
@@ -157,7 +147,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
-            let index = u32::try_from(index).map_err(|e| throw_generic_error(env, e))?;
+            let index = u32::try_from(index).map_err(|e| throw_conversion_error(env, e))?;
 
             let result = session.export_at(index);
             match result {
@@ -198,8 +188,9 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
+            let index = u32::try_from(index).map_err(|e| throw_conversion_error(env, e))?;
 
-            let result = session.advance_to(index as u32);
+            let result = session.advance_to(index);
             Ok(result as jboolean)
         })
     });
@@ -212,7 +203,7 @@ fn check_self_pointer(
     other_ptr: jlong,
 ) -> Result<(), jni::errors::Error> {
     if ptr == other_ptr {
-        return Err(throw_generic_error(
+        return Err(throw_conversion_error(
             env,
             "Cannot compare a session with itself",
         ));
@@ -253,7 +244,7 @@ fn session_ordering_to_jobject<'local>(
         SessionOrdering::Unconnected => jni_str!("UNCONNECTED"),
     };
     env.get_static_field(
-        jni_str!("io/github/fherbreteau/vodozemac/megolm/SessionOrdering"),
+        SESSION_ORDERING,
         name,
         jni_sig!(io.github.fherbreteau.vodozemac.megolm.SessionOrdering),
     )
@@ -277,7 +268,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
 
             let result = session.compare(other_session);
             let ordering = session_ordering_to_jobject(env, result)
-                .map_err(|e| throw_generic_error(env, e))?;
+                .map_err(|e| throw_conversion_error(env, e))?;
             Ok(ordering.into_raw())
         })
     });
@@ -302,14 +293,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
             let result = session.merge(other_session);
             match result {
                 Some(new_session) => {
-                    let new_box = Box::new(new_session);
-                    let new_ptr = &*new_box as *const InboundGroupSession as jlong;
+                    let new_box = RawBox::new(new_session);
                     let result = env.new_object(
-                        jni_str!("java/lang/Long"),
+                        JAVA_LONG,
                         jni_sig!((long) -> void),
-                        &[JValue::Long(new_ptr)],
+                        &[JValue::Long(new_box.as_jlong())],
                     )?;
-                    forget(new_box);
+                    new_box.leak();
                     Ok(result.into_raw())
                 }
                 None => Ok(std::ptr::null_mut()),
