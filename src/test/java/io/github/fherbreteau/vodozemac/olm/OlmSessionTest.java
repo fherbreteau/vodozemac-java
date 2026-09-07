@@ -332,27 +332,35 @@ class OlmSessionTest {
     void testInboundCreationResultEqualsHashCodeToString() {
         try (Account aliceAccount = new Account();
                 Account bobAccount = new Account()) {
-            OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(2L);
+            OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(3L);
             Iterator<Curve25519PublicKey> createdKeys = result.created().iterator();
             Curve25519PublicKey firstOneTimeKey = createdKeys.next();
             Curve25519PublicKey secondOneTimeKey = createdKeys.next();
+            Curve25519PublicKey thirdOneTimeKey = createdKeys.next();
             bobAccount.markKeysAsPublished();
 
             try (OlmSession session1 = aliceAccount.createOutboundSession(
                     bobAccount.curve25519Key(), firstOneTimeKey);
                     OlmSession session2 = aliceAccount.createOutboundSession(
-                            bobAccount.curve25519Key(), secondOneTimeKey)) {
+                            bobAccount.curve25519Key(), secondOneTimeKey);
+                    OlmSession session3 = aliceAccount.createOutboundSession(
+                            bobAccount.curve25519Key(), thirdOneTimeKey)) {
                 OlmMessage encrypted1 = session1.encrypt("Hello".getBytes(StandardCharsets.UTF_8));
                 OlmMessage encrypted2 = session2.encrypt("Hello".getBytes(StandardCharsets.UTF_8));
+                OlmMessage encrypted3 = session3.encrypt("Goodbye".getBytes(StandardCharsets.UTF_8));
 
                 try (InboundCreationResult inbound1 = bobAccount.createInboundSession(
                         aliceAccount.curve25519Key(), encrypted1);
                         InboundCreationResult inbound2 = bobAccount.createInboundSession(
-                                aliceAccount.curve25519Key(), encrypted2)) {
+                                aliceAccount.curve25519Key(), encrypted2);
+                        InboundCreationResult inbound3 = bobAccount.createInboundSession(
+                                aliceAccount.curve25519Key(), encrypted3)) {
 
                     assertThat(inbound1).isEqualTo(inbound1)
                             .hasSameHashCodeAs(inbound1)
-                            .isNotEqualTo(inbound2)
+                            .isEqualTo(inbound2)
+                            .hasSameHashCodeAs(inbound2)
+                            .isNotEqualTo(inbound3)
                             .isNotEqualTo("not a result")
                             .isNotEqualTo(null);
                     assertThat(inbound1.toString()).contains("plaintext");

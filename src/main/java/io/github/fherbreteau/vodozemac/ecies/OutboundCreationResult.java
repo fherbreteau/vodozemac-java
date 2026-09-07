@@ -70,12 +70,12 @@ public final class OutboundCreationResult implements AutoCloseable {
         if (!(o instanceof OutboundCreationResult that)) {
             return false;
         }
-        return Objects.equals(ecies, that.ecies) && Objects.equals(initialMessage, that.initialMessage);
+        return Objects.equals(initialMessage, that.initialMessage);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(ecies, initialMessage);
+        return Objects.hash(initialMessage);
     }
 
     @Override
