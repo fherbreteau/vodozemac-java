@@ -30,6 +30,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CI/CD Hardening**: SHA-pinned GitHub Actions, concurrency groups, security scanning (CodeQL, Trivy, `cargo-audit`), Maven wrapper checksum verification, and all six native platforms assembled in release artifacts
 - **Rust Release Profile**: Enabled `lto`, single `codegen-units`, and `strip` for release builds
 
+### 🧹 Refactoring
+
+- **Creation-Result Equality**: `equals`/`hashCode` of the Olm and ECIES creation-result types compare payload data only, restoring 100% Java branch coverage
+- **Parameter Names**: Centralised `requireNonNull` message constants in a shared `ParamNames` holder
+- **Rust JNI Deduplication**: New `JniBase64Value` trait collapsing the `to_java_*` helpers and a `session_config_from_version!` macro collapsing the Olm/Megolm version-mapping pair
+- **Sample Demos**: Moved out of the test sourceset into `src/demos/java`, compiled and executed through the non-default `sample` Maven profile (`mvn -Psample test`)
+
 ### 📚 Documentation
 
 - **SECURITY.md**: Added comprehensive security policy and vulnerability reporting guide

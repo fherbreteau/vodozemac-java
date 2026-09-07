@@ -28,6 +28,9 @@ mvn compile
 # Run Java tests only
 mvn test
 
+# Run Java tests and the sample demo programs (non-default profile)
+mvn -Psample test
+
 # Run a single test class
 mvn test -Dtest=InboundGroupSessionTest
 
