@@ -8,14 +8,14 @@ use vodozemac::base64_encode;
 use vodozemac::olm::{IdentityKeys, OlmMessage, SessionKeys};
 
 use crate::classes::{IDENTITY_KEYS, OLM_MESSAGE, SESSION_KEYS};
-use crate::types::{to_java_curve25519, to_java_ed25519};
+use crate::types::to_java_base64_value;
 
 pub(crate) fn to_java_identity_keys<'local>(
     env: &mut Env<'local>,
     identity_keys: &IdentityKeys,
 ) -> Result<JObject<'local>, jni::errors::Error> {
-    let ed25519 = to_java_ed25519(env, &identity_keys.ed25519)?;
-    let curve25519 = to_java_curve25519(env, &identity_keys.curve25519)?;
+    let ed25519 = to_java_base64_value(env, &identity_keys.ed25519)?;
+    let curve25519 = to_java_base64_value(env, &identity_keys.curve25519)?;
     env.new_object(
         IDENTITY_KEYS,
         jni_sig!((ed25519: io.github.fherbreteau.vodozemac.types.Ed25519PublicKey, curve25519: io.github.fherbreteau.vodozemac.types.Curve25519PublicKey) -> void),
@@ -28,9 +28,9 @@ pub(crate) fn to_java_session_keys<'local>(
     session_keys: &SessionKeys,
 ) -> Result<JObject<'local>, jni::errors::Error> {
     let session_id = env.new_string(session_keys.session_id())?;
-    let identity_key = to_java_curve25519(env, &session_keys.identity_key)?;
-    let base_key = to_java_curve25519(env, &session_keys.base_key)?;
-    let one_time_key = to_java_curve25519(env, &session_keys.one_time_key)?;
+    let identity_key = to_java_base64_value(env, &session_keys.identity_key)?;
+    let base_key = to_java_base64_value(env, &session_keys.base_key)?;
+    let one_time_key = to_java_base64_value(env, &session_keys.one_time_key)?;
     env.new_object(
         SESSION_KEYS,
         jni_sig!((sessionId: java.lang.String, identityKey: io.github.fherbreteau.vodozemac.types.Curve25519PublicKey, baseKey: io.github.fherbreteau.vodozemac.types.Curve25519PublicKey, oneTimeKey: io.github.fherbreteau.vodozemac.types.Curve25519PublicKey) -> void),

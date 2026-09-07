@@ -12,6 +12,7 @@ import org.junit.jupiter.api.Test;
 class EciesTest {
 
     private static final byte[] PLAINTEXT = "It's a secret to everybody".getBytes(UTF_8);
+    private static final byte[] OTHER_PLAINTEXT = "It's a different secret".getBytes(UTF_8);
 
     @Test
     void testEciesCreation() {
@@ -233,14 +234,19 @@ class EciesTest {
     void testInboundCreationResultEqualsHashCodeToString() {
         try (Ecies alice1 = new Ecies(); Ecies bob1 = new Ecies();
                 Ecies alice2 = new Ecies(); Ecies bob2 = new Ecies();
+                Ecies alice3 = new Ecies(); Ecies bob3 = new Ecies();
                 OutboundCreationResult outbound1 = alice1.establishOutboundChannel(bob1.publicKey(), PLAINTEXT);
                 OutboundCreationResult outbound2 = alice2.establishOutboundChannel(bob2.publicKey(), PLAINTEXT);
+                OutboundCreationResult outbound3 = alice3.establishOutboundChannel(bob3.publicKey(), OTHER_PLAINTEXT);
                 InboundCreationResult result = bob1.establishInboundChannel(outbound1.initialMessage());
-                InboundCreationResult other = bob2.establishInboundChannel(outbound2.initialMessage())) {
+                InboundCreationResult other = bob2.establishInboundChannel(outbound2.initialMessage());
+                InboundCreationResult third = bob3.establishInboundChannel(outbound3.initialMessage())) {
 
             assertThat(result).isEqualTo(result)
                     .hasSameHashCodeAs(result)
-                    .isNotEqualTo(other)
+                    .isEqualTo(other)
+                    .hasSameHashCodeAs(other)
+                    .isNotEqualTo(third)
                     .isNotEqualTo("not a result")
                     .isNotEqualTo(null);
             assertThat(result.toString()).contains("ecies", "plaintext");

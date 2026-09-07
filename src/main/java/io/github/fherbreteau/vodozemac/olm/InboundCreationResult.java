@@ -52,12 +52,12 @@ public final class InboundCreationResult implements AutoCloseable {
         if (!(o instanceof InboundCreationResult that)) {
             return false;
         }
-        return Objects.equals(session, that.session) && Objects.deepEquals(plaintext, that.plaintext);
+        return Objects.deepEquals(plaintext, that.plaintext);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(session, Arrays.hashCode(plaintext));
+        return Arrays.hashCode(plaintext);
     }
 
     @Override

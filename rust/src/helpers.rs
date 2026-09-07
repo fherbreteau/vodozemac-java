@@ -15,33 +15,26 @@ pub(crate) fn wrap<T>(env: &mut Env, v: Vec<T>) -> Result<[T; 32], jni::errors::
     })
 }
 
-pub(crate) fn olm_session_config_from_version(
-    env: &mut Env,
-    version: jint,
-) -> Result<OlmSessionConfig, jni::errors::Error> {
-    match version {
-        1 => Ok(OlmSessionConfig::version_1()),
-        2 => Ok(OlmSessionConfig::version_2()),
-        _ => Err(throw_conversion_error(
-            env,
-            format!("Invalid session config version: {version}"),
-        )),
-    }
+macro_rules! session_config_from_version {
+    ($fn_name:ident, $config:ty) => {
+        pub(crate) fn $fn_name(
+            env: &mut Env,
+            version: jint,
+        ) -> Result<$config, jni::errors::Error> {
+            match version {
+                1 => Ok(<$config>::version_1()),
+                2 => Ok(<$config>::version_2()),
+                _ => Err(throw_conversion_error(
+                    env,
+                    format!("Invalid session config version: {version}"),
+                )),
+            }
+        }
+    };
 }
 
-pub(crate) fn megolm_session_config_from_version(
-    env: &mut Env,
-    version: jint,
-) -> Result<MegolmSessionConfig, jni::errors::Error> {
-    match version {
-        1 => Ok(MegolmSessionConfig::version_1()),
-        2 => Ok(MegolmSessionConfig::version_2()),
-        _ => Err(throw_conversion_error(
-            env,
-            format!("Invalid session config version: {version}"),
-        )),
-    }
-}
+session_config_from_version!(olm_session_config_from_version, OlmSessionConfig);
+session_config_from_version!(megolm_session_config_from_version, MegolmSessionConfig);
 
 pub(crate) fn native_free<T>(env: &mut Env, ptr: jlong) {
     let _ = catch_panic(env, |env| {

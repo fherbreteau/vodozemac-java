@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
+import io.github.fherbreteau.vodozemac.ParamNames;
 import io.github.fherbreteau.vodozemac.exception.EciesException;
 
 /**
@@ -81,7 +82,7 @@ public final class EstablishedEcies extends NativeHandle {
      * @throws IllegalStateException if this {@code EstablishedEcies} has been closed
      */
     public String encrypt(byte[] plaintext) {
-        Objects.requireNonNull(plaintext, "plaintext");
+        Objects.requireNonNull(plaintext, ParamNames.PLAINTEXT);
         checkNotClosed();
         return nativeEncrypt(nativePtr, plaintext);
     }
@@ -101,7 +102,7 @@ public final class EstablishedEcies extends NativeHandle {
      *         message, a replayed message, or a key mismatch
      */
     public byte[] decrypt(String message) {
-        Objects.requireNonNull(message, "message");
+        Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
         return nativeDecrypt(nativePtr, message);
     }

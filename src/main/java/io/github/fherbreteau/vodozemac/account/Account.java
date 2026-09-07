@@ -9,6 +9,7 @@ import java.util.Optional;
 
 import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
+import io.github.fherbreteau.vodozemac.ParamNames;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
 import io.github.fherbreteau.vodozemac.exception.SessionCreationException;
@@ -33,8 +34,6 @@ import io.github.fherbreteau.vodozemac.types.Ed25519Signature;
  * @author François HERBRETEAU
  */
 public final class Account extends NativeHandle {
-
-    private static final String PICKLE_DATA = "pickleData";
 
     static {
         NativeLibraryLoader.loadLibrary();
@@ -92,7 +91,7 @@ public final class Account extends NativeHandle {
      * @throws IllegalStateException if this account has been closed
      */
     public Ed25519Signature sign(String message) {
-        Objects.requireNonNull(message, "message");
+        Objects.requireNonNull(message, ParamNames.MESSAGE);
         return sign(message.getBytes(UTF_8));
     }
 
@@ -104,7 +103,7 @@ public final class Account extends NativeHandle {
      * @throws IllegalStateException if this account has been closed
      */
     public Ed25519Signature sign(byte[] message) {
-        Objects.requireNonNull(message, "message");
+        Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
         return nativeSign(nativePtr, message);
     }
@@ -318,7 +317,7 @@ public final class Account extends NativeHandle {
      * @throws KeyException         if the key is not 32 bytes
      */
     public String pickle(byte[] key) {
-        Objects.requireNonNull(key, "key");
+        Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
         return nativeEncryptedPickle(nativePtr, key);
@@ -339,7 +338,7 @@ public final class Account extends NativeHandle {
      * @throws PickleException     if the pickle could not be created
      */
     public String pickleLegacy(byte[] pickleKey) {
-        Objects.requireNonNull(pickleKey, "pickleKey");
+        Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
         checkNotClosed();
         validateEncryptionKey(pickleKey);
         return nativePickleLegacy(nativePtr, pickleKey);
@@ -353,7 +352,7 @@ public final class Account extends NativeHandle {
      * @throws PickleException if the data cannot be deserialized
      */
     public static Account unpickle(String pickleData) {
-        Objects.requireNonNull(pickleData, PICKLE_DATA);
+        Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         long nativePtr = nativeUnpickle(pickleData);
         return new Account(nativePtr);
     }
@@ -369,8 +368,8 @@ public final class Account extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static Account unpickle(String pickleData, byte[] key) {
-        Objects.requireNonNull(pickleData, PICKLE_DATA);
-        Objects.requireNonNull(key, "key");
+        Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
+        Objects.requireNonNull(key, ParamNames.KEY);
         validateEncryptionKey(key);
         long nativePtr = nativeEncryptedUnpickle(pickleData, key);
         return new Account(nativePtr);
@@ -386,8 +385,8 @@ public final class Account extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static Account unpickleLegacy(String pickleData, byte[] pickleKey) {
-        Objects.requireNonNull(pickleData, PICKLE_DATA);
-        Objects.requireNonNull(pickleKey, "pickleKey");
+        Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
+        Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
         long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
         return new Account(nativePtr);
     }
@@ -414,7 +413,7 @@ public final class Account extends NativeHandle {
      * @throws PickleException       if creating the dehydrated device fails
      */
     public DehydratedDeviceResult toDehydratedDevice(byte[] key) {
-        Objects.requireNonNull(key, "key");
+        Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
         return nativeToDehydratedDevice(nativePtr, key);
@@ -433,7 +432,7 @@ public final class Account extends NativeHandle {
     public static Account fromDehydratedDevice(String ciphertext, String nonce, byte[] key) {
         Objects.requireNonNull(ciphertext, "ciphertext");
         Objects.requireNonNull(nonce, "nonce");
-        Objects.requireNonNull(key, "key");
+        Objects.requireNonNull(key, ParamNames.KEY);
         validateEncryptionKey(key);
         long nativePtr = nativeFromDehydratedDevice(ciphertext, nonce, key);
         return new Account(nativePtr);

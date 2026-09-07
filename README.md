@@ -462,6 +462,7 @@ vodozemac-java/
 │   │   ├── Vodozemac.java      # Utility class (base64, version)
 │   │   └── NativeLibraryLoader.java
 │   └── test/java/              # Test classes
+├── src/demos/java/             # Sample demo programs (run via the `sample` profile)
 ├── pom.xml                     # Maven build configuration
 └── README.md                   # This file
 ```
@@ -497,6 +498,12 @@ mvn package -DskipRustBuild=true
 
 # Run tests
 mvn test
+
+# Run tests and the sample demo programs (non-default profile)
+mvn -Psample test
+
+# Run only the sample demo programs
+mvn -Psample -DskipTests test
 
 # Run specific test
 mvn test -Dtest=AccountTest

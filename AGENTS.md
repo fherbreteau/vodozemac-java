@@ -28,6 +28,9 @@ mvn compile
 # Run Java tests only
 mvn test
 
+# Run Java tests and the sample demo programs (non-default profile)
+mvn -Psample test
+
 # Run a single test class
 mvn test -Dtest=InboundGroupSessionTest
 
@@ -101,11 +104,13 @@ All of the following must pass before committing:
 
 ## Dependencies
 
-- **Java 25**, Maven
-- **Rust** (stable), Cargo
+- **Java 25**, **Maven 3.9.16** (wrapper), **Maven ≥ 3.6.3** (enforcer)
+- **Rust** (stable, `rust-toolchain.toml`), Cargo
 - **vodozemac 0.10.0** (Rust crate with features: `libolm-compat`, `experimental-session-config`, `insecure-pk-encryption`)
 - **JNI 0.22.4** (Rust crate)
-- **JUnit 6**, AssertJ, JaCoCo 0.8.15, Checkstyle 14.0.0
+- **JUnit Jupiter 6.1.3**, **AssertJ 3.27.7**, JaCoCo 0.8.15, Checkstyle 14.1.0
+
+Keep this section in sync with `pom.xml` and `rust/Cargo.toml` when dependencies are bumped.
 
 ## Working Files (`docs/`)
 

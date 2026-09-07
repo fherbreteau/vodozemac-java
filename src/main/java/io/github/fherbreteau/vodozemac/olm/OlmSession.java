@@ -6,6 +6,7 @@ import java.util.Objects;
 
 import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
+import io.github.fherbreteau.vodozemac.ParamNames;
 import io.github.fherbreteau.vodozemac.exception.DecryptionException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
@@ -42,8 +43,6 @@ import io.github.fherbreteau.vodozemac.exception.PickleException;
  * @author François HERBRETEAU
  */
 public final class OlmSession extends NativeHandle {
-
-    private static final String PICKLE_DATA = "pickleData";
 
     static {
         NativeLibraryLoader.loadLibrary();
@@ -124,7 +123,7 @@ public final class OlmSession extends NativeHandle {
      * @throws IllegalStateException if this session has been closed
      */
     public OlmMessage encrypt(byte[] plaintext) {
-        Objects.requireNonNull(plaintext, "plaintext");
+        Objects.requireNonNull(plaintext, ParamNames.PLAINTEXT);
         checkNotClosed();
         return nativeEncrypt(nativePtr, plaintext);
     }
@@ -138,7 +137,7 @@ public final class OlmSession extends NativeHandle {
      * @throws DecryptionException   if decryption fails
      */
     public byte[] decrypt(OlmMessage message) {
-        Objects.requireNonNull(message, "message");
+        Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
         return nativeDecrypt(nativePtr, message.toJson());
     }
@@ -164,7 +163,7 @@ public final class OlmSession extends NativeHandle {
      * @throws KeyException         if the key is not 32 bytes
      */
     public String pickle(byte[] key) {
-        Objects.requireNonNull(key, "key");
+        Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
         return nativeEncryptedPickle(nativePtr, key);
@@ -178,7 +177,7 @@ public final class OlmSession extends NativeHandle {
      * @throws PickleException if the data cannot be deserialized
      */
     public static OlmSession unpickle(String pickleData) {
-        Objects.requireNonNull(pickleData, PICKLE_DATA);
+        Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         long nativePtr = nativeUnpickle(pickleData);
         return new OlmSession(nativePtr);
     }
@@ -194,8 +193,8 @@ public final class OlmSession extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static OlmSession unpickle(String pickleData, byte[] key) {
-        Objects.requireNonNull(pickleData, PICKLE_DATA);
-        Objects.requireNonNull(key, "key");
+        Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
+        Objects.requireNonNull(key, ParamNames.KEY);
         validateEncryptionKey(key);
         long nativePtr = nativeEncryptedUnpickle(pickleData, key);
         return new OlmSession(nativePtr);
@@ -211,8 +210,8 @@ public final class OlmSession extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static OlmSession unpickleLegacy(String pickleData, byte[] pickleKey) {
-        Objects.requireNonNull(pickleData, PICKLE_DATA);
-        Objects.requireNonNull(pickleKey, "pickleKey");
+        Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
+        Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
         long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
         return new OlmSession(nativePtr);
     }
