@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
+import io.github.fherbreteau.vodozemac.ParamNames;
 import io.github.fherbreteau.vodozemac.exception.EciesException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 
@@ -66,7 +67,7 @@ public final class Ecies extends NativeHandle {
      * @return a new {@code Ecies} session
      */
     public static Ecies withInfo(String info) {
-        Objects.requireNonNull(info, "info");
+        Objects.requireNonNull(info, ParamNames.INFO);
         long ptr = nativeWithInfo(info);
         return new Ecies(ptr);
     }
@@ -146,7 +147,7 @@ public final class Ecies extends NativeHandle {
      *         a non-contributory key or a malformed message
      */
     public InboundCreationResult establishInboundChannel(String message) {
-        Objects.requireNonNull(message, "message");
+        Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
         try {
             return nativeEstablishInboundChannel(nativePtr, message);

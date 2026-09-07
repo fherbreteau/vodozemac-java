@@ -4,6 +4,7 @@ import java.util.Objects;
 
 import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
+import io.github.fherbreteau.vodozemac.ParamNames;
 import io.github.fherbreteau.vodozemac.exception.ConversionException;
 import io.github.fherbreteau.vodozemac.exception.DecryptionException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
@@ -65,7 +66,7 @@ public final class PkDecryption extends NativeHandle {
      * @throws ConversionException if the key is not a valid 32-byte base64-encoded key
      */
     public static PkDecryption fromKey(String key) {
-        Objects.requireNonNull(key, "key");
+        Objects.requireNonNull(key, ParamNames.KEY);
         long nativePtr = nativeFromKey(key);
         return new PkDecryption(nativePtr);
     }
@@ -116,7 +117,7 @@ public final class PkDecryption extends NativeHandle {
      * @throws DecryptionException  if the MAC verification fails or the padding is invalid
      */
     public byte[] decrypt(PkMessage message) {
-        Objects.requireNonNull(message, "message");
+        Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
         return nativeDecrypt(nativePtr, message.ciphertext(), message.mac(), message.ephemeralKey());
     }
@@ -131,8 +132,8 @@ public final class PkDecryption extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static PkDecryption unpickleLegacy(String pickleData, byte[] pickleKey) {
-        Objects.requireNonNull(pickleData, "pickleData");
-        Objects.requireNonNull(pickleKey, "pickleKey");
+        Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
+        Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
         long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
         return new PkDecryption(nativePtr);
     }
@@ -147,7 +148,7 @@ public final class PkDecryption extends NativeHandle {
      * @throws PickleException if the pickling fails
      */
     public String pickleLegacy(byte[] pickleKey) {
-        Objects.requireNonNull(pickleKey, "pickleKey");
+        Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
         checkNotClosed();
         return nativePickleLegacy(nativePtr, pickleKey);
     }

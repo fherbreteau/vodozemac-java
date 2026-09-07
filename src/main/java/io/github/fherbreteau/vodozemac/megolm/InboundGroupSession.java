@@ -7,6 +7,7 @@ import java.util.Optional;
 
 import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
+import io.github.fherbreteau.vodozemac.ParamNames;
 import io.github.fherbreteau.vodozemac.exception.DecryptionException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
@@ -27,8 +28,6 @@ import io.github.fherbreteau.vodozemac.exception.SignatureException;
  * @author François HERBRETEAU
  */
 public final class InboundGroupSession extends NativeHandle {
-
-    private static final String PICKLE_DATA = "pickleData";
 
     static {
         NativeLibraryLoader.loadLibrary();
@@ -104,7 +103,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws SignatureException       if the message signature is invalid
      */
     public DecryptedMessage decrypt(MegolmMessage message) {
-        Objects.requireNonNull(message, "message");
+        Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
         return nativeDecrypt(nativePtr, message.toString());
     }
@@ -130,7 +129,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws KeyException         if the key is not 32 bytes
      */
     public String pickle(byte[] key) {
-        Objects.requireNonNull(key, "key");
+        Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
         return nativeEncryptedPickle(nativePtr, key);
@@ -250,7 +249,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws PickleException if the data cannot be deserialized
      */
     public static InboundGroupSession unpickle(String pickleData) {
-        Objects.requireNonNull(pickleData, PICKLE_DATA);
+        Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         long nativePtr = nativeUnpickle(pickleData);
         return new InboundGroupSession(nativePtr);
     }
@@ -266,8 +265,8 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static InboundGroupSession unpickle(String pickleData, byte[] key) {
-        Objects.requireNonNull(pickleData, PICKLE_DATA);
-        Objects.requireNonNull(key, "key");
+        Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
+        Objects.requireNonNull(key, ParamNames.KEY);
         validateEncryptionKey(key);
         long nativePtr = nativeEncryptedUnpickle(pickleData, key);
         return new InboundGroupSession(nativePtr);
@@ -283,8 +282,8 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws PickleException if the data cannot be decrypted or deserialized
      */
     public static InboundGroupSession unpickleLegacy(String pickleData, byte[] pickleKey) {
-        Objects.requireNonNull(pickleData, PICKLE_DATA);
-        Objects.requireNonNull(pickleKey, "pickleKey");
+        Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
+        Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
         long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
         return new InboundGroupSession(nativePtr);
     }
