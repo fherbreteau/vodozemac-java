@@ -246,7 +246,7 @@ jobs:
   quality:
     if: ${{ github.repository == 'fherbreteau/vodozemac-java' }}
     name: Sonar code analysis
-    needs: test
+    needs: [package-maven, test]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
