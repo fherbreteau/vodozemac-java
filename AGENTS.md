@@ -89,7 +89,7 @@ All of the following must pass before committing:
 
 ### Key Patterns
 
-- **NativeHandle lifecycle**: All native-handle classes are `final`, implement `AutoCloseable`, and use `checkNotClosed()` before accessing `nativePtr`. `close()` is idempotent.
+- **NativeHandle lifecycle**: All native-handle classes are `final`, implement `AutoCloseable`, and use `checkNotClosed()` before accessing `nativePtr`. `close()` is idempotent. Instance methods touching native state are `synchronized` (and `nativePtr` is `volatile`), so handles can be shared across threads; `InboundGroupSession.connected/compare/merge` lock both operands in deterministic order (`withLocks`).
 - **Value classes**: Result types (`IdentityKeys`, `SessionKeys`, `MegolmMessage`, `OlmMessage`, etc.) have `equals`/`hashCode`/`toString`.
 - **Accessors**: Fluent style (no `get` prefix) — e.g., `session.sessionId()`, `message.ciphertext()`.
 - **SessionVersion interface**: Shared by `OlmSessionVersion`, `MegolmSessionVersion`, and `MessageType` for `fromVersion`/`fromValue` lookups.

@@ -58,7 +58,7 @@ public final class OlmSession extends NativeHandle {
      * @return the session ID as a base64 string
      * @throws IllegalStateException if this session has been closed
      */
-    public String sessionId() {
+    public synchronized String sessionId() {
         checkNotClosed();
         return nativeSessionId(nativePtr);
     }
@@ -73,7 +73,7 @@ public final class OlmSession extends NativeHandle {
      * @return the {@link SessionKeys} for this session
      * @throws IllegalStateException if this session has been closed
      */
-    public SessionKeys sessionKeys() {
+    public synchronized SessionKeys sessionKeys() {
         checkNotClosed();
         return nativeSessionKeys(nativePtr);
     }
@@ -88,7 +88,7 @@ public final class OlmSession extends NativeHandle {
      * @return the {@link OlmSessionVersion} of this session
      * @throws IllegalStateException if this session has been closed
      */
-    public OlmSessionVersion sessionConfig() {
+    public synchronized OlmSessionVersion sessionConfig() {
         checkNotClosed();
         return OlmSessionVersion.fromVersion(nativeSessionConfig(nativePtr));
     }
@@ -104,7 +104,7 @@ public final class OlmSession extends NativeHandle {
      *         {@code false} otherwise
      * @throws IllegalStateException if this session has been closed
      */
-    public boolean hasReceivedMessage() {
+    public synchronized boolean hasReceivedMessage() {
         checkNotClosed();
         return nativeHasReceivedMessage(nativePtr);
     }
@@ -122,7 +122,7 @@ public final class OlmSession extends NativeHandle {
      * @return the encrypted {@code OlmMessage}
      * @throws IllegalStateException if this session has been closed
      */
-    public OlmMessage encrypt(byte[] plaintext) {
+    public synchronized OlmMessage encrypt(byte[] plaintext) {
         Objects.requireNonNull(plaintext, ParamNames.PLAINTEXT);
         checkNotClosed();
         return nativeEncrypt(nativePtr, plaintext);
@@ -136,7 +136,7 @@ public final class OlmSession extends NativeHandle {
      * @throws IllegalStateException if this session has been closed
      * @throws DecryptionException   if decryption fails
      */
-    public byte[] decrypt(OlmMessage message) {
+    public synchronized byte[] decrypt(OlmMessage message) {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
         return nativeDecrypt(nativePtr, message.toJson());
@@ -148,7 +148,7 @@ public final class OlmSession extends NativeHandle {
      * @return a JSON string representing the session
      * @throws IllegalStateException if this session has been closed
      */
-    public String pickle() {
+    public synchronized String pickle() {
         checkNotClosed();
         return nativePickle(nativePtr);
     }
@@ -162,7 +162,7 @@ public final class OlmSession extends NativeHandle {
      * @throws IllegalStateException if this session has been closed
      * @throws KeyException         if the key is not 32 bytes
      */
-    public String pickle(byte[] key) {
+    public synchronized String pickle(byte[] key) {
         Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
