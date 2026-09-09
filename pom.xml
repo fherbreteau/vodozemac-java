@@ -22,7 +22,7 @@
         <rust.target.dir>${rust.dir}/target/release</rust.target.dir>
         <skipRustBuild>false</skipRustBuild>
 
-        <!-- Détection de la plateforme pour le nom de la lib native -->
+        <!-- Platform detection for the native library name -->
         <native.lib.name>libvodozemac_java.so</native.lib.name>
 
         <!-- Test Dependencies versions -->
@@ -63,7 +63,7 @@
 
     </properties>
 
-    <!-- Profils pour gérer les différentes plateformes -->
+    <!-- Profiles for handling the different platforms -->
     <profiles>
         <profile>
             <id>linux-x86_64</id>
@@ -415,12 +415,12 @@
                     <dateFormatTimeZone>UTC</dateFormatTimeZone>
                 </configuration>
             </plugin>
-            <!-- Plugin pour compiler Rust via Cargo -->
+            <!-- Plugin to compile Rust via Cargo -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <executions>
-                    <!-- Étape 1 : Compiler le code Rust -->
+                    <!-- Step 1: Compile the Rust code -->
                     <execution>
                         <id>cargo-build</id>
                         <phase>generate-resources</phase>
@@ -440,7 +440,7 @@
                 </executions>
             </plugin>
 
-            <!-- Plugin pour copier la librairie native dans les resources -->
+            <!-- Plugin to copy the native library into the resources -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
@@ -466,7 +466,7 @@
                 </executions>
             </plugin>
 
-            <!-- Plugin pour générer les headers JNI depuis les classes Java -->
+            <!-- Plugin to generate JNI headers from the Java classes -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -543,7 +543,7 @@
                 </configuration>
             </plugin>
 
-            <!-- Plugin pour les tests -->
+            <!-- Plugin for tests -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
@@ -553,13 +553,13 @@
                 </configuration>
             </plugin>
 
-            <!-- Plugin pour créer un JAR exécutable -->
+            <!-- Plugin to create an executable JAR -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
             </plugin>
 
-            <!-- Plugin pour nettoyer aussi le build Rust -->
+            <!-- Plugin to also clean the Rust build -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
