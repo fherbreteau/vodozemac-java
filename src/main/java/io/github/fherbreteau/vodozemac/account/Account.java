@@ -58,7 +58,7 @@ public final class Account extends NativeHandle {
      * @return the {@link IdentityKeys} containing both Ed25519 and Curve25519 public keys
      * @throws IllegalStateException if this account has been closed
      */
-    public IdentityKeys identityKeys() {
+    public synchronized IdentityKeys identityKeys() {
         checkNotClosed();
         return nativeIdentityKeys(nativePtr());
     }
@@ -69,7 +69,7 @@ public final class Account extends NativeHandle {
      * @return the Ed25519 public key
      * @throws IllegalStateException if this account has been closed
      */
-    public Ed25519PublicKey ed25519Key() {
+    public synchronized Ed25519PublicKey ed25519Key() {
         checkNotClosed();
         return nativeEd25519Key(nativePtr());
     }
@@ -80,7 +80,7 @@ public final class Account extends NativeHandle {
      * @return the Curve25519 public key
      * @throws IllegalStateException if this account has been closed
      */
-    public Curve25519PublicKey curve25519Key() {
+    public synchronized Curve25519PublicKey curve25519Key() {
         checkNotClosed();
         return nativeCurve25519Key(nativePtr());
     }
@@ -104,7 +104,7 @@ public final class Account extends NativeHandle {
      * @return the signature
      * @throws IllegalStateException if this account has been closed
      */
-    public Ed25519Signature sign(byte[] message) {
+    public synchronized Ed25519Signature sign(byte[] message) {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
         return nativeSign(nativePtr(), message);
@@ -117,7 +117,7 @@ public final class Account extends NativeHandle {
      * @return the maximum number of one-time keys
      * @throws IllegalStateException if this account has been closed
      */
-    public long maxNumberOfOneTimeKeys() {
+    public synchronized long maxNumberOfOneTimeKeys() {
         checkNotClosed();
         return nativeMaxNumberOfOneTimeKeys(nativePtr());
     }
@@ -149,7 +149,7 @@ public final class Account extends NativeHandle {
      * @throws KeyException            if the keys cannot be decoded
      * @throws SessionCreationException if session creation fails
      */
-    public OlmSession createOutboundSession(OlmSessionVersion sessionVersion, Curve25519PublicKey identityKey, Curve25519PublicKey oneTimeKey) {
+    public synchronized OlmSession createOutboundSession(OlmSessionVersion sessionVersion, Curve25519PublicKey identityKey, Curve25519PublicKey oneTimeKey) {
         Objects.requireNonNull(sessionVersion, "sessionVersion");
         Objects.requireNonNull(identityKey, "identityKey");
         Objects.requireNonNull(oneTimeKey, "oneTimeKey");
@@ -188,7 +188,7 @@ public final class Account extends NativeHandle {
      * @throws KeyException              if the identity key cannot be decoded
      * @throws SessionCreationException  if session creation fails
      */
-    public InboundCreationResult createInboundSession(OlmSessionVersion sessionVersion, Curve25519PublicKey theirIdentityKey,
+    public synchronized InboundCreationResult createInboundSession(OlmSessionVersion sessionVersion, Curve25519PublicKey theirIdentityKey,
             OlmMessage preKeyMessage) {
         Objects.requireNonNull(sessionVersion, "sessionVersion");
         Objects.requireNonNull(theirIdentityKey, "theirIdentityKey");
@@ -209,7 +209,7 @@ public final class Account extends NativeHandle {
      *         and discarded keys
      * @throws IllegalStateException if this account has been closed
      */
-    public OneTimeKeyGenerationResult generateOneTimeKeys(long count) {
+    public synchronized OneTimeKeyGenerationResult generateOneTimeKeys(long count) {
         checkNotClosed();
         if (count <= 0) {
             throw new IllegalArgumentException("Must request a strictly positive number of keys");
@@ -230,7 +230,7 @@ public final class Account extends NativeHandle {
      * @return the number of stored one-time keys
      * @throws IllegalStateException if this account has been closed
      */
-    public long storedOneTimeKeyCount() {
+    public synchronized long storedOneTimeKeyCount() {
         checkNotClosed();
         return nativeStoredOneTimeKeyCount(nativePtr());
     }
@@ -244,7 +244,7 @@ public final class Account extends NativeHandle {
      * @return a map of key ID to base64-encoded Curve25519 public key
      * @throws IllegalStateException if this account has been closed
      */
-    public Map<String, Curve25519PublicKey> unpublishedOneTimeKeys() {
+    public synchronized Map<String, Curve25519PublicKey> unpublishedOneTimeKeys() {
         checkNotClosed();
         return nativeOneTimeKeys(nativePtr());
     }
@@ -259,7 +259,7 @@ public final class Account extends NativeHandle {
      *         or an empty {@link Optional} if there was no previous key
      * @throws IllegalStateException if this account has been closed
      */
-    public Optional<Curve25519PublicKey> generateFallbackKey() {
+    public synchronized Optional<Curve25519PublicKey> generateFallbackKey() {
         checkNotClosed();
         return Optional.ofNullable(nativeGenerateFallbackKey(nativePtr()));
     }
@@ -273,7 +273,7 @@ public final class Account extends NativeHandle {
      * @return a map of key ID to base64-encoded Curve25519 public key
      * @throws IllegalStateException if this account has been closed
      */
-    public Map<String, Curve25519PublicKey> unpublishedFallbackKey() {
+    public synchronized Map<String, Curve25519PublicKey> unpublishedFallbackKey() {
         checkNotClosed();
         return nativeFallbackKey(nativePtr());
     }
@@ -288,7 +288,7 @@ public final class Account extends NativeHandle {
      *         {@code false} otherwise
      * @throws IllegalStateException if this account has been closed
      */
-    public boolean forgetFallbackKey() {
+    public synchronized boolean forgetFallbackKey() {
         checkNotClosed();
         return nativeForgetFallbackKey(nativePtr());
     }
@@ -299,7 +299,7 @@ public final class Account extends NativeHandle {
      *
      * @throws IllegalStateException if this account has been closed
      */
-    public void markKeysAsPublished() {
+    public synchronized void markKeysAsPublished() {
         checkNotClosed();
         nativeMarkKeysAsPublished(nativePtr());
     }
@@ -310,7 +310,7 @@ public final class Account extends NativeHandle {
      * @return a JSON string representing the account
      * @throws IllegalStateException if this account has been closed
      */
-    public String pickle() {
+    public synchronized String pickle() {
         checkNotClosed();
         return nativePickle(nativePtr());
     }
@@ -324,7 +324,7 @@ public final class Account extends NativeHandle {
      * @throws IllegalStateException if this account has been closed
      * @throws KeyException         if the key is not 32 bytes
      */
-    public String pickle(byte[] key) {
+    public synchronized String pickle(byte[] key) {
         Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
@@ -345,7 +345,7 @@ public final class Account extends NativeHandle {
      * @throws KeyException        if the key is not 32 bytes
      * @throws PickleException     if the pickle could not be created
      */
-    public String pickleLegacy(byte[] pickleKey) {
+    public synchronized String pickleLegacy(byte[] pickleKey) {
         Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
         checkNotClosed();
         validateEncryptionKey(pickleKey);
@@ -417,7 +417,7 @@ public final class Account extends NativeHandle {
      * @throws KeyException         if the key is not 32 bytes
      * @throws PickleException       if creating the dehydrated device fails
      */
-    public DehydratedDeviceResult toDehydratedDevice(byte[] key) {
+    public synchronized DehydratedDeviceResult toDehydratedDevice(byte[] key) {
         Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
