@@ -73,10 +73,11 @@ class ConcurrencyTest {
         Account account = new Account();
         List<Throwable> failures = runConcurrently(account, (shared, threadIndex) -> shared.close());
         assertThat(failures).isEmpty();
-        assertThatThrownBy(() -> account.sign("message".getBytes(UTF_8)))
+        byte[] message = "message".getBytes(UTF_8);
+        assertThatThrownBy(() -> account.sign(message))
                 .isInstanceOf(IllegalStateException.class);
         account.close();
-        assertThatThrownBy(() -> account.sign("message".getBytes(UTF_8)))
+        assertThatThrownBy(() -> account.sign(message))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -100,7 +101,7 @@ class ConcurrencyTest {
                     try {
                         account.sign(("message-" + i).getBytes(UTF_8));
                         successes.incrementAndGet();
-                    } catch (IllegalStateException e) {
+                    } catch (IllegalStateException _) {
                         rejections.incrementAndGet();
                     }
                 }
@@ -119,7 +120,8 @@ class ConcurrencyTest {
         executor.shutdownNow();
         assertThat(failures).isEmpty();
         assertThat(rejections.get()).isPositive();
-        assertThatThrownBy(() -> account.sign("message".getBytes(UTF_8)))
+        byte[] payload = "message".getBytes(UTF_8);
+        assertThatThrownBy(() -> account.sign(payload))
                 .isInstanceOf(IllegalStateException.class);
         account.close();
         assertThat(successes.get() + rejections.get()).isEqualTo(THREADS * ITERATIONS * 20);

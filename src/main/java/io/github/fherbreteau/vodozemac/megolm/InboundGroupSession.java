@@ -199,7 +199,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws IllegalStateException if either session has been closed
      */
     public boolean connected(InboundGroupSession other) {
-        Objects.requireNonNull(other, "other");
+        Objects.requireNonNull(other, ParamNames.OTHER);
         return withLocks(this, other, () -> {
             checkNotClosed();
             other.checkNotClosed();
@@ -219,7 +219,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws IllegalStateException if either session has been closed
      */
     public SessionOrdering compare(InboundGroupSession other) {
-        Objects.requireNonNull(other, "other");
+        Objects.requireNonNull(other, ParamNames.OTHER);
         return withLocks(this, other, () -> {
             checkNotClosed();
             other.checkNotClosed();
@@ -243,7 +243,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws IllegalStateException if either session has been closed
      */
     public Optional<InboundGroupSession> merge(InboundGroupSession other) {
-        Objects.requireNonNull(other, "other");
+        Objects.requireNonNull(other, ParamNames.OTHER);
         return withLocks(this, other, () -> {
             checkNotClosed();
             other.checkNotClosed();
@@ -343,24 +343,28 @@ public final class InboundGroupSession extends NativeHandle {
     }
 
     private static <T> T withLocks(InboundGroupSession first, InboundGroupSession second, Supplier<T> action) {
-        if (first == second) {
-            synchronized (first) {
+        // Synchronizing on local copies is intentional: the monitors are the
+        // same objects used by the synchronized instance methods.
+        final InboundGroupSession self = first;
+        final InboundGroupSession other = second;
+        if (self == other) {
+            synchronized (self) {
                 return action.get();
             }
         }
-        int firstHash = System.identityHashCode(first);
-        int secondHash = System.identityHashCode(second);
-        if (firstHash == secondHash) {
+        int selfHash = System.identityHashCode(self);
+        int otherHash = System.identityHashCode(other);
+        if (selfHash == otherHash) {
             synchronized (IDENTITY_HASH_TIEBREAK_LOCK) {
-                synchronized (first) {
-                    synchronized (second) {
+                synchronized (self) {
+                    synchronized (other) {
                         return action.get();
                     }
                 }
             }
         }
-        InboundGroupSession lower = firstHash < secondHash ? first : second;
-        InboundGroupSession higher = lower == first ? second : first;
+        InboundGroupSession lower = selfHash < otherHash ? self : other;
+        InboundGroupSession higher = lower == self ? other : self;
         synchronized (lower) {
             synchronized (higher) {
                 return action.get();
