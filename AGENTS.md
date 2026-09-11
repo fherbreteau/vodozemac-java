@@ -95,23 +95,6 @@ All of the following must pass before committing:
 - **SessionVersion interface**: Shared by `OlmSessionVersion`, `MegolmSessionVersion`, and `MessageType` for `fromVersion`/`fromValue` lookups.
 - **Exceptions**: `VodozemacException` (protected constructors) is the base; subclasses have `(String)` and `(String, Throwable)` constructors.
 
-## New Module Workflow
-
-When adding a new module (or a new class within a module), work in this order:
-
-1. **Java API** — classes under `src/main/java/io/github/fherbreteau/vodozemac/<module>/`: native-handle classes extending `NativeHandle`, value/result classes, typed exceptions in `exception/`.
-2. **Rust bridge** — module under `rust/src/<module>/` registered in `rust/src/lib.rs`; JNI functions matching the Java `native` declarations exactly.
-3. **Glue** — Java class constants in `rust/src/classes.rs`, error-mapping functions in `rust/src/errors.rs`.
-4. **Tests** — JUnit/AssertJ tests mirroring the Java package; optional Rust-side JNI tests (see `rust/src/helpers.rs` `get_jvm`); optional sample in `src/demos`.
-5. **Documentation** — update the Module Layout table above, `README.md`, and `CHANGELOG.md`.
-6. **Verification** — both lanes from *CI Requirements*.
-
-Detailed per-language conventions live in the project skills
-`.opencode/skills/java-conventions/SKILL.md` and
-`.opencode/skills/rust-jni-conventions/SKILL.md` — consult the matching skill
-when working on that language. Reviewer/test sub-agents are defined in
-`.opencode/agent/`.
-
 ## Code Style
 
 - Java: Checkstyle enforces no trailing whitespace, LF line endings, no tabs, `FinalClass` rule, ordered imports (java group first), `EmptyLineSeparator` between methods.
