@@ -31,7 +31,11 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
-          server-id: github
+          server-id: central
+          server-username: MAVEN_CENTRAL_USERNAME
+          server-password: MAVEN_CENTRAL_PASSWORD
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: GPG_PASSPHRASE
 
       - name: Download all native libraries
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -57,10 +61,21 @@ jobs:
       - name: Update pom.xml version
         run: mvn versions:set -DnewVersion=${{ steps.version.outputs.VERSION }}
 
-      - name: Build and publish
-        run: mvn clean deploy -DskipRustBuild=true -DskipTests
+      - name: Publish to GitHub Packages
+        run: >-
+          mvn clean deploy -DskipRustBuild=true -DskipTests
+          -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/fherbreteau/vodozemac-java
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to Maven Central
+        run: >-
+          mvn deploy -Prelease -DskipRustBuild=true -DskipTests
+          -Dgpg.passphrase="$GPG_PASSPHRASE"
+        env:
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.MAVEN_CENTRAL_USERNAME }}
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.MAVEN_CENTRAL_PASSWORD }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v2
