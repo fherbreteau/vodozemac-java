@@ -33,19 +33,19 @@
         <exec-plugin.version>3.6.3</exec-plugin.version>
         <resource-plugin.version>3.5.0</resource-plugin.version>
         <compiler-plugin.version>3.16.0</compiler-plugin.version>
-        <surefire-plugin.version>3.5.6</surefire-plugin.version>
+        <surefire-plugin.version>3.6.0</surefire-plugin.version>
         <jacoco.version>0.8.15</jacoco.version>
         <checkstyle-maven.version>3.6.0</checkstyle-maven.version>
         <checkstyle.version>14.1.0</checkstyle.version>
         <jar-plugin.version>3.5.1</jar-plugin.version>
         <clean-plugin.version>3.5.0</clean-plugin.version>
-        <sonar.version>5.7.0.6970</sonar.version>
+        <sonar.version>5.8.0.7211</sonar.version>
         <git-commit-id.version>10.0.1</git-commit-id.version>
         <dependency.version>2.21.0</dependency.version>
         <versions-plugin.version>2.21.0</versions-plugin.version>
         <dependency-plugin.version>3.11.0</dependency-plugin.version>
         <enforcer-plugin.version>3.6.3</enforcer-plugin.version>
-        <build-helper-plugin.version>3.2.0</build-helper-plugin.version>
+        <build-helper-plugin.version>3.6.1</build-helper-plugin.version>
 
         <!-- Jacoco Coverage Ratio -->
         <jacoco.coverage.ratio>80%</jacoco.coverage.ratio>
