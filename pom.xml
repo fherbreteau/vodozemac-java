@@ -45,7 +45,7 @@
         <versions-plugin.version>2.21.0</versions-plugin.version>
         <dependency-plugin.version>3.11.0</dependency-plugin.version>
         <enforcer-plugin.version>3.6.3</enforcer-plugin.version>
-        <build-helper-plugin.version>3.2.0</build-helper-plugin.version>
+        <build-helper-plugin.version>3.6.1</build-helper-plugin.version>
 
         <!-- Jacoco Coverage Ratio -->
         <jacoco.coverage.ratio>80%</jacoco.coverage.ratio>
