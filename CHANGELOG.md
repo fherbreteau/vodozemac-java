@@ -61,7 +61,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Complete Refactoring**: Organized project structure for better maintainability
 - **GitHub Integration**: Added proper .github/workflows/ directory
-- **License Files**: Organized LICENSE and LICENSES directories
+- **License File**: Apache-2.0 `LICENSE` declared in the project root and in the Maven POM
 
 ## [1.0.0] - 2026-08-13
 
