@@ -65,6 +65,16 @@ All of the following must pass before committing:
 2. **Rust**: `cargo clippy` (0 warnings), `cargo fmt -- --check` (0 issues), `cargo test` (0 failures)
 3. **Checkstyle config**: `checkstyle.xml` — enforces naming, imports, formatting, `FinalClass` (all classes with private constructors must be `final`)
 
+## Pull Requests
+
+Before creating a pull request — and before pushing any update to an existing one — update `CHANGELOG.md`:
+
+1. Locate the `## [Unreleased]` section at the top of `CHANGELOG.md`.
+2. Add a single bullet describing the **main purpose** of the PR (not a per-commit log): `- **Bold summary**: what changed and why.` Reference related issues/PRs when relevant.
+3. Place it under the matching category header (`🚀 Features`, `🐛 Fixes`, `🛡️ Security & Hardening`, `🧹 Refactoring`, `📚 Documentation`, `🔧 Build System`, `🧪 Testing`, `📁 Project Structure`), creating the category if it does not exist yet.
+4. When updating an existing PR, refine its existing entry instead of adding a duplicate.
+5. Never modify released sections (`## [X.Y.Z] - date`); they are frozen once published.
+
 ## Architecture
 
 ### Java ↔ Rust JNI Bridge
