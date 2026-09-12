@@ -1,123 +1,29 @@
 name: Release
 
 on:
+  push:
+    tags:
+      - 'v*.*.*'
   workflow_dispatch:
     inputs:
-      version:
-        description: 'Version to release (e.g. 1.0.0 or 1.0.0-rc1)'
+      tag:
+        description: 'Release tag to publish (e.g. v1.0.0)'
         required: true
         type: string
 
 env:
   JAVA_VERSION: "25"
 
-concurrency:
-  group: release
-  cancel-in-progress: false
-
 jobs:
-  # ============================================
-  # JOB 1: Prepare the release (changelog, versions, tag)
-  # ============================================
-  prepare-release:
-    name: Prepare release
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    outputs:
-      version: ${{ steps.meta.outputs.version }}
-      tag: ${{ steps.meta.outputs.tag }}
-      isFinal: ${{ steps.meta.outputs.isFinal }}
-      nextVersion: ${{ steps.meta.outputs.nextVersion }}
-      cargoVersion: ${{ steps.meta.outputs.cargoVersion }}
-    steps:
-      - name: Checkout main
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Validate version input
-        id: meta
-        run: |
-          VERSION="${{ inputs.version }}"
-          VERSION="${VERSION#v}"
-          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)?$ ]]; then
-            echo "::error::Invalid version '$VERSION': expected X.Y.Z or X.Y.Z-rcN"
-            exit 1
-          fi
-          if [[ "$VERSION" =~ -rc[0-9]+$ ]]; then
-            echo "isFinal=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "isFinal=true" >> "$GITHUB_OUTPUT"
-            IFS='.' read -r major minor patch <<< "$VERSION"
-            echo "nextVersion=$major.$((minor + 1)).0-SNAPSHOT" >> "$GITHUB_OUTPUT"
-            echo "cargoVersion=$major.$((minor + 1)).0" >> "$GITHUB_OUTPUT"
-          fi
-          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
-          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
-
-      - name: Update CHANGELOG.md
-        run: |
-          ARGS=("${{ steps.meta.outputs.version }}")
-          if [ "${{ steps.meta.outputs.isFinal }}" = "true" ]; then
-            ARGS+=(--final)
-          fi
-          python3 .github/scripts/prepare_changelog.py "${ARGS[@]}"
-
-      - name: Setup Java
-        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: Ensure project versions match the release version
-        run: |
-          VERSION="${{ steps.meta.outputs.version }}"
-          POM_CURRENT=$(mvn -q help:evaluate -Dexpression=project.version -DforceStdout)
-          if [ "$POM_CURRENT" != "$VERSION" ]; then
-            mvn versions:set -DnewVersion="$VERSION" -DgenerateBackupPoms=false
-            echo "pom.xml updated: $POM_CURRENT -> $VERSION"
-          else
-            echo "pom.xml already at $VERSION"
-          fi
-          CARGO_CURRENT=$(sed -n 's/^version = "\(.*\)"/\1/p' rust/Cargo.toml | head -n1)
-          if [ "$CARGO_CURRENT" != "$VERSION" ]; then
-            sed -i.bak "s/^version = \".*\"/version = \"$VERSION\"/" rust/Cargo.toml
-            rm rust/Cargo.toml.bak
-            cargo update --manifest-path rust/Cargo.toml --package vodozemac-java --precise "$VERSION"
-            echo "rust/Cargo.toml updated: $CARGO_CURRENT -> $VERSION"
-          else
-            echo "rust/Cargo.toml already at $VERSION"
-          fi
-
-      - name: Commit, tag and push
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md pom.xml rust/Cargo.toml rust/Cargo.lock
-          git commit -m "chore(release): Prepare ${{ steps.meta.outputs.tag }}"
-          git push origin main
-          git tag -a "${{ steps.meta.outputs.tag }}" -m "Release ${{ steps.meta.outputs.version }}"
-          git push origin "${{ steps.meta.outputs.tag }}"
-
-  # ============================================
-  # JOB 2: Build Rust native libraries (from the release tag)
-  # ============================================
   build-native:
-    name: Build native libraries
-    needs: prepare-release
+    # Reuses the same job as build.yml (extract into a reusable workflow)
     uses: ./.github/workflows/build.yml
     with:
-      ref: ${{ needs.prepare-release.outputs.tag }}
+      ref: ${{ inputs.tag || github.ref }}
 
-  # ============================================
-  # JOB 3: Publish artifacts and create the GitHub Release
-  # ============================================
   publish:
-    name: Publish to GitHub Packages and Maven Central
-    needs: [prepare-release, build-native]
+    name: Publish to GitHub Packages
+    needs: build-native
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -127,7 +33,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ needs.prepare-release.outputs.tag }}
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Setup Java
         uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
@@ -158,6 +64,29 @@ jobs:
           cp downloaded-natives/native-lib-windows-x86_64/*.dll src/main/resources/native/windows-x86_64/
           cp downloaded-natives/native-lib-windows-aarch64/*.dll src/main/resources/native/windows-aarch64/
 
+      - name: Extract version from tag
+        id: version
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: echo "VERSION=${TAG#v}" >> $GITHUB_OUTPUT
+
+      - name: Determine next development version
+        id: meta
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "isFinal=true" >> "$GITHUB_OUTPUT"
+            IFS='.' read -r major minor patch <<< "${TAG#v}"
+            echo "nextVersion=$major.$((minor + 1)).0-SNAPSHOT" >> "$GITHUB_OUTPUT"
+            echo "cargoVersion=$major.$((minor + 1)).0" >> "$GITHUB_OUTPUT"
+          else
+            echo "isFinal=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Update pom.xml version
+        run: mvn versions:set -DnewVersion=${{ steps.version.outputs.VERSION }}
+
       - name: Publish to GitHub Packages
         run: >-
           mvn clean deploy -DskipRustBuild=true -DskipTests
@@ -175,9 +104,9 @@ jobs:
       - name: Generate release notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ needs.prepare-release.outputs.tag }}
+          TAG: ${{ inputs.tag || github.ref_name }}
         run: |
-          if [ "${{ needs.prepare-release.outputs.isFinal }}" = "true" ]; then
+          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             # Final release: base the notes on the previous final published release
             PREV_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 100 \
               --json tagName,isDraft,isPrerelease \
@@ -198,17 +127,17 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v2
         with:
-          tag_name: ${{ needs.prepare-release.outputs.tag }}
+          tag_name: ${{ inputs.tag || github.ref_name }}
           files: target/*.jar
           body_path: release-notes.md
-          prerelease: ${{ needs.prepare-release.outputs.isFinal == 'false' }}
+          prerelease: ${{ steps.meta.outputs.isFinal == 'false' }}
 
       - name: Bump to next development version
-        if: needs.prepare-release.outputs.isFinal == 'true'
+        if: steps.meta.outputs.isFinal == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mvn versions:set -DnewVersion=${{ needs.prepare-release.outputs.nextVersion }} -DgenerateBackupPoms=false
+          mvn versions:set -DnewVersion=${{ steps.meta.outputs.nextVersion }} -DgenerateBackupPoms=false
           sed -i.bak 's/^version = ".*"/version = "'"${CARGO_VERSION}"'"/' rust/Cargo.toml
           rm rust/Cargo.toml.bak
           cargo update --manifest-path rust/Cargo.toml --package vodozemac-java --precise "${CARGO_VERSION}"
@@ -216,5 +145,5 @@ jobs:
           git commit -m "chore(release): Prepare next development version (pom: $NEXT_VERSION, rust: $CARGO_VERSION)"
           git push origin HEAD:main
         env:
-          NEXT_VERSION: ${{ needs.prepare-release.outputs.nextVersion }}
-          CARGO_VERSION: ${{ needs.prepare-release.outputs.cargoVersion }}
+          NEXT_VERSION: ${{ steps.meta.outputs.nextVersion }}
+          CARGO_VERSION: ${{ steps.meta.outputs.cargoVersion }}
