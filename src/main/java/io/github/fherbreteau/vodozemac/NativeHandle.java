@@ -12,12 +12,18 @@ package io.github.fherbreteau.vodozemac;
  * The {@link #close()} method is idempotent — calling it more than once has no
  * effect. Any method that accesses the native pointer after {@code close()} has
  * been called will throw an {@link IllegalStateException}.
+ * <p>
+ * Instances are safe to use from multiple threads: every method that accesses
+ * the native handle is synchronized on the instance, so native calls on the
+ * same object are serialized and {@code close()} can never race with an
+ * ongoing native call. Constructors and static factory methods that only
+ * create fresh native objects require no synchronization.
  *
  * @author François HERBRETEAU
  */
 public abstract class NativeHandle implements AutoCloseable {
 
-    protected long nativePtr;
+    protected volatile long nativePtr;
 
     protected NativeHandle(long nativePtr) {
         this.nativePtr = nativePtr;
@@ -36,7 +42,7 @@ public abstract class NativeHandle implements AutoCloseable {
      * @return {@code true} if the native resource has been released,
      *         {@code false} otherwise
      */
-    final boolean isClosed() {
+    final synchronized boolean isClosed() {
         return nativePtr == 0;
     }
 
@@ -48,7 +54,7 @@ public abstract class NativeHandle implements AutoCloseable {
      * {@inheritDoc}
      */
     @Override
-    public final void close() {
+    public final synchronized void close() {
         if (nativePtr != 0) {
             nativeFree(nativePtr);
             nativePtr = 0;

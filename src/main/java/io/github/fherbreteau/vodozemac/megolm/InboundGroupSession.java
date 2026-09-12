@@ -4,6 +4,7 @@ import static io.github.fherbreteau.vodozemac.KeyValidator.validateEncryptionKey
 
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 import io.github.fherbreteau.vodozemac.NativeHandle;
 import io.github.fherbreteau.vodozemac.NativeLibraryLoader;
@@ -28,6 +29,8 @@ import io.github.fherbreteau.vodozemac.exception.SignatureException;
  * @author François HERBRETEAU
  */
 public final class InboundGroupSession extends NativeHandle {
+
+    private static final Object IDENTITY_HASH_TIEBREAK_LOCK = new Object();
 
     static {
         NativeLibraryLoader.loadLibrary();
@@ -71,7 +74,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @return the session ID as a base64 string
      * @throws IllegalStateException if this session has been closed
      */
-    public String sessionId() {
+    public synchronized String sessionId() {
         checkNotClosed();
         return nativeSessionId(nativePtr);
     }
@@ -88,7 +91,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @return the first known message index
      * @throws IllegalStateException if this session has been closed
      */
-    public int firstKnownIndex() {
+    public synchronized int firstKnownIndex() {
         checkNotClosed();
         return nativeFirstKnownIndex(nativePtr);
     }
@@ -102,7 +105,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws DecryptionException      if decryption fails (invalid MAC, padding, or unknown message index)
      * @throws SignatureException       if the message signature is invalid
      */
-    public DecryptedMessage decrypt(MegolmMessage message) {
+    public synchronized DecryptedMessage decrypt(MegolmMessage message) {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
         return nativeDecrypt(nativePtr, message.toString());
@@ -114,7 +117,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @return a JSON string representing the session
      * @throws IllegalStateException if this session has been closed
      */
-    public String pickle() {
+    public synchronized String pickle() {
         checkNotClosed();
         return nativePickle(nativePtr);
     }
@@ -128,7 +131,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws IllegalStateException if this session has been closed
      * @throws KeyException         if the key is not 32 bytes
      */
-    public String pickle(byte[] key) {
+    public synchronized String pickle(byte[] key) {
         Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
@@ -147,7 +150,7 @@ public final class InboundGroupSession extends NativeHandle {
      *         if the session has been ratcheted beyond the given index
      * @throws IllegalStateException if this session has been closed
      */
-    public Optional<String> exportAt(int index) {
+    public synchronized Optional<String> exportAt(int index) {
         checkNotClosed();
         String result = nativeExportAt(nativePtr, index);
         return Optional.ofNullable(result);
@@ -162,7 +165,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @return the exported session key as a base64 string
      * @throws IllegalStateException if this session has been closed
      */
-    public Optional<String> exportAtFirstKnownIndex() {
+    public synchronized Optional<String> exportAtFirstKnownIndex() {
         checkNotClosed();
         String result = nativeExportAtFirstKnownIndex(nativePtr);
         return Optional.ofNullable(result);
@@ -179,7 +182,7 @@ public final class InboundGroupSession extends NativeHandle {
      *         {@code false} if the ratchet was already advanced beyond the given index
      * @throws IllegalStateException if this session has been closed
      */
-    public boolean advanceTo(int index) {
+    public synchronized boolean advanceTo(int index) {
         checkNotClosed();
         return nativeAdvanceTo(nativePtr, index);
     }
@@ -196,9 +199,12 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws IllegalStateException if either session has been closed
      */
     public boolean connected(InboundGroupSession other) {
-        checkNotClosed();
-        other.checkNotClosed();
-        return nativeConnected(nativePtr, other.nativePtr);
+        Objects.requireNonNull(other, ParamNames.OTHER);
+        return withLocks(this, other, () -> {
+            checkNotClosed();
+            other.checkNotClosed();
+            return nativeConnected(nativePtr, other.nativePtr);
+        });
     }
 
     /**
@@ -213,9 +219,12 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws IllegalStateException if either session has been closed
      */
     public SessionOrdering compare(InboundGroupSession other) {
-        checkNotClosed();
-        other.checkNotClosed();
-        return nativeCompare(nativePtr, other.nativePtr);
+        Objects.requireNonNull(other, ParamNames.OTHER);
+        return withLocks(this, other, () -> {
+            checkNotClosed();
+            other.checkNotClosed();
+            return nativeCompare(nativePtr, other.nativePtr);
+        });
     }
 
     /**
@@ -234,10 +243,13 @@ public final class InboundGroupSession extends NativeHandle {
      * @throws IllegalStateException if either session has been closed
      */
     public Optional<InboundGroupSession> merge(InboundGroupSession other) {
-        checkNotClosed();
-        other.checkNotClosed();
-        Long result = nativeMerge(nativePtr, other.nativePtr);
-        return Optional.ofNullable(result).map(InboundGroupSession::new);
+        Objects.requireNonNull(other, ParamNames.OTHER);
+        return withLocks(this, other, () -> {
+            checkNotClosed();
+            other.checkNotClosed();
+            Long result = nativeMerge(nativePtr, other.nativePtr);
+            return Optional.ofNullable(result).map(InboundGroupSession::new);
+        });
     }
 
     /**
@@ -328,6 +340,36 @@ public final class InboundGroupSession extends NativeHandle {
         Objects.requireNonNull(version, "version");
         long nativePtr = nativeImport(sessionKey, version.value());
         return new InboundGroupSession(nativePtr);
+    }
+
+    private static <T> T withLocks(InboundGroupSession first, InboundGroupSession second, Supplier<T> action) {
+        // Synchronizing on local copies is intentional: the monitors are the
+        // same objects used by the synchronized instance methods.
+        final InboundGroupSession self = first;
+        final InboundGroupSession other = second;
+        if (self == other) {
+            synchronized (self) {
+                return action.get();
+            }
+        }
+        int selfHash = System.identityHashCode(self);
+        int otherHash = System.identityHashCode(other);
+        if (selfHash == otherHash) {
+            synchronized (IDENTITY_HASH_TIEBREAK_LOCK) {
+                synchronized (self) {
+                    synchronized (other) {
+                        return action.get();
+                    }
+                }
+            }
+        }
+        InboundGroupSession lower = selfHash < otherHash ? self : other;
+        InboundGroupSession higher = lower == self ? other : self;
+        synchronized (lower) {
+            synchronized (higher) {
+                return action.get();
+            }
+        }
     }
 
     private static native long nativeNew(String sessionKey, int version);

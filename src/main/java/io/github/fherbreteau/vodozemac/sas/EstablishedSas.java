@@ -49,7 +49,7 @@ public final class EstablishedSas extends NativeHandle {
      *         and raw bytes
      * @throws IllegalStateException if this {@code EstablishedSas} has been closed
      */
-    public SasBytes bytes(String info) {
+    public synchronized SasBytes bytes(String info) {
         Objects.requireNonNull(info, ParamNames.INFO);
         checkNotClosed();
         return nativeBytes(nativePtr, info);
@@ -69,7 +69,7 @@ public final class EstablishedSas extends NativeHandle {
      * @throws IllegalStateException if this {@code EstablishedSas} has been closed
      * @throws SasException         if the requested count exceeds the maximum
      */
-    public byte[] bytesRaw(String info, int count) {
+    public synchronized byte[] bytesRaw(String info, int count) {
         Objects.requireNonNull(info, ParamNames.INFO);
         checkNotClosed();
         return nativeBytesRaw(nativePtr, info, count);
@@ -87,7 +87,7 @@ public final class EstablishedSas extends NativeHandle {
      * @return the MAC as a base64-encoded string
      * @throws IllegalStateException if this {@code EstablishedSas} has been closed
      */
-    public String calculateMac(String input, String info) {
+    public synchronized String calculateMac(String input, String info) {
         Objects.requireNonNull(input, ParamNames.INPUT);
         Objects.requireNonNull(info, ParamNames.INFO);
         checkNotClosed();
@@ -108,7 +108,7 @@ public final class EstablishedSas extends NativeHandle {
      * @return the MAC as an invalid base64-encoded string
      * @throws IllegalStateException if this {@code EstablishedSas} has been closed
      */
-    public String calculateMacInvalidBase64(String input, String info) {
+    public synchronized String calculateMacInvalidBase64(String input, String info) {
         Objects.requireNonNull(input, ParamNames.INPUT);
         Objects.requireNonNull(info, ParamNames.INFO);
         checkNotClosed();
@@ -128,7 +128,7 @@ public final class EstablishedSas extends NativeHandle {
      * @throws IllegalStateException if this {@code EstablishedSas} has been closed
      * @throws SasException          if the MAC verification fails
      */
-    public void verifyMac(String input, String info, String mac) {
+    public synchronized void verifyMac(String input, String info, String mac) {
         Objects.requireNonNull(input, ParamNames.INPUT);
         Objects.requireNonNull(info, ParamNames.INFO);
         Objects.requireNonNull(mac, ParamNames.MAC);
@@ -143,7 +143,7 @@ public final class EstablishedSas extends NativeHandle {
      * @return the base64-encoded public key
      * @throws IllegalStateException if this {@code EstablishedSas} has been closed
      */
-    public String ourPublicKey() {
+    public synchronized String ourPublicKey() {
         checkNotClosed();
         return nativeOurPublicKey(nativePtr);
     }
@@ -155,7 +155,7 @@ public final class EstablishedSas extends NativeHandle {
      * @return the base64-encoded public key
      * @throws IllegalStateException if this {@code EstablishedSas} has been closed
      */
-    public String theirPublicKey() {
+    public synchronized String theirPublicKey() {
         checkNotClosed();
         return nativeTheirPublicKey(nativePtr);
     }

@@ -83,7 +83,7 @@ public final class Ecies extends NativeHandle {
      * @throws IllegalStateException if this {@code Ecies} has been closed or
      *         consumed by channel establishment
      */
-    public String publicKey() {
+    public synchronized String publicKey() {
         checkNotClosed();
         return nativePublicKey(nativePtr);
     }
@@ -112,7 +112,7 @@ public final class Ecies extends NativeHandle {
      * @throws EciesException       if channel establishment fails, e.g. due to
      *         a non-contributory key
      */
-    public OutboundCreationResult establishOutboundChannel(String theirPublicKey, byte[] initialPlaintext) {
+    public synchronized OutboundCreationResult establishOutboundChannel(String theirPublicKey, byte[] initialPlaintext) {
         Objects.requireNonNull(theirPublicKey, "theirPublicKey");
         Objects.requireNonNull(initialPlaintext, "initialPlaintext");
         checkNotClosed();
@@ -146,7 +146,7 @@ public final class Ecies extends NativeHandle {
      * @throws EciesException       if channel establishment fails, e.g. due to
      *         a non-contributory key or a malformed message
      */
-    public InboundCreationResult establishInboundChannel(String message) {
+    public synchronized InboundCreationResult establishInboundChannel(String message) {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
         try {
