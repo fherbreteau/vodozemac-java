@@ -12,6 +12,9 @@ concurrency:
   group: prepare-release
   cancel-in-progress: false
 
+env:
+  JAVA_VERSION: "25"
+
 jobs:
   prepare-release:
     name: Prepare release
