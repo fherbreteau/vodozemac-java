@@ -18,7 +18,7 @@ jobs:
     needs: build-native
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
@@ -58,6 +58,18 @@ jobs:
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
 
+      - name: Determine next development version
+        id: meta
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "isFinal=true" >> "$GITHUB_OUTPUT"
+            IFS='.' read -r major minor patch <<< "${TAG#v}"
+            echo "nextVersion=$major.$((minor + 1)).0-SNAPSHOT" >> "$GITHUB_OUTPUT"
+          else
+            echo "isFinal=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Update pom.xml version
         run: mvn versions:set -DnewVersion=${{ steps.version.outputs.VERSION }}
 
@@ -70,7 +82,8 @@ jobs:
 
       - name: Publish to Maven Central
         run: >-
-          mvn deploy -Prelease -DskipRustBuild=true -DskipTests"
+          mvn deploy -Prelease -DskipRustBuild=true -DskipTests
+          -Dgpg.passphrase="$MAVEN_GPG_PASSPHRASE"
         env:
           MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
@@ -81,3 +94,16 @@ jobs:
         with:
           files: target/*.jar
           generate_release_notes: true
+          prerelease: ${{ steps.meta.outputs.isFinal == 'false' }}
+
+      - name: Bump pom to next development version
+        if: steps.meta.outputs.isFinal == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mvn versions:set -DnewVersion=${{ steps.meta.outputs.nextVersion }} -DgenerateBackupPoms=false
+          git add pom.xml
+          git commit -m "chore(release): Prepare next development version ($NEXT_VERSION)"
+          git push origin HEAD:main
+        env:
+          NEXT_VERSION: ${{ steps.meta.outputs.nextVersion }}
