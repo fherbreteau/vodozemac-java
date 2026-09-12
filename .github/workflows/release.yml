@@ -66,6 +66,7 @@ jobs:
             echo "isFinal=true" >> "$GITHUB_OUTPUT"
             IFS='.' read -r major minor patch <<< "${TAG#v}"
             echo "nextVersion=$major.$((minor + 1)).0-SNAPSHOT" >> "$GITHUB_OUTPUT"
+            echo "cargoVersion=$major.$((minor + 1)).0" >> "$GITHUB_OUTPUT"
           else
             echo "isFinal=false" >> "$GITHUB_OUTPUT"
           fi
@@ -118,14 +119,18 @@ jobs:
           body_path: release-notes.md
           prerelease: ${{ steps.meta.outputs.isFinal == 'false' }}
 
-      - name: Bump pom to next development version
+      - name: Bump to next development version
         if: steps.meta.outputs.isFinal == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           mvn versions:set -DnewVersion=${{ steps.meta.outputs.nextVersion }} -DgenerateBackupPoms=false
-          git add pom.xml
-          git commit -m "chore(release): Prepare next development version ($NEXT_VERSION)"
+          sed -i.bak 's/^version = ".*"/version = "'"${CARGO_VERSION}"'"/' rust/Cargo.toml
+          rm rust/Cargo.toml.bak
+          cargo update --manifest-path rust/Cargo.toml --package vodozemac-java --precise "${CARGO_VERSION}"
+          git add pom.xml rust/Cargo.toml rust/Cargo.lock
+          git commit -m "chore(release): Prepare next development version (pom: $NEXT_VERSION, rust: $CARGO_VERSION)"
           git push origin HEAD:main
         env:
           NEXT_VERSION: ${{ steps.meta.outputs.nextVersion }}
+          CARGO_VERSION: ${{ steps.meta.outputs.cargoVersion }}
