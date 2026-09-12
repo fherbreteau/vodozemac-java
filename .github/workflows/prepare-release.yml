@@ -16,10 +16,27 @@ jobs:
   prepare-release:
     name: Prepare release
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: write
 
     steps:
+      - name: Check that the triggering actor is authorized
+        env:
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+          ALLOWED_ACTORS: ${{ vars.RELEASE_ADMINS || 'fherbreteau' }}
+        run: |
+          ACTOR="${TRIGGERING_ACTOR,,}"
+          ALLOWED="${ALLOWED_ACTORS,,}"
+          for admin in $ALLOWED; do
+            if [ "$ACTOR" = "$admin" ]; then
+              echo "Actor '$TRIGGERING_ACTOR' is authorized to prepare a release"
+              exit 0
+            fi
+          done
+          echo "::error::Actor '$TRIGGERING_ACTOR' is not authorized to prepare a release (allowed: $ALLOWED_ACTORS)"
+          exit 1
+
       - name: Checkout main
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
