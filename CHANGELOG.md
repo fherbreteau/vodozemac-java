@@ -49,6 +49,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Maven Configuration**: Fixed groupId, main class, and added AssertJ dependency
 - **Cross-Platform Profiles**: Corrected all platform targets for proper cross-compilation
 - **Resource Management**: Improved native library organization and packaging
+- **Maven Central Publishing**: Release artifacts are now published to Maven Central (Sonatype Central Portal) in addition to GitHub Packages, with generated release notes based on the previous final published release, pre-release handling for `-rc` tags, and automatic post-release version bumps (pom to the next `-SNAPSHOT`, Rust crate to the next final version)
 
 ### 🧪 Testing
 
