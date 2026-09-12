@@ -238,7 +238,7 @@
             Release profile for publishing to Maven Central via the Sonatype
             Central Portal. It attaches the sources and javadoc jars, signs all
             artifacts with GPG and delegates deployment to the
-            central-publishing-maven-plugin (server id: central).
+            central-publishing-maven-plugin (server id: ossrh).
         -->
         <profile>
             <id>release</id>
