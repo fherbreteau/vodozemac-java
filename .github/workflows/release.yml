@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to publish (e.g. v1.0.0)'
+        required: true
+        type: string
 
 env:
   JAVA_VERSION: "25"
@@ -12,18 +18,22 @@ jobs:
   build-native:
     # Reuses the same job as build.yml (extract into a reusable workflow)
     uses: ./.github/workflows/build.yml
+    with:
+      ref: ${{ inputs.tag || github.ref }}
 
   publish:
     name: Publish to GitHub Packages
     needs: build-native
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
       packages: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
 
       - name: Setup Java
         uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
@@ -31,7 +41,11 @@ jobs:
           distribution: 'temurin'
           java-version: ${{ env.JAVA_VERSION }}
           cache: 'maven'
-          server-id: github
+          server-id: ossrh
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_PASSWORD
+          gpg-private-key: ${{ secrets.OSSRH_GPG_SECRET_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
 
       - name: Download all native libraries
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
@@ -52,18 +66,84 @@ jobs:
 
       - name: Extract version from tag
         id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: echo "VERSION=${TAG#v}" >> $GITHUB_OUTPUT
+
+      - name: Determine next development version
+        id: meta
+        env:
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "isFinal=true" >> "$GITHUB_OUTPUT"
+            IFS='.' read -r major minor patch <<< "${TAG#v}"
+            echo "nextVersion=$major.$((minor + 1)).0-SNAPSHOT" >> "$GITHUB_OUTPUT"
+            echo "cargoVersion=$major.$((minor + 1)).0" >> "$GITHUB_OUTPUT"
+          else
+            echo "isFinal=false" >> "$GITHUB_OUTPUT"
+          fi
 
       - name: Update pom.xml version
         run: mvn versions:set -DnewVersion=${{ steps.version.outputs.VERSION }}
 
-      - name: Build and publish
-        run: mvn clean deploy -DskipRustBuild=true -DskipTests
+      - name: Publish to GitHub Packages
+        run: >-
+          mvn clean deploy -DskipRustBuild=true -DskipTests
+          -DaltDeploymentRepository=github::default::https://maven.pkg.github.com/fherbreteau/vodozemac-java
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to Maven Central
+        run: mvn deploy -Prelease -DskipRustBuild=true -DskipTests
+        env:
+          MAVEN_USERNAME: ${{ secrets.OSSRH_USERNAME }}
+          MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
+
+      - name: Generate release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            # Final release: base the notes on the previous final published release
+            PREV_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 100 \
+              --json tagName,isDraft,isPrerelease \
+              --jq '[.[] | select(.isDraft == false and .isPrerelease == false)] | sort_by(.createdAt) | reverse | .[0].tagName // empty')
+          else
+            # Pre-release: base the notes on the previous published release
+            PREV_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 100 \
+              --json tagName,isDraft \
+              --jq '[.[] | select(.isDraft == false)] | sort_by(.createdAt) | reverse | .[0].tagName // empty')
+          fi
+          ARGS=(-f tag_name="$TAG")
+          if [ -n "$PREV_TAG" ]; then
+            ARGS+=(-f previous_tag_name="$PREV_TAG")
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" "${ARGS[@]}" \
+            --jq '.body' > release-notes.md
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v2
         with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
           files: target/*.jar
-          generate_release_notes: true
+          body_path: release-notes.md
+          prerelease: ${{ steps.meta.outputs.isFinal == 'false' }}
+
+      - name: Bump to next development version
+        if: steps.meta.outputs.isFinal == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          mvn versions:set -DnewVersion=${{ steps.meta.outputs.nextVersion }} -DgenerateBackupPoms=false
+          sed -i.bak 's/^version = ".*"/version = "'"${CARGO_VERSION}"'"/' rust/Cargo.toml
+          rm rust/Cargo.toml.bak
+          cargo update --manifest-path rust/Cargo.toml --package vodozemac-java --precise "${CARGO_VERSION}"
+          git add pom.xml rust/Cargo.toml rust/Cargo.lock
+          git commit -m "chore(release): Prepare next development version (pom: $NEXT_VERSION, rust: $CARGO_VERSION)"
+          git push origin HEAD:main
+        env:
+          NEXT_VERSION: ${{ steps.meta.outputs.nextVersion }}
+          CARGO_VERSION: ${{ steps.meta.outputs.cargoVersion }}

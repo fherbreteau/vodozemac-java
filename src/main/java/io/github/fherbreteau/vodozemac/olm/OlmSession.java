@@ -32,9 +32,9 @@ import io.github.fherbreteau.vodozemac.exception.PickleException;
  * <p>
  * An {@code OlmSession} is acquired from an
  * {@link io.github.fherbreteau.vodozemac.account.Account}, by calling
- * {@link io.github.fherbreteau.vodozemac.account.Account#createOutboundSession(OlmSessionVersion, String, String)}
+ * {@link io.github.fherbreteau.vodozemac.account.Account#createOutboundSession(OlmSessionVersion, io.github.fherbreteau.vodozemac.types.Curve25519PublicKey, io.github.fherbreteau.vodozemac.types.Curve25519PublicKey)}
  * if you are the first participant to send a message, or
- * {@link io.github.fherbreteau.vodozemac.account.Account#createInboundSession(OlmSessionVersion, String, String)}
+ * {@link io.github.fherbreteau.vodozemac.account.Account#createInboundSession(OlmSessionVersion, io.github.fherbreteau.vodozemac.types.Curve25519PublicKey, OlmMessage)}
  * if the other participant initiated the channel by sending you a message.
  * <p>
  * This class implements {@link AutoCloseable} and should be used in a
