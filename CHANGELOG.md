@@ -42,7 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **SECURITY.md**: Added comprehensive security policy and vulnerability reporting guide
 - **CONTRIBUTING.md**: Created detailed contribution guidelines and development workflow
 - **CHANGELOG.md**: Added this changelog file for tracking changes
-- **Agent Changelog Rule**: `AGENTS.md` now instructs coding agents to update the `[Unreleased]` section of `CHANGELOG.md` with the PR's main purpose before creating or updating a pull request
+- **Agent Changelog Rule**: `AGENTS.md` now instructs coding agents to update the `[Unreleased]` section of `CHANGELOG.md` with the PR's main purpose before creating or updating a pull request, ending each bullet with its PR number `(#NNN)` so release notes can attribute changes
 
 ### 🔧 Build System
 
