@@ -89,11 +89,35 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
 
+      - name: Generate release notes
+        id: notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            # Final release: base the notes on the previous final published release
+            PREV_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 100 \
+              --json tagName,isDraft,isPrerelease \
+              --jq '[.[] | select(.isDraft == false and .isPrerelease == false)] | sort_by(.createdAt) | reverse | .[0].tagName // empty')
+          else
+            # Pre-release: base the notes on the previous published release
+            PREV_TAG=$(gh release list --repo "$GITHUB_REPOSITORY" --limit 100 \
+              --json tagName,isDraft \
+              --jq '[.[] | select(.isDraft == false)] | sort_by(.createdAt) | reverse | .[0].tagName // empty')
+          fi
+          ARGS=(-f tag_name="$TAG")
+          if [ -n "$PREV_TAG" ]; then
+            ARGS+=(-f previous_tag_name="$PREV_TAG")
+          fi
+          gh api "repos/$GITHUB_REPOSITORY/releases/generate-notes" "${ARGS[@]}" \
+            --jq '.body' > release-notes.md
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v2
         with:
           files: target/*.jar
-          generate_release_notes: true
+          body_path: release-notes.md
           prerelease: ${{ steps.meta.outputs.isFinal == 'false' }}
 
       - name: Bump pom to next development version
