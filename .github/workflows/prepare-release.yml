@@ -22,6 +22,10 @@ jobs:
     environment: release
     permissions:
       contents: write
+      # Needed to dispatch the tag-triggered Release workflow at the end of
+      # the job (the actions:write permission is what the workflow dispatch
+      # API requires; anything unlisted in this block is dropped to none).
+      actions: write
 
     steps:
       - name: Check that the triggering actor is authorized
