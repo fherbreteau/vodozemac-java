@@ -1,6 +1,6 @@
 [package]
 name = "vodozemac-java"
-version = "1.0.0"
+version = "1.0.0-rc1"
 authors = ["François Herbreteau <francois.herbreteau@gmail.com>"]
 edition = "2024"
 

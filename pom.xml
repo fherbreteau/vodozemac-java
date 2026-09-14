@@ -6,7 +6,7 @@
 
     <groupId>io.github.fherbreteau</groupId>
     <artifactId>vodozemac-java</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.0-rc1</version>
     <packaging>jar</packaging>
     <name>Vodozemac Java binding</name>
     <description>Java binding for the vodozemac cryptographic Rust library</description>
@@ -62,7 +62,7 @@
         </sonar.coverage.exclusions>
 
         <!-- Reproducible Builds configuration-->
-        <project.build.outputTimestamp>${git.commit.time}</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2026-09-14T17:24:55Z</project.build.outputTimestamp>
 
     </properties>
 

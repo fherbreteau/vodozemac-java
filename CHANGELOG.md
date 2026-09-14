@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc1] - 2026-09-14
+
 ### 🚀 Features
 
 - **Cryptographic Key Types**: Added `Ed25519PublicKey`, `Ed25519Signature`, and `Curve25519PublicKey` typed value classes in `io.github.fherbreteau.vodozemac.types`, backed by a new Rust JNI module (`rust/src/types/mod.rs`). Keys are now typed throughout the Account, IdentityKeys, OneTimeKeyGenerationResult, and SessionKeys APIs instead of raw base64 `String`s. (#38)
