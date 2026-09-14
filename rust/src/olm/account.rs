@@ -5,6 +5,8 @@ use std::collections::HashMap;
 use vodozemac::olm::{Account, AccountPickle, OlmMessage};
 use vodozemac::{Curve25519PublicKey, KeyId};
 
+const MAX_ONE_TIME_KEYS_GENERATION_LIMIT: usize = 100;
+
 use super::to_java_identity_keys;
 use crate::classes::{
     DEHYDRATED_DEVICE_RESULT, JAVA_ARRAY_LIST, JAVA_HASH_MAP, OLM_INBOUND_CREATION_RESULT,
@@ -261,6 +263,14 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
             check_ptr(env, ptr)?;
             let account = unsafe { &mut *(ptr as *mut Account) };
             let count = usize::try_from(count).map_err(|e| throw_conversion_error(env, e))?;
+            if count == 0 || count > MAX_ONE_TIME_KEYS_GENERATION_LIMIT {
+                return Err(throw_conversion_error(
+                    env,
+                    format!(
+                        "count must be between 1 and {MAX_ONE_TIME_KEYS_GENERATION_LIMIT}, got {count}"
+                    ),
+                ));
+            }
 
             let result = account.generate_one_time_keys(count);
             let result = key_generation_to_result(env, result)?;

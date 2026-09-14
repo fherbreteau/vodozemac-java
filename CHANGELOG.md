@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CI/CD Hardening**: SHA-pinned GitHub Actions, concurrency groups, security scanning (CodeQL, Trivy, `cargo-audit`), Maven wrapper checksum verification, and all six native platforms assembled in release artifacts (#47)
 - **Rust Release Profile**: Enabled `lto`, single `codegen-units`, and `strip` for release builds
 - **Release Push Authorization**: The release workflows authenticate their direct pushes to `main` (release preparation and final version bump) with a dedicated `RELEASE_TOKEN` identity, satisfying the default-branch ruleset that requires pull requests for every other actor (#66) (#47)
+- **One-Time Keys Generation Cap**: Capped `Account.generateOneTimeKeys` at 100 keys per call (rejecting non-positive counts) in both the Java API and the JNI binding, preventing memory/CPU exhaustion that could abort the JVM from unbounded native key generation (#65)
 
 ### 🧹 Refactoring
 

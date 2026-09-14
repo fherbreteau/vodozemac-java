@@ -2,6 +2,7 @@ package io.github.fherbreteau.vodozemac.account;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.InstanceOfAssertFactories.STRING;
 import static org.assertj.core.api.InstanceOfAssertFactories.list;
@@ -390,6 +391,49 @@ class AccountTest {
             fallbackKeys = account.unpublishedFallbackKey();
             assertThat(fallbackKeys)
                     .isEmpty();
+        }
+    }
+
+    @Test
+    void testAllowTheGenerationOf100KeysAtOnce() {
+        try (Account account = new Account()) {
+            OneTimeKeyGenerationResult result = account.generateOneTimeKeys(100L);
+            assertThat(result)
+                .extracting(OneTimeKeyGenerationResult::created, list(Curve25519PublicKey.class))
+                .hasSize(100);
+            assertThat(result)
+                .extracting(OneTimeKeyGenerationResult::removed, list(Curve25519PublicKey.class))
+                .isEmpty();
+        }
+    }
+
+    @Test
+    void testNumberOfOneTimeKeyGenerationMustBePositive() {
+        try (Account account = new Account()) {
+            assertThatCode(() -> account.generateOneTimeKeys(-1L))
+                .as("Should block the generation of negative number of keys")
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Must request a strictly positive number of keys");
+        }
+    }
+
+    @Test
+    void testZeroOneTimeKeyGenerationIsRejected() {
+        try (Account account = new Account()) {
+            assertThatCode(() -> account.generateOneTimeKeys(0L))
+                .as("Should block the generation of zero keys")
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Must request a strictly positive number of keys");
+        }
+    }
+
+    @Test
+    void testLimitNumberOfOneTimeKeyGenerationTo100() {
+        try (Account account = new Account()) {
+            assertThatCode(() -> account.generateOneTimeKeys(101L))
+                .as("Should block the generation of more than 100 keys at once")
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessage("Too many one-time keys requested");
         }
     }
 
