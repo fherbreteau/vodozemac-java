@@ -51,6 +51,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Cross-Platform Profiles**: Corrected all platform targets for proper cross-compilation (#1)
 - **Resource Management**: Improved native library organization and packaging (#1)
 - **Maven Central Publishing**: Release artifacts are now published to Maven Central (Sonatype Central Portal) in addition to GitHub Packages, with generated release notes based on the previous final published release, pre-release handling for `-rc` tags, and automatic post-release version bumps (pom to the next `-SNAPSHOT`, Rust crate to the next final version). Releasing starts with an action-triggered *Prepare Release* workflow that validates the version, renames `CHANGELOG.md`'s `[Unreleased]` to the released version (RC entries are merged into the final section when it ships), aligns the Maven and Rust crate versions, commits to `main` and creates the release tag; the tag-triggered *Release* workflow then builds and publishes the artifacts. Release notes combine the released version's changelog section with the merged pull requests that are not referenced in it (#59)
+- **Release Dispatch Permission**: The *Prepare Release* job now grants `actions: write` so its final step can dispatch the tag-triggered *Release* workflow with `GITHUB_TOKEN` (#67)
 
 ### 🧪 Testing
 
