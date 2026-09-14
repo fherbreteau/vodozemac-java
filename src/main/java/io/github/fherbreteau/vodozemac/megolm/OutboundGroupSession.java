@@ -64,7 +64,7 @@ public final class OutboundGroupSession extends NativeHandle {
      * @return the session ID as a base64 string
      * @throws IllegalStateException if this session has been closed
      */
-    public String sessionId() {
+    public synchronized String sessionId() {
         checkNotClosed();
         return nativeSessionId(nativePtr);
     }
@@ -78,7 +78,7 @@ public final class OutboundGroupSession extends NativeHandle {
      * @return the current message index
      * @throws IllegalStateException if this session has been closed
      */
-    public int messageIndex() {
+    public synchronized int messageIndex() {
         checkNotClosed();
         return nativeMessageIndex(nativePtr);
     }
@@ -96,7 +96,7 @@ public final class OutboundGroupSession extends NativeHandle {
      * @return the session key as a base64 string
      * @throws IllegalStateException if this session has been closed
      */
-    public String sessionKey() {
+    public synchronized String sessionKey() {
         checkNotClosed();
         return nativeSessionKey(nativePtr);
     }
@@ -111,7 +111,7 @@ public final class OutboundGroupSession extends NativeHandle {
      * @return the {@link MegolmSessionVersion} of this session
      * @throws IllegalStateException if this session has been closed
      */
-    public MegolmSessionVersion sessionConfig() {
+    public synchronized MegolmSessionVersion sessionConfig() {
         checkNotClosed();
         return MegolmSessionVersion.fromVersion(nativeSessionConfig(nativePtr));
     }
@@ -126,7 +126,7 @@ public final class OutboundGroupSession extends NativeHandle {
      * @return the encrypted message as a {@link MegolmMessage}
      * @throws IllegalStateException if this session has been closed
      */
-    public MegolmMessage encrypt(byte[] plaintext) {
+    public synchronized MegolmMessage encrypt(byte[] plaintext) {
         Objects.requireNonNull(plaintext, ParamNames.PLAINTEXT);
         checkNotClosed();
         return nativeEncrypt(nativePtr, plaintext);
@@ -138,7 +138,7 @@ public final class OutboundGroupSession extends NativeHandle {
      * @return a JSON string representing the session
      * @throws IllegalStateException if this session has been closed
      */
-    public String pickle() {
+    public synchronized String pickle() {
         checkNotClosed();
         return nativePickle(nativePtr);
     }
@@ -152,7 +152,7 @@ public final class OutboundGroupSession extends NativeHandle {
      * @throws IllegalStateException if this session has been closed
      * @throws KeyException         if the key is not 32 bytes
      */
-    public String pickle(byte[] key) {
+    public synchronized String pickle(byte[] key) {
         Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);

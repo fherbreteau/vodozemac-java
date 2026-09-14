@@ -81,7 +81,7 @@ public final class PkDecryption extends NativeHandle {
      * @return the base64-encoded Curve25519 secret key
      * @throws IllegalStateException if this {@code PkDecryption} has been closed
      */
-    public String secretKey() {
+    public synchronized String secretKey() {
         checkNotClosed();
         return nativeSecretKey(nativePtr);
     }
@@ -97,7 +97,7 @@ public final class PkDecryption extends NativeHandle {
      * @return the base64-encoded Curve25519 public key
      * @throws IllegalStateException if this {@code PkDecryption} has been closed
      */
-    public String publicKey() {
+    public synchronized String publicKey() {
         checkNotClosed();
         return nativePublicKey(nativePtr);
     }
@@ -116,7 +116,7 @@ public final class PkDecryption extends NativeHandle {
      * @throws KeyException         if the ephemeral key in the message is invalid
      * @throws DecryptionException  if the MAC verification fails or the padding is invalid
      */
-    public byte[] decrypt(PkMessage message) {
+    public synchronized byte[] decrypt(PkMessage message) {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
         return nativeDecrypt(nativePtr, message.ciphertext(), message.mac(), message.ephemeralKey());
@@ -147,7 +147,7 @@ public final class PkDecryption extends NativeHandle {
      * @throws IllegalStateException if this {@code PkDecryption} has been closed
      * @throws PickleException if the pickling fails
      */
-    public String pickleLegacy(byte[] pickleKey) {
+    public synchronized String pickleLegacy(byte[] pickleKey) {
         Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
         checkNotClosed();
         return nativePickleLegacy(nativePtr, pickleKey);

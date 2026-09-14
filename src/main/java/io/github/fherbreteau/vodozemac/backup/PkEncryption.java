@@ -73,7 +73,7 @@ public final class PkEncryption extends NativeHandle {
      * @return a {@link PkMessage} containing the encrypted message
      * @throws EncryptionException if encryption fails (e.g. non-contributory key)
      */
-    public PkMessage encrypt(byte[] plaintext) {
+    public synchronized PkMessage encrypt(byte[] plaintext) {
         Objects.requireNonNull(plaintext, ParamNames.PLAINTEXT);
         checkNotClosed();
         return nativeEncrypt(nativePtr, plaintext);

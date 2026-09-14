@@ -45,7 +45,7 @@ public final class Sas extends NativeHandle {
      * @throws IllegalStateException if this {@code Sas} has been closed or
      *         consumed by {@link #diffieHellman(String)}
      */
-    public String publicKey() {
+    public synchronized String publicKey() {
         checkNotClosed();
         return nativePublicKey(nativePtr);
     }
@@ -66,7 +66,7 @@ public final class Sas extends NativeHandle {
      * @throws KeyException if the given public key is invalid or cannot be
      *         decoded
      */
-    public EstablishedSas diffieHellman(String theirPublicKey) {
+    public synchronized EstablishedSas diffieHellman(String theirPublicKey) {
         Objects.requireNonNull(theirPublicKey, "theirPublicKey");
         checkNotClosed();
         try {
