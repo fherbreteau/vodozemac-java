@@ -35,6 +35,8 @@ import io.github.fherbreteau.vodozemac.types.Ed25519Signature;
  */
 public final class Account extends NativeHandle {
 
+    private static final long ONE_TIME_KEYS_GENERATION_LIMIT = 100L;
+
     static {
         NativeLibraryLoader.loadLibrary();
     }
@@ -209,6 +211,12 @@ public final class Account extends NativeHandle {
      */
     public OneTimeKeyGenerationResult generateOneTimeKeys(long count) {
         checkNotClosed();
+        if (count <= 0) {
+            throw new IllegalArgumentException("Must request a strictly positive number of keys");
+        }
+        if (count > ONE_TIME_KEYS_GENERATION_LIMIT) {
+            throw new IllegalArgumentException("Too many one-time keys requested");
+        }
         return nativeGenerateOneTimeKeys(nativePtr, count);
     }
 
