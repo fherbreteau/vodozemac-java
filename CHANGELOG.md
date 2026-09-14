@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Reusable Workflow Secrets**: The *Release* workflow now forwards its secrets to the reusable build workflow (`secrets: inherit`); called workflows do not inherit secrets, which made the Sonar job fail and skipped artifact publishing on release runs (#68)
 - **Release Credentials**: The *Release* workflow writes both Maven server credentials (GitHub Packages and Maven Central) explicitly, since `setup-java` only supports a single server entry and the GitHub Packages deploy lost its `github` server entry (#69)
 - **Central Auto-Publishing**: Maven Central deployments now publish automatically (`autoPublish`) and the release workflow waits until the artifacts are live (`waitUntil published`); the previously used `autoReleaseAfterClose` parameter was silently ignored by the Central Portal plugin (#70)
+- **Setup Java Inputs**: Renamed the deprecated `server-username`, `server-password` and `gpg-passphrase` inputs of `actions/setup-java` to their `-env-var` variants in the release workflow (#71)
 
 ## [1.0.0-rc1] - 2026-09-14
 
