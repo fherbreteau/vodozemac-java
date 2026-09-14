@@ -381,6 +381,20 @@ A Curve25519 public key used for X25519 key agreement.
 | `static Curve25519PublicKey fromBase64(String base64)` | Decode and validate a base64 key |
 | `String toBase64()` | Get the base64-encoded key |
 
+#### Ed25519KeyPair
+
+An Ed25519 key pair used to sign and verify messages. Native resource — use with
+try-with-resources.
+
+| Method | Description |
+|--------|-------------|
+| `Ed25519KeyPair()` | Generate a new key pair with a random private key |
+| `Ed25519PublicKey publicKey()` | Get the Ed25519 public key |
+| `Ed25519Signature sign(String message)` | Sign a string message with the private key |
+| `Ed25519Signature sign(byte[] message)` | Sign raw bytes with the private key |
+| `String pickle()` | Serialize the key pair to a JSON string |
+| `static Ed25519KeyPair unpickle(String pickleData)` | Restore a key pair from its JSON representation |
+
 ### Exceptions
 
 All exceptions extend `VodozemacException` (which extends `RuntimeException`):

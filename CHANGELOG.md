@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🚀 Features
+
+- **Ed25519 Key Pair Generator**: Added `Ed25519KeyPair` in `io.github.fherbreteau.vodozemac.types`, a native-handle class generating a random Ed25519 signing key pair with signing, public-key export, and JSON pickle/unpickle support, backed by a new Rust JNI module (`rust/src/types/keypair.rs`) (#72)
+
 ### 🔧 Build System
 
 - **Reusable Workflow Secrets**: The *Release* workflow now forwards its secrets to the reusable build workflow (`secrets: inherit`); called workflows do not inherit secrets, which made the Sonar job fail and skipped artifact publishing on release runs (#68)
