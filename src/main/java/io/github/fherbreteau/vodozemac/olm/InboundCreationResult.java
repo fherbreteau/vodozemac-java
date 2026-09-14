@@ -12,7 +12,7 @@ import java.util.Objects;
  * and the decrypted plaintext of that first message.
  *
  * @author François HERBRETEAU
- * @see io.github.fherbreteau.vodozemac.account.Account#createInboundSession(io.github.fherbreteau.vodozemac.olm.OlmSessionVersion, String, io.github.fherbreteau.vodozemac.olm.OlmMessage)
+ * @see io.github.fherbreteau.vodozemac.account.Account#createInboundSession(io.github.fherbreteau.vodozemac.olm.OlmSessionVersion, io.github.fherbreteau.vodozemac.types.Curve25519PublicKey, io.github.fherbreteau.vodozemac.olm.OlmMessage)
  */
 public final class InboundCreationResult implements AutoCloseable {
     private final OlmSession session;

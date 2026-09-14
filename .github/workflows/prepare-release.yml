@@ -1,0 +1,126 @@
+name: Prepare Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g. 1.0.0 or 1.0.0-rc1)'
+        required: true
+        type: string
+
+concurrency:
+  group: prepare-release
+  cancel-in-progress: false
+
+env:
+  JAVA_VERSION: "25"
+
+jobs:
+  prepare-release:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: write
+
+    steps:
+      - name: Check that the triggering actor is authorized
+        env:
+          TRIGGERING_ACTOR: ${{ github.triggering_actor }}
+          ALLOWED_ACTORS: ${{ vars.RELEASE_ADMINS || 'fherbreteau' }}
+        run: |
+          ACTOR="${TRIGGERING_ACTOR,,}"
+          ALLOWED="${ALLOWED_ACTORS,,}"
+          for admin in $ALLOWED; do
+            if [ "$ACTOR" = "$admin" ]; then
+              echo "Actor '$TRIGGERING_ACTOR' is authorized to prepare a release"
+              exit 0
+            fi
+          done
+          echo "::error::Actor '$TRIGGERING_ACTOR' is not authorized to prepare a release (allowed: $ALLOWED_ACTORS)"
+          exit 1
+
+      - name: Checkout main
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Validate version input
+        id: meta
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          VERSION="${INPUT_VERSION}"
+          VERSION="${VERSION#v}"
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-rc[0-9]+)?$ ]]; then
+            echo "::error::Invalid version '$VERSION': expected X.Y.Z or X.Y.Z-rcN"
+            exit 1
+          fi
+          if [[ "$VERSION" =~ -rc[0-9]+$ ]]; then
+            echo "isFinal=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "isFinal=true" >> "$GITHUB_OUTPUT"
+            IFS='.' read -r major minor patch <<< "$VERSION"
+            echo "nextVersion=$major.$((minor + 1)).0-SNAPSHOT" >> "$GITHUB_OUTPUT"
+            echo "cargoVersion=$major.$((minor + 1)).0" >> "$GITHUB_OUTPUT"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Update CHANGELOG.md
+        run: |
+          ARGS=("${{ steps.meta.outputs.version }}")
+          if [ "${{ steps.meta.outputs.isFinal }}" = "true" ]; then
+            ARGS+=(--final)
+          fi
+          python3 .github/scripts/prepare_changelog.py "${ARGS[@]}"
+
+      - name: Setup Java
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Ensure project versions match the release version
+        run: |
+          VERSION="${{ steps.meta.outputs.version }}"
+          POM_CURRENT=$(mvn -q help:evaluate -Dexpression=project.version -DforceStdout)
+          if [ "$POM_CURRENT" != "$VERSION" ]; then
+            mvn versions:set -DnewVersion="$VERSION" -DgenerateBackupPoms=false
+            echo "pom.xml updated: $POM_CURRENT -> $VERSION"
+          else
+            echo "pom.xml already at $VERSION"
+          fi
+          CARGO_CURRENT=$(sed -n 's/^version = "\(.*\)"/\1/p' rust/Cargo.toml | head -n1)
+          if [ "$CARGO_CURRENT" != "$VERSION" ]; then
+            sed -i.bak "s/^version = \".*\"/version = \"$VERSION\"/" rust/Cargo.toml
+            rm rust/Cargo.toml.bak
+            cargo update --manifest-path rust/Cargo.toml --package vodozemac-java --precise "$VERSION"
+            echo "rust/Cargo.toml updated: $CARGO_CURRENT -> $VERSION"
+          else
+            echo "rust/Cargo.toml already at $VERSION"
+          fi
+
+      - name: Commit release preparation
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md pom.xml rust/Cargo.toml rust/Cargo.lock
+          git commit -m "chore(release): Prepare ${{ steps.meta.outputs.tag }}"
+          git push origin main
+
+      - name: Create and push the release tag
+        run: |
+          git tag -a "${{ steps.meta.outputs.tag }}" -m "Release ${{ steps.meta.outputs.version }}"
+          git push origin "${{ steps.meta.outputs.tag }}"
+
+      - name: Trigger the Release workflow
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: |
+          # Tags pushed with GITHUB_TOKEN do not trigger workflows, so
+          # dispatch the tag-triggered Release workflow explicitly.
+          gh workflow run release.yml --ref main -f tag="$TAG"
