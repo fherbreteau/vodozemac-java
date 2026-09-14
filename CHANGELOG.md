@@ -28,7 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **JNI Lifecycle Hardening**: Panic-guarded `native_free`, pointer validation ordering, `catch_panic` safety on all JNI entry points, and `RawBox` guards replacing `forget` (#47)
 - **Java API Finalization**: Input validation via `Objects.requireNonNull` on public APIs, `final` value classes with `equals`/`hashCode`/`toString`, session protocol version support (`OlmSessionVersion`, `MegolmSessionVersion`) (#47)
 - **CI/CD Hardening**: SHA-pinned GitHub Actions, concurrency groups, security scanning (CodeQL, Trivy, `cargo-audit`), Maven wrapper checksum verification, and all six native platforms assembled in release artifacts (#47)
-- **Rust Release Profile**: Enabled `lto`, single `codegen-units`, and `strip` for release builds (#47)
+- **Rust Release Profile**: Enabled `lto`, single `codegen-units`, and `strip` for release builds
+- **Release Push Authorization**: The release workflows authenticate their direct pushes to `main` (release preparation and final version bump) with a dedicated `RELEASE_TOKEN` identity, satisfying the default-branch ruleset that requires pull requests for every other actor (#66) (#47)
 
 ### 🧹 Refactoring
 

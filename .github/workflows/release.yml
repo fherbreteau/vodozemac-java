@@ -34,6 +34,11 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ inputs.tag || github.ref }}
+          # The final-release version bump pushes directly to main; the
+          # main-branch ruleset only waives its pull-request requirement for
+          # the repository-admin role, so authenticate as the RELEASE_TOKEN
+          # identity (GITHUB_TOKEN itself stays subject to the rule).
+          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
 
       - name: Setup Java
         uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
@@ -134,7 +139,15 @@ jobs:
 
       - name: Bump to next development version
         if: steps.meta.outputs.isFinal == 'true'
+        env:
+          HAS_RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN != '' }}
+          NEXT_VERSION: ${{ steps.meta.outputs.nextVersion }}
+          CARGO_VERSION: ${{ steps.meta.outputs.cargoVersion }}
         run: |
+          if [ "$HAS_RELEASE_TOKEN" != "true" ]; then
+            echo "::error::The RELEASE_TOKEN secret is not configured. Create a fine-grained personal access token with Contents read/write on this repository and store it as the RELEASE_TOKEN secret; the main-branch ruleset waives its pull-request requirement only for the repository-admin role this token authenticates as."
+            exit 1
+          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           mvn versions:set -DnewVersion=${{ steps.meta.outputs.nextVersion }} -DgenerateBackupPoms=false
@@ -144,6 +157,3 @@ jobs:
           git add pom.xml rust/Cargo.toml rust/Cargo.lock
           git commit -m "chore(release): Prepare next development version (pom: $NEXT_VERSION, rust: $CARGO_VERSION)"
           git push origin HEAD:main
-        env:
-          NEXT_VERSION: ${{ steps.meta.outputs.nextVersion }}
-          CARGO_VERSION: ${{ steps.meta.outputs.cargoVersion }}
