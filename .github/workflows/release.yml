@@ -16,10 +16,14 @@ env:
 
 jobs:
   build-native:
-    # Reuses the same job as build.yml (extract into a reusable workflow)
+    # Reuses the same job as build.yml (extract into a reusable workflow).
+    # Called workflows do not inherit the caller's secrets; without this,
+    # secrets.SONAR_TOKEN inside build.yml resolves to empty and the Sonar
+    # job fails on release runs while passing on push/PR events.
     uses: ./.github/workflows/build.yml
     with:
       ref: ${{ inputs.tag || github.ref }}
+    secrets: inherit
 
   publish:
     name: Publish to GitHub Packages
