@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🔧 Build System
 
 - **Reusable Workflow Secrets**: The *Release* workflow now forwards its secrets to the reusable build workflow (`secrets: inherit`); called workflows do not inherit secrets, which made the Sonar job fail and skipped artifact publishing on release runs (#68)
+- **Release Credentials**: The *Release* workflow writes both Maven server credentials (GitHub Packages and Maven Central) explicitly, since `setup-java` only supports a single server entry and the GitHub Packages deploy lost its `github` server entry (#69)
 
 ## [1.0.0-rc1] - 2026-09-14
 
