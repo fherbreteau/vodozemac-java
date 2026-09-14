@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚀 Features
 
-- **Ed25519 Key Pair Generator**: Added `Ed25519KeyPair` in `io.github.fherbreteau.vodozemac.types`, a native-handle class generating a random Ed25519 signing key pair with signing, public-key export, and JSON pickle/unpickle support, backed by a new Rust JNI module (`rust/src/types/keypair.rs`) (#72)
+- **Ed25519 Key Pair Generator**: Added `Ed25519KeyPair` in `io.github.fherbreteau.vodozemac.types`, a native-handle class generating a random Ed25519 signing key pair with signing, public-key export, and JSON pickle/unpickle support, backed by a new Rust JNI module (`rust/src/types/keypair.rs`) (#73)
 
 ### 🔧 Build System
 
