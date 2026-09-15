@@ -42,7 +42,7 @@ public final class PkEncryption extends NativeHandle {
     }
 
     private PkEncryption(long nativePtr) {
-        super(nativePtr);
+        super(nativePtr, PkEncryption::nativeFree);
     }
 
     /**
@@ -83,6 +83,6 @@ public final class PkEncryption extends NativeHandle {
 
     private native PkMessage nativeEncrypt(long ptr, byte[] plaintext);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 
 }

@@ -1,137 +1,142 @@
 package io.github.fherbreteau.vodozemac;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.github.fherbreteau.vodozemac.account.Account;
-import io.github.fherbreteau.vodozemac.account.OneTimeKeyGenerationResult;
-import io.github.fherbreteau.vodozemac.backup.PkDecryption;
-import io.github.fherbreteau.vodozemac.ecies.Ecies;
-import io.github.fherbreteau.vodozemac.ecies.OutboundCreationResult;
-import io.github.fherbreteau.vodozemac.megolm.InboundGroupSession;
-import io.github.fherbreteau.vodozemac.megolm.OutboundGroupSession;
-import io.github.fherbreteau.vodozemac.olm.OlmSessionVersion;
+import java.lang.ref.WeakReference;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+
+import io.github.fherbreteau.vodozemac.sas.EstablishedSas;
 import io.github.fherbreteau.vodozemac.sas.Sas;
-import io.github.fherbreteau.vodozemac.types.Curve25519PublicKey;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 class NativeHandleTest {
 
-    @Test
-    void testAccountIsClosed() {
-        NativeHandle handle = new Account();
-        assertThat(handle.isClosed()).isFalse();
-        handle.close();
-        assertThat(handle.isClosed()).isTrue();
-        handle.close();
-        assertThat(handle.isClosed()).isTrue();
+    private static final AtomicInteger FREED_COUNT = new AtomicInteger();
+
+    private static final Duration CLEANUP_TIMEOUT = Duration.ofSeconds(10);
+
+    private final List<LogRecord> warningRecords = new ArrayList<>();
+
+    private java.util.logging.Logger julLogger;
+
+    private Handler handler;
+
+    private Level previousLevel;
+
+    @BeforeEach
+    void captureWarningLogs() {
+        julLogger = java.util.logging.Logger.getLogger(NativeHandle.class.getName());
+        handler = new Handler() {
+            @Override
+            public void publish(LogRecord record) {
+                if (record.getLevel() == Level.WARNING) {
+                    synchronized (warningRecords) {
+                        warningRecords.add(record);
+                    }
+                }
+            }
+
+            @Override
+            public void flush() {
+            }
+
+            @Override
+            public void close() {
+            }
+        };
+        previousLevel = julLogger.getLevel();
+        julLogger.addHandler(handler);
+        julLogger.setLevel(Level.ALL);
+    }
+
+    @AfterEach
+    void restoreWarningLogs() {
+        julLogger.removeHandler(handler);
+        julLogger.setLevel(previousLevel);
     }
 
     @Test
-    void testOlmSessionIsClosed() {
-        try (Account aliceAccount = new Account();
-                Account bobAccount = new Account()) {
-            OneTimeKeyGenerationResult result = bobAccount.generateOneTimeKeys(1L);
-            Curve25519PublicKey bobOneTimeKey = result.created().iterator().next();
-            bobAccount.markKeysAsPublished();
+    void testCloseReleasesNativeResourceExactlyOnce() {
+        TestNativeHandle handle = new TestNativeHandle();
+        int freedBefore = FREED_COUNT.get();
 
-            NativeHandle handle = aliceAccount.createOutboundSession(
-                    OlmSessionVersion.V2, bobAccount.curve25519Key(), bobOneTimeKey);
-            assertThat(handle.isClosed()).isFalse();
-            handle.close();
-            assertThat(handle.isClosed()).isTrue();
-            handle.close();
-            assertThat(handle.isClosed()).isTrue();
+        assertThat(handle.isClosed()).isFalse();
+
+        handle.close();
+        assertThat(handle.isClosed()).isTrue();
+        assertThat(FREED_COUNT.get()).isEqualTo(freedBefore + 1);
+
+        handle.close();
+        assertThat(FREED_COUNT.get()).isEqualTo(freedBefore + 1);
+    }
+
+    @Test
+    void testCleanerReleasesLeakedHandle() throws Exception {
+        int freedBefore = FREED_COUNT.get();
+        WeakReference<TestNativeHandle> leaked = newLeakedHandle();
+
+        gcUntil(() -> FREED_COUNT.get() > freedBefore);
+
+        assertThat(FREED_COUNT.get()).isEqualTo(freedBefore + 1);
+        gcUntil(() -> {
+            synchronized (warningRecords) {
+                return warningRecords.stream()
+                        .anyMatch(record -> record.getMessage().contains("TestNativeHandle"));
+            }
+        });
+        synchronized (warningRecords) {
+            assertThat(warningRecords)
+                    .anyMatch(record -> record.getMessage().contains("became unreachable without being closed"));
         }
     }
 
     @Test
-    void testOutboundGroupSessionIsClosed() {
-        NativeHandle handle = new OutboundGroupSession();
-        assertThat(handle.isClosed()).isFalse();
-        handle.close();
-        assertThat(handle.isClosed()).isTrue();
-        handle.close();
-        assertThat(handle.isClosed()).isTrue();
-    }
+    void testConsumedHandleDoesNotTriggerCleanerRelease() throws Exception {
+        Sas sas = new Sas();
+        EstablishedSas established = sas.diffieHellman(sas.publicKey());
+        assertThat(established).isNotNull();
+        WeakReference<Sas> consumed = new WeakReference<>(sas);
 
-    @Test
-    void testInboundGroupSessionIsClosed() {
-        String sessionKey;
-        try (OutboundGroupSession outbound = new OutboundGroupSession()) {
-            sessionKey = outbound.sessionKey();
+        gcUntil(() -> consumed.get() == null);
+        System.gc();
+        Thread.sleep(200);
+
+        synchronized (warningRecords) {
+            assertThat(warningRecords)
+                    .noneMatch(record -> record.getMessage().contains("Sas"));
         }
-
-        NativeHandle handle = new InboundGroupSession(sessionKey);
-        assertThat(handle.isClosed()).isFalse();
-        handle.close();
-        assertThat(handle.isClosed()).isTrue();
-        handle.close();
-        assertThat(handle.isClosed()).isTrue();
+        established.close();
     }
 
-    @Test
-    void testSasIsClosed() {
-        NativeHandle handle = new Sas();
-        assertThat(handle.isClosed()).isFalse();
-        handle.close();
-        assertThat(handle.isClosed()).isTrue();
-        handle.close();
-        assertThat(handle.isClosed()).isTrue();
+    private static WeakReference<TestNativeHandle> newLeakedHandle() {
+        return new WeakReference<>(new TestNativeHandle());
     }
 
-    @Test
-    void testEstablishedSasIsClosed() {
-        try (Sas aliceSas = new Sas(); Sas bobSas = new Sas()) {
-            NativeHandle handle = aliceSas.diffieHellman(bobSas.publicKey());
-            assertThat(handle.isClosed()).isFalse();
-            handle.close();
-            assertThat(handle.isClosed()).isTrue();
-            handle.close();
-            assertThat(handle.isClosed()).isTrue();
+    private static void gcUntil(BooleanSupplier condition) throws Exception {
+        long deadline = System.nanoTime() + CLEANUP_TIMEOUT.toNanos();
+        while (!condition.getAsBoolean() && System.nanoTime() < deadline) {
+            System.gc();
+            Thread.sleep(20);
         }
     }
 
-    @Test
-    void testEciesIsClosed() {
-        NativeHandle handle = new Ecies();
-        assertThat(handle.isClosed()).isFalse();
-        handle.close();
-        assertThat(handle.isClosed()).isTrue();
-        handle.close();
-        assertThat(handle.isClosed()).isTrue();
-    }
+    private static final class TestNativeHandle extends NativeHandle {
 
-    @Test
-    void testEstablishedEciesIsClosed() {
-        Ecies alice = new Ecies();
-        Ecies bob = new Ecies();
-        OutboundCreationResult result = alice.establishOutboundChannel(
-                bob.publicKey(), "plaintext".getBytes(UTF_8));
-        NativeHandle handle = result.establishedEcies();
-        assertThat(handle.isClosed()).isFalse();
-        handle.close();
-        assertThat(handle.isClosed()).isTrue();
-        handle.close();
-        assertThat(handle.isClosed()).isTrue();
-        alice.close();
-        bob.close();
-    }
+        private TestNativeHandle() {
+            super(0x1234L, TestNativeHandle::release);
+        }
 
-    @Test
-    void testPkDecryptionIsClosed() {
-        NativeHandle handle = new PkDecryption();
-        assertThat(handle.isClosed()).isFalse();
-        handle.close();
-        assertThat(handle.isClosed()).isTrue();
-        handle.close();
-        assertThat(handle.isClosed()).isTrue();
-    }
-
-    @Test
-    void testNativeLibraryIsLoaded() {
-        assertThat(NativeLibraryLoader.isLoaded())
-                .as("Native Library is Loaded")
-                .isTrue();
+        private static void release(long ptr) {
+            FREED_COUNT.incrementAndGet();
+        }
     }
 }

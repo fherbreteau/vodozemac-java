@@ -39,7 +39,7 @@ public final class EstablishedEcies extends NativeHandle {
     }
 
     EstablishedEcies(long nativePtr) {
-        super(nativePtr);
+        super(nativePtr, EstablishedEcies::nativeFree);
     }
 
     /**
@@ -128,5 +128,5 @@ public final class EstablishedEcies extends NativeHandle {
 
     private native byte[] nativeDecrypt(long ptr, String message);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 }
