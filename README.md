@@ -112,6 +112,16 @@ try {
 }
 ```
 
+### Key Material Handling
+
+Secret material (private keys, `pickle()` outputs, decrypted payloads) is
+returned as immutable Java `String`s or `byte[]`s. The JVM may keep these
+objects in memory indefinitely (GC heuristics) and they will be captured by
+heap dumps and core dumps. Avoid enabling heap/core dump capture on hosts
+that process key material, and close native handles promptly so the native
+copies of secret material are released as well. See [SECURITY.md](SECURITY.md)
+for details.
+
 ## 🗃️ API Reference
 
 ### Account
