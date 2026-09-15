@@ -56,6 +56,7 @@ The following repository-level protections are enabled under
 |------------|--------|
 | Secret scanning | ✅ Enabled |
 | Secret scanning push protection | ✅ Enabled |
+| Secret scanning validity checks | ✅ Enabled |
 | Dependabot security updates | ✅ Enabled |
 | CodeQL + Trivy (scheduled) | ✅ Enabled (`.github/workflows/security.yml`) |
 | cargo-audit | ✅ Enabled (`.github/workflows/test.yml`) |
@@ -65,6 +66,11 @@ The following repository-level protections are enabled under
 so a leaked credential cannot sit unnoticed in a feature branch or fork.
 Overriding a blocked push is possible with a stated reason and should be
 reserved for false positives and test fixtures.
+
+**Validity checks** validate detected secrets against the issuing
+provider, so alerts are marked active (live credential — act now) or
+inactive (revoked credential — archive), keeping triage focused on
+credentials that actually need rotation.
 
 ## 🔐 Cryptographic Security
 
