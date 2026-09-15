@@ -129,7 +129,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let session = unsafe { &mut *(ptr as *mut Session) };
-            let message_str: String = message.to_string();
+            let message_str = message.try_to_string(env)?;
 
             let olm_message: OlmMessage =
                 serde_json::from_str(&message_str).map_err(|e| throw_decryption_error(env, e))?;
@@ -188,7 +188,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let pickle_str: String = pickle_data.to_string();
+            let pickle_str = pickle_data.try_to_string(env)?;
 
             let pickle_data: SessionPickle = from_json(env, &pickle_str)?;
             Ok(box_to_jlong(Session::from_pickle(pickle_data)))
@@ -206,7 +206,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let pickle_str: String = pickle_data.to_string();
+            let pickle_str = pickle_data.try_to_string(env)?;
             let key = wrap(env, env.convert_byte_array(key)?)?;
 
             let pickle_data: SessionPickle = SessionPickle::from_encrypted(&pickle_str, &key)
@@ -226,7 +226,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_olm_OlmSession_nativ
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let pickle_str: String = pickle_data.to_string();
+            let pickle_str = pickle_data.try_to_string(env)?;
             let pickle_key = env.convert_byte_array(pickle_key)?;
 
             let session = Session::from_libolm_pickle(&pickle_str, &pickle_key)

@@ -124,10 +124,12 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
             check_ptr(env, ptr)?;
             let account = unsafe { &mut *(ptr as *mut Account) };
             let session_config = olm_session_config_from_version(env, session_version)?;
-            let decoded_identity_key = Curve25519PublicKey::from_base64(&identity_key.to_string())
-                .map_err(|e| throw_key_error(env, e))?;
-            let decoded_one_time_key = Curve25519PublicKey::from_base64(&one_time_key.to_string())
-                .map_err(|e| throw_key_error(env, e))?;
+            let decoded_identity_key =
+                Curve25519PublicKey::from_base64(&identity_key.try_to_string(env)?)
+                    .map_err(|e| throw_key_error(env, e))?;
+            let decoded_one_time_key =
+                Curve25519PublicKey::from_base64(&one_time_key.try_to_string(env)?)
+                    .map_err(|e| throw_key_error(env, e))?;
 
             let session = account
                 .create_outbound_session(session_config, decoded_identity_key, decoded_one_time_key)
@@ -160,10 +162,11 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
             let account = unsafe { &mut *(ptr as *mut Account) };
             let session_config = olm_session_config_from_version(env, session_version)?;
             let their_identity_key =
-                Curve25519PublicKey::from_base64(&their_identity_key.to_string())
+                Curve25519PublicKey::from_base64(&their_identity_key.try_to_string(env)?)
                     .map_err(|e| throw_key_error(env, e))?;
-            let olm_message: OlmMessage = serde_json::from_str(&pre_key_message.to_string())
-                .map_err(|e| throw_session_creation_error(env, e))?;
+            let olm_message: OlmMessage =
+                serde_json::from_str(&pre_key_message.try_to_string(env)?)
+                    .map_err(|e| throw_session_creation_error(env, e))?;
 
             let pre_key_message = match olm_message {
                 OlmMessage::PreKey(pk) => pk,
@@ -486,7 +489,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let pickle_str: String = pickle_data.to_string();
+            let pickle_str = pickle_data.try_to_string(env)?;
 
             let pickle_data: AccountPickle = from_json(env, &pickle_str)?;
             Ok(box_to_jlong(Account::from_pickle(pickle_data)))
@@ -504,7 +507,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let pickle_str: String = pickle_data.to_string();
+            let pickle_str = pickle_data.try_to_string(env)?;
             let key = wrap(env, env.convert_byte_array(key)?)?;
 
             let pickle_data = AccountPickle::from_encrypted(&pickle_str, &key)
@@ -524,7 +527,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let pickle_str: String = pickle_data.to_string();
+            let pickle_str = pickle_data.try_to_string(env)?;
             let pickle_key = env.convert_byte_array(pickle_key)?;
 
             let from_olm = Account::from_libolm_pickle(&pickle_str, &pickle_key)
@@ -545,8 +548,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let ciphertext_str: String = ciphertext.to_string();
-            let nonce_str: String = nonce.to_string();
+            let ciphertext_str = ciphertext.try_to_string(env)?;
+            let nonce_str = nonce.try_to_string(env)?;
             let key = wrap(env, env.convert_byte_array(key)?)?;
 
             let dehydrated = Account::from_dehydrated_device(&ciphertext_str, &nonce_str, &key)

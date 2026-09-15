@@ -53,7 +53,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeDiffie
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
-            let their_public_key_str = their_public_key.to_string();
+            let their_public_key_str = their_public_key.try_to_string(env)?;
             let their_public_key = Curve25519PublicKey::from_base64(&their_public_key_str)
                 .map_err(|e| throw_key_error(env, e))?;
             let sas = unsafe { Box::from_raw(ptr as *mut Sas) };

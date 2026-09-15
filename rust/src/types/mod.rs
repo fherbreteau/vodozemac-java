@@ -14,7 +14,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_types_Ed25519PublicK
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
         catch_panic(env, |env| {
-            let base64 = base64.to_string();
+            let base64 = base64.try_to_string(env)?;
 
             let _ = Ed25519PublicKey::from_base64(&base64).map_err(|e| throw_key_error(env, e))?;
             Ok(())
@@ -33,9 +33,9 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_types_Ed25519PublicK
 ) -> jboolean {
     let outcome = env.with_env(|env| -> Result<jboolean, jni::errors::Error> {
         catch_panic(env, |env| {
-            let public_key = public_key.to_string();
+            let public_key = public_key.try_to_string(env)?;
             let message = env.convert_byte_array(message)?;
-            let signature = signature.to_string();
+            let signature = signature.try_to_string(env)?;
 
             let public_key =
                 Ed25519PublicKey::from_base64(&public_key).map_err(|e| throw_key_error(env, e))?;
@@ -61,7 +61,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_types_Ed25519Signatu
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
         catch_panic(env, |env| {
-            let base64 = base64.to_string();
+            let base64 = base64.try_to_string(env)?;
 
             let _ =
                 Ed25519Signature::from_base64(&base64).map_err(|e| throw_signature_error(env, e));
@@ -79,7 +79,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_types_Curve25519Publ
 ) {
     let outcome = env.with_env(|env| -> Result<(), jni::errors::Error> {
         catch_panic(env, |env| {
-            let base64 = base64.to_string();
+            let base64 = base64.try_to_string(env)?;
             let _ = Curve25519PublicKey::from_base64(&base64).map_err(|e| throw_key_error(env, e));
             Ok(())
         })
