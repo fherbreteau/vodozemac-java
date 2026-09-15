@@ -89,6 +89,26 @@ This project uses the Vodozemac library which implements:
 
 All cryptographic operations follow modern security standards.
 
+## 🧠 Key Material and Heap Exposure
+
+Secret material (private keys, `pickle()` outputs, decrypted payloads) is
+exposed to Java as immutable `String`s or `byte[]`s. The JVM may keep copies
+of these objects in memory indefinitely (GC heuristics, string interning) and
+they are captured by heap dumps and core dumps. This is inherent to the JVM:
+there is no `String`-erasing API, and native `free()` only releases the Rust
+copies.
+
+- Never enable heap dump capture (`-XX:+HeapDumpOnOutOfMemoryError`, `jmap`,
+  `jcmd GC.heap_dump`) or core dumps on hosts that process key material
+  without reviewing where the dumps are stored and who can read them.
+- Restrict physical access to machines handling key material (disable
+  swap or use encrypted swap, protect memory with OS controls).
+- Prefer the `byte[]`-based APIs where available (e.g. encrypted pickles
+  accept a `byte[]` key) and zero such buffers after use when possible.
+- Close native handles (try-with-resources) so native copies of secret
+  material are released promptly; leaked handles keep their native memory
+  until the process exits.
+
 ## 📋 Security Checklist
 
 - [x] Secure coding practices
