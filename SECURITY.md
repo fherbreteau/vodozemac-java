@@ -47,6 +47,25 @@ Security updates are provided for the following versions:
 - Implement proper error handling
 - Use cryptographic best practices
 
+## 🛡️ Repository Security Settings
+
+The following repository-level protections are enabled under
+*Settings > Code security and analysis*:
+
+| Capability | Status |
+|------------|--------|
+| Secret scanning | ✅ Enabled |
+| Secret scanning push protection | ✅ Enabled |
+| Dependabot security updates | ✅ Enabled |
+| CodeQL + Trivy (scheduled) | ✅ Enabled (`.github/workflows/security.yml`) |
+| cargo-audit | ✅ Enabled (`.github/workflows/test.yml`) |
+
+**Push protection** blocks pushes containing recognized secret patterns
+(GitHub tokens, cloud provider keys, etc.) on every branch at push time,
+so a leaked credential cannot sit unnoticed in a feature branch or fork.
+Overriding a blocked push is possible with a stated reason and should be
+reserved for false positives and test fixtures.
+
 ## 🔐 Cryptographic Security
 
 This project uses the Vodozemac library which implements:
