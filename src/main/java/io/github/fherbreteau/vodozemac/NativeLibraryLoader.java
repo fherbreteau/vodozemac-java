@@ -9,6 +9,7 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 
@@ -77,7 +78,7 @@ public final class NativeLibraryLoader {
     }
 
     private static String toLowerCase(String value) {
-        return Objects.requireNonNull(value).toLowerCase();
+        return Objects.requireNonNull(value).toLowerCase(Locale.ROOT);
     }
 
     private static String detectPlatform(String osName, String osArch) {
@@ -140,7 +141,12 @@ public final class NativeLibraryLoader {
             }
         }
 
-        // Mark for deletion on JVM exit
+        // Mark for deletion on JVM exit. Deleted files cannot be re-opened on
+        // Windows, so the removal must happen after System.load. The library
+        // is never re-extracted within the same JVM (loading is idempotent),
+        // and extraction relies on deleteOnExit() only: directories accumulate
+        // when the JVM is hard-killed, which is acceptable for a crypto
+        // library that is extracted at most once per run.
         tempLib.toFile().deleteOnExit();
         tempDir.toFile().deleteOnExit();
 
