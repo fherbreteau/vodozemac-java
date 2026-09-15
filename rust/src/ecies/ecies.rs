@@ -31,8 +31,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeWi
     info: JString,
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
-        catch_panic(env, |_env| {
-            let info = info.to_string();
+        catch_panic(env, |env| {
+            let info = info.try_to_string(env)?;
 
             let ecies = Ecies::with_info(&info);
             Ok(box_to_jlong(ecies))
@@ -70,7 +70,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeEs
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
-            let their_public_key_str = their_public_key.to_string();
+            let their_public_key_str = their_public_key.try_to_string(env)?;
             let their_public_key = Curve25519PublicKey::from_base64(&their_public_key_str)
                 .map_err(|e| throw_key_error(env, e))?;
             let initial_plaintext = env.convert_byte_array(initial_plaintext)?;
@@ -107,7 +107,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeEs
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
-            let message = InitialMessage::decode(&message.to_string())
+            let message = InitialMessage::decode(&message.try_to_string(env)?)
                 .map_err(|e| throw_ecies_error(env, e))?;
             let ecies = unsafe { Box::from_raw(ptr as *mut Ecies) };
 

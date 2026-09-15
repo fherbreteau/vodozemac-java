@@ -18,7 +18,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
-            let info = info.to_string();
+            let info = info.try_to_string(env)?;
 
             let bytes = established_sas.bytes(&info);
             let result = to_java_sas_bytes(env, &bytes)?;
@@ -51,7 +51,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
-            let info = info.to_string();
+            let info = info.try_to_string(env)?;
             let count = usize::try_from(count).map_err(|e| throw_conversion_error(env, e))?;
 
             let bytes = established_sas
@@ -77,8 +77,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
-            let input = input.to_string();
-            let info = info.to_string();
+            let input = input.try_to_string(env)?;
+            let info = info.try_to_string(env)?;
 
             let mac = established_sas.calculate_mac(&input, &info);
             string_to_jstring(env, mac.to_base64())
@@ -99,8 +99,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
-            let input = input.to_string();
-            let info = info.to_string();
+            let input = input.try_to_string(env)?;
+            let info = info.try_to_string(env)?;
 
             let mac = established_sas.calculate_mac_invalid_base64(&input, &info);
             string_to_jstring(env, mac)
@@ -122,10 +122,10 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let established_sas = unsafe { &*(ptr as *const EstablishedSas) };
-            let input = input.to_string();
-            let info = info.to_string();
-            let mac =
-                Mac::from_base64(&mac.to_string()).map_err(|e| throw_conversion_error(env, e))?;
+            let input = input.try_to_string(env)?;
+            let info = info.try_to_string(env)?;
+            let mac = Mac::from_base64(&mac.try_to_string(env)?)
+                .map_err(|e| throw_conversion_error(env, e))?;
 
             established_sas
                 .verify_mac(&input, &info, &mac)

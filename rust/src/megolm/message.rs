@@ -16,7 +16,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_MegolmMessage
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         catch_panic(env, |env| {
-            let base64_str: String = base64.to_string();
+            let base64_str = base64.try_to_string(env)?;
             let message =
                 MegolmMessage::from_base64(&base64_str).map_err(|e| throw_decode_error(env, e))?;
 
