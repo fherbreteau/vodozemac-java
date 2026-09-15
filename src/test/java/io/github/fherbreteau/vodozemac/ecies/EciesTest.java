@@ -41,10 +41,11 @@ class EciesTest {
             assertThat(bobResult).isNotNull();
             assertThat(bobResult.plaintext()).isEqualTo(PLAINTEXT);
 
-            EstablishedEcies aliceEcies = aliceResult.establishedEcies();
-            EstablishedEcies bobEcies = bobResult.establishedEcies();
-            assertThat(aliceEcies).isNotNull();
-            assertThat(bobEcies).isNotNull();
+            try (EstablishedEcies aliceEcies = aliceResult.establishedEcies();
+                    EstablishedEcies bobEcies = bobResult.establishedEcies()) {
+                assertThat(aliceEcies).isNotNull();
+                assertThat(bobEcies).isNotNull();
+            }
         }
     }
 
@@ -141,7 +142,9 @@ class EciesTest {
         try (Ecies alice = new Ecies(); Ecies bob = new Ecies()) {
             String bobPublicKey = bob.publicKey();
 
-            alice.establishOutboundChannel(bobPublicKey, PLAINTEXT);
+            try (OutboundCreationResult result = alice.establishOutboundChannel(bobPublicKey, PLAINTEXT)) {
+                assertThat(result.initialMessage()).isNotNull().isNotEmpty();
+            }
             assertThatThrownBy(() -> alice.establishOutboundChannel(bobPublicKey, PLAINTEXT))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessage("Ecies has been closed");
@@ -153,8 +156,8 @@ class EciesTest {
 
     @Test
     void testResultGettersReturnCorrectValues() {
-        try (Ecies alice = new Ecies(); Ecies bob = new Ecies()) {
-            OutboundCreationResult result = alice.establishOutboundChannel(bob.publicKey(), PLAINTEXT);
+        try (Ecies alice = new Ecies(); Ecies bob = new Ecies();
+                OutboundCreationResult result = alice.establishOutboundChannel(bob.publicKey(), PLAINTEXT)) {
             assertThat(result.initialMessage()).isNotNull().isNotEmpty();
             assertThat(result.establishedEcies()).isNotNull();
 
@@ -218,9 +221,9 @@ class EciesTest {
 
     @Test
     void testEstablishedEciesUseAfterClose() {
-        try (Ecies alice = new Ecies(); Ecies bob = new Ecies()) {
-            OutboundCreationResult aliceResult = alice.establishOutboundChannel(bob.publicKey(), PLAINTEXT);
-            bob.establishInboundChannel(aliceResult.initialMessage());
+        try (Ecies alice = new Ecies(); Ecies bob = new Ecies();
+                OutboundCreationResult aliceResult = alice.establishOutboundChannel(bob.publicKey(), PLAINTEXT);
+                InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.initialMessage())) {
 
             EstablishedEcies aliceEcies = aliceResult.establishedEcies();
             aliceEcies.close();
