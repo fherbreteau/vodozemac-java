@@ -62,11 +62,11 @@ class Ed25519KeyPairTest {
         // Close the account
         keyPair.close();
 
-            // Verify that using the account after closing throws an exception
-            assertThatThrownBy(keyPair::publicKey)
-                    .as("Using closed account should throw IllegalStateException")
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessage("Ed25519KeyPair has been closed");
+        // Verify that using the account after closing throws an exception
+        assertThatThrownBy(keyPair::publicKey)
+                .as("Using closed account should throw IllegalStateException")
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Ed25519KeyPair has been closed");
     }
 
     @Test
