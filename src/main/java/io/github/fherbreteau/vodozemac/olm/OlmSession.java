@@ -49,7 +49,7 @@ public final class OlmSession extends NativeHandle {
     }
 
     OlmSession(long nativePtr) {
-        super(nativePtr);
+        super(nativePtr, OlmSession::nativeFree);
     }
 
     /**
@@ -238,6 +238,6 @@ public final class OlmSession extends NativeHandle {
 
     private static native long nativeUnpickleLegacy(String pickleData, byte[] pickleKey);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 
 }

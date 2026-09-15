@@ -55,11 +55,11 @@ public final class InboundGroupSession extends NativeHandle {
     public InboundGroupSession(String sessionKey, MegolmSessionVersion version) {
         Objects.requireNonNull(sessionKey, "sessionKey");
         Objects.requireNonNull(version, "version");
-        super(nativeNew(sessionKey, version.value()));
+        super(nativeNew(sessionKey, version.value()), InboundGroupSession::nativeFree);
     }
 
     private InboundGroupSession(long nativePtr) {
-        super(nativePtr);
+        super(nativePtr, InboundGroupSession::nativeFree);
     }
 
     /**
@@ -352,7 +352,7 @@ public final class InboundGroupSession extends NativeHandle {
 
     private native Long nativeMerge(long ptr, long otherPtr);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 
     private native String nativeEncryptedPickle(long ptr, byte[] key);
 

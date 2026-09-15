@@ -47,11 +47,11 @@ public final class PkDecryption extends NativeHandle {
      * Creates a new {@code PkDecryption} with a fresh random Curve25519 key pair.
      */
     public PkDecryption() {
-        super(nativeNew());
+        super(nativeNew(), PkDecryption::nativeFree);
     }
 
     private PkDecryption(long nativePtr) {
-        super(nativePtr);
+        super(nativePtr, PkDecryption::nativeFree);
     }
 
     /**
@@ -167,6 +167,6 @@ public final class PkDecryption extends NativeHandle {
 
     private native byte[] nativeDecrypt(long ptr, String ciphertext, String mac, String ephemeralKey);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 
 }
