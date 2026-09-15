@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🛡️ Security & Hardening
+
+- **Secret-Scanning Settings**: Enabled secret-scanning push protection (blocks pushes containing recognized secret patterns on every branch) and validity checks (provider-validated active/inactive alerts) at the repository level, and documented the active repository security settings in SECURITY.md (#75)
+
 ### 🔧 Build System
 
 - **Reusable Workflow Secrets**: The *Release* workflow now forwards its secrets to the reusable build workflow (`secrets: inherit`); called workflows do not inherit secrets, which made the Sonar job fail and skipped artifact publishing on release runs (#68)
