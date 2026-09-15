@@ -316,7 +316,7 @@ A two-digit check code for out-of-band verification of an ECIES session.
 
 The encryption component of the PK Encryption module for Megolm key backup. Implements `m.megolm_backup.v1.curve25519-aes-sha2`.
 
-**Warning:** The algorithm contains a critical flaw — the MAC does not authenticate the ciphertext.
+**Warning:** The algorithm contains a critical flaw — the MAC does not authenticate the ciphertext. This module is restricted to interoperability with the Matrix secure backup (`m.megolm_backup.v1.curve25519-aes-sha2`) and with libolm's PK encryption; it must never be reused for new protocols, because tampering with a ciphertext cannot be detected by the receiver.
 
 | Method | Description |
 |--------|-------------|
@@ -326,6 +326,8 @@ The encryption component of the PK Encryption module for Megolm key backup. Impl
 ### PkDecryption
 
 The decryption component of the PK Encryption module, holding a Curve25519 secret key.
+
+**Warning:** Subject to the same restriction as `PkEncryption`: backup/libolm interoperability only — never reuse for new protocols (see the `PkEncryption` warning above).
 
 | Method | Description |
 |--------|-------------|
