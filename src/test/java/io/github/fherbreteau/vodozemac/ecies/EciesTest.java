@@ -225,6 +225,7 @@ class EciesTest {
                 OutboundCreationResult aliceResult = alice.establishOutboundChannel(bob.publicKey(), PLAINTEXT);
                 InboundCreationResult bobResult = bob.establishInboundChannel(aliceResult.initialMessage())) {
 
+            assertThat(bobResult.plaintext()).isEqualTo(PLAINTEXT);
             EstablishedEcies aliceEcies = aliceResult.establishedEcies();
             aliceEcies.close();
             assertThatThrownBy(aliceEcies::publicKey)

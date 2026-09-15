@@ -109,9 +109,9 @@ public abstract class NativeHandle implements AutoCloseable {
         }
 
         synchronized long take() {
-            long ptr = this.ptr;
+            long held = this.ptr;
             this.ptr = 0;
-            return ptr;
+            return held;
         }
     }
 
