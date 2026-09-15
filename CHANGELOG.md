@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🛡️ Security & Hardening
+
+- **Hardening Backlog (issue #64)**: Landed the low-severity hardening backlog from the deep main analysis — scheduled `cargo-audit` in `security.yml` (L1), `Locale.ROOT`-safe platform detection plus documented temp-file cleanup in `NativeLibraryLoader` (L2), a best-effort `java.lang.Cleaner` safety net that releases native memory and logs a warning when a `NativeHandle` is garbage collected without being closed (L3), tolerant `git-commit-id-maven-plugin` settings for builds without a `.git` directory (L4), exact JNI error propagation via `JString::try_to_string` instead of the `<NULL>` fallback (L5), README documentation restricting `pk_encryption` to Matrix backup/libolm interoperability (L6), and documentation of the secret-material heap-dump exposure in `README.md`/`SECURITY.md` (M2) (#74)
+
 ### 🔧 Build System
 
 - **Reusable Workflow Secrets**: The *Release* workflow now forwards its secrets to the reusable build workflow (`secrets: inherit`); called workflows do not inherit secrets, which made the Sonar job fail and skipped artifact publishing on release runs (#68)
