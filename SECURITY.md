@@ -72,6 +72,13 @@ provider, so alerts are marked active (live credential — act now) or
 inactive (revoked credential — archive), keeping triage focused on
 credentials that actually need rotation.
 
+**Partner alerts**: because this is a public repository, GitHub always
+notifies the secret's issuing partner when secret scanning detects a
+provider-pattern secret, independently of the repository settings above.
+Partners may revoke the exposed credential directly, so any secret
+pushed to a public branch should be considered compromised and rotated
+even if it is removed afterwards.
+
 ## 🔐 Cryptographic Security
 
 This project uses the Vodozemac library which implements:
