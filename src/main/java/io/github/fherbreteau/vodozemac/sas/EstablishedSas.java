@@ -34,7 +34,7 @@ public final class EstablishedSas extends NativeHandle {
     }
 
     EstablishedSas(long nativePtr) {
-        super(nativePtr);
+        super(nativePtr, EstablishedSas::nativeFree);
     }
 
     /**
@@ -174,5 +174,5 @@ public final class EstablishedSas extends NativeHandle {
 
     private native String nativeTheirPublicKey(long ptr);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 }

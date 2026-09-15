@@ -101,7 +101,7 @@ The PR reference matters: the release notes separate changelog-covered changes f
 
 ### Key Patterns
 
-- **NativeHandle lifecycle**: All native-handle classes are `final`, implement `AutoCloseable`, and use `checkNotClosed()` before accessing `nativePtr`. `close()` is idempotent.
+- **NativeHandle lifecycle**: All native-handle classes are `final`, implement `AutoCloseable`, and use `checkNotClosed()` before accessing `nativePtr`. `close()` is idempotent. Subclasses pass their `private static native void nativeFree(long)` function to the `NativeHandle` constructor (`super(ptr, Subclass::nativeFree)`), which also registers the handle with a `Cleaner` that releases the native memory and logs a warning if an instance becomes unreachable without being closed.
 - **Value classes**: Result types (`IdentityKeys`, `SessionKeys`, `MegolmMessage`, `OlmMessage`, etc.) have `equals`/`hashCode`/`toString`.
 - **Accessors**: Fluent style (no `get` prefix) — e.g., `session.sessionId()`, `message.ciphertext()`.
 - **SessionVersion interface**: Shared by `OlmSessionVersion`, `MegolmSessionVersion`, and `MessageType` for `fromVersion`/`fromValue` lookups.

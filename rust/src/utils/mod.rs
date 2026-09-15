@@ -31,7 +31,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_Vodozemac_nativeBase
 ) -> jobject {
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         catch_panic(env, |env| {
-            let src = src.to_string();
+            let src = src.try_to_string(env)?;
 
             let dst = base64_decode(&src).map_err(|e| throw_conversion_error(env, e))?;
             let result = env.byte_array_from_slice(&dst)?;

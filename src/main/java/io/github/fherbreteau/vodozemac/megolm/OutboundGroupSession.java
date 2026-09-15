@@ -47,11 +47,11 @@ public final class OutboundGroupSession extends NativeHandle {
      * @param version the Megolm session protocol version to use
      */
     public OutboundGroupSession(MegolmSessionVersion version) {
-        super(nativeNew(version.value()));
+        super(nativeNew(version.value()), OutboundGroupSession::nativeFree);
     }
 
     private OutboundGroupSession(long nativePtr) {
-        super(nativePtr);
+        super(nativePtr, OutboundGroupSession::nativeFree);
     }
 
     /**
@@ -229,6 +229,6 @@ public final class OutboundGroupSession extends NativeHandle {
 
     private static native long nativeUnpickleLegacy(String pickleData, byte[] pickleKey);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 
 }

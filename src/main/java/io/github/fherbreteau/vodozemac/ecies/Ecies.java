@@ -48,11 +48,11 @@ public final class Ecies extends NativeHandle {
      * {@link #withInfo(String)} instead.
      */
     public Ecies() {
-        super(nativeNew());
+        super(nativeNew(), Ecies::nativeFree);
     }
 
     private Ecies(long nativePtr) {
-        super(nativePtr);
+        super(nativePtr, Ecies::nativeFree);
     }
 
     /**
@@ -119,7 +119,7 @@ public final class Ecies extends NativeHandle {
         try {
             return nativeEstablishOutboundChannel(nativePtr, theirPublicKey, initialPlaintext);
         } finally {
-            nativePtr = 0;
+            invalidate();
         }
     }
 
@@ -152,7 +152,7 @@ public final class Ecies extends NativeHandle {
         try {
             return nativeEstablishInboundChannel(nativePtr, message);
         } finally {
-            nativePtr = 0;
+            invalidate();
         }
     }
 
@@ -166,6 +166,6 @@ public final class Ecies extends NativeHandle {
 
     private native InboundCreationResult nativeEstablishInboundChannel(long ptr, String message);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 
 }

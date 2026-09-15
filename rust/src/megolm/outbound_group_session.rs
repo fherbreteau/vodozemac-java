@@ -164,7 +164,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let pickle_str: String = pickle_data.to_string();
+            let pickle_str = pickle_data.try_to_string(env)?;
 
             let pickle_data: GroupSessionPickle = from_json(env, &pickle_str)?;
             Ok(box_to_jlong(GroupSession::from_pickle(pickle_data)))
@@ -182,7 +182,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let pickle_str: String = pickle_data.to_string();
+            let pickle_str = pickle_data.try_to_string(env)?;
             let key = wrap(env, env.convert_byte_array(key)?)?;
 
             let pickle_data = GroupSessionPickle::from_encrypted(&pickle_str, &key)
@@ -202,7 +202,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let pickle_str: String = pickle_data.to_string();
+            let pickle_str = pickle_data.try_to_string(env)?;
             let pickle_key = env.convert_byte_array(pickle_key)?;
 
             let session = GroupSession::from_libolm_pickle(&pickle_str, &pickle_key)

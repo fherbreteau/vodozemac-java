@@ -27,7 +27,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
             let config = megolm_session_config_from_version(env, version)?;
-            let session_key = SessionKey::from_base64(&session_key.to_string())
+            let session_key = SessionKey::from_base64(&session_key.try_to_string(env)?)
                 .map_err(|e| throw_session_key_decode_error(env, e))?;
 
             let session = InboundGroupSession::new(&session_key, config);
@@ -83,7 +83,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let session = unsafe { &mut *(ptr as *mut InboundGroupSession) };
-            let message_str: String = message.to_string();
+            let message_str = message.try_to_string(env)?;
             let megolm_message =
                 MegolmMessage::from_base64(&message_str).map_err(|e| throw_decode_error(env, e))?;
 
@@ -330,7 +330,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let pickle_str: String = pickle_data.to_string();
+            let pickle_str = pickle_data.try_to_string(env)?;
             let pickle_data: InboundGroupSessionPickle = from_json(env, &pickle_str)?;
 
             Ok(box_to_jlong(InboundGroupSession::from_pickle(pickle_data)))
@@ -348,7 +348,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let pickle_str: String = pickle_data.to_string();
+            let pickle_str = pickle_data.try_to_string(env)?;
             let key = wrap(env, env.convert_byte_array(key)?)?;
             let pickle_data = InboundGroupSessionPickle::from_encrypted(&pickle_str, &key)
                 .map_err(|e| throw_pickle_error(env, e))?;
@@ -368,7 +368,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let pickle_str: String = pickle_data.to_string();
+            let pickle_str = pickle_data.try_to_string(env)?;
             let pickle_key = env.convert_byte_array(pickle_key)?;
             let session = InboundGroupSession::from_libolm_pickle(&pickle_str, &pickle_key)
                 .map_err(|e| throw_pickle_error(env, e))?;
@@ -389,7 +389,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
             let config = megolm_session_config_from_version(env, version)?;
-            let session_str: String = session_key.to_string();
+            let session_str = session_key.try_to_string(env)?;
             let exported_session = ExportedSessionKey::from_base64(&session_str)
                 .map_err(|e| throw_session_key_decode_error(env, e))?;
 

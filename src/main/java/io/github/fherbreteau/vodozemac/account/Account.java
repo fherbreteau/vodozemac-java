@@ -45,11 +45,11 @@ public final class Account extends NativeHandle {
      * Creates a new {@code Account} with new random identity keys.
      */
     public Account() {
-        super(nativeNew());
+        super(nativeNew(), Account::nativeFree);
     }
 
     private Account(long nativePtr) {
-        super(nativePtr);
+        super(nativePtr, Account::nativeFree);
     }
 
     /**
@@ -494,5 +494,5 @@ public final class Account extends NativeHandle {
 
     private static native long nativeFromDehydratedDevice(String ciphertext, String nonce, byte[] key);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 }

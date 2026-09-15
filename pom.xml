@@ -514,6 +514,11 @@
                 </executions>
                 <configuration>
                     <dateFormatTimeZone>UTC</dateFormatTimeZone>
+                    <!-- Builds from source archives without a .git directory must
+                         not fail; the git metadata is simply omitted. -->
+                    <failOnNoGitDirectory>false</failOnNoGitDirectory>
+                    <!-- Never fetch from remotes during the build. -->
+                    <offline>true</offline>
                 </configuration>
             </plugin>
             <!-- Plugin to compile Rust via Cargo -->
