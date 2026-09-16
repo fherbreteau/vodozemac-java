@@ -1,3 +1,5 @@
+pub mod keypair;
+
 use jni::objects::{JByteArray, JClass, JObject, JString};
 use jni::sys::jboolean;
 use jni::{Env, EnvUnowned, JValue, jni_sig, jni_str};

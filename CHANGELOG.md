@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🚀 Features
+
+- **Ed25519 Key Pair Generator**: Added `Ed25519KeyPair` in `io.github.fherbreteau.vodozemac.types`, a native-handle class generating a random Ed25519 signing key pair with signing, public-key export, and JSON pickle/unpickle support, backed by a new Rust JNI module (`rust/src/types/keypair.rs`) (#73)
+
 ### 🛡️ Security & Hardening
 
 - **Secret-Scanning Settings**: Enabled secret-scanning push protection (blocks pushes containing recognized secret patterns on every branch) and validity checks (provider-validated active/inactive alerts) at the repository level, and documented the active repository security settings in SECURITY.md (#75)
