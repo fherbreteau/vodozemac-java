@@ -22,6 +22,12 @@ import java.util.function.LongConsumer;
  * been closed is cleaned up by a {@link Cleaner}: its native memory is released
  * and a warning is logged. The safety net is not deterministic and should never
  * be relied upon — always close handles explicitly.
+ * <p>
+ * Instances are safe to use from multiple threads: every method that accesses
+ * the native handle is synchronized on the instance, so native calls on the
+ * same object are serialized and {@code close()} can never race with an
+ * ongoing native call. Constructors and static factory methods that only
+ * create fresh native objects require no synchronization.
  *
  * @author François HERBRETEAU
  */
@@ -58,7 +64,7 @@ public abstract class NativeHandle implements AutoCloseable {
      * @return {@code true} if the native resource has been released,
      *         {@code false} otherwise
      */
-    final boolean isClosed() {
+    final synchronized boolean isClosed() {
         return state.isTaken();
     }
 
@@ -70,7 +76,7 @@ public abstract class NativeHandle implements AutoCloseable {
      * {@inheritDoc}
      */
     @Override
-    public final void close() {
+    public final synchronized void close() {
         long ptr = state.take();
         if (ptr != 0) {
             cleanable.clean();
@@ -84,8 +90,8 @@ public abstract class NativeHandle implements AutoCloseable {
      * <p>
      * Subclasses whose native methods consume the native object and hand
      * its ownership to a new Java object (e.g. a {@code Sas} consumed by
-     * {@code diffieHellman}) must call this method instead of zeroing
-     * {@link #nativePtr} directly, so that the {@link Cleaner} safety net
+     * {@code diffieHellman}) must call this method instead of dropping
+     * the pointer themselves, so that the {@link Cleaner} safety net
      * does not release the already-transferred pointer a second time.
      * After this call the handle behaves as if it had been closed.
      */
@@ -101,7 +107,7 @@ public abstract class NativeHandle implements AutoCloseable {
      */
     private static final class State {
 
-        private long ptr;
+        private volatile long ptr;
 
         State(long ptr) {
             this.ptr = ptr;

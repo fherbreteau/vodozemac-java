@@ -17,6 +17,7 @@ public final class ParamNames {
     public static final String INPUT = "input";
     public static final String INFO = "info";
     public static final String MAC = "mac";
+    public static final String OTHER = "other";
 
     private ParamNames() {
     }

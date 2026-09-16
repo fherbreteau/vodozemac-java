@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Optional;
 
+import io.github.fherbreteau.vodozemac.exception.ConversionException;
 import io.github.fherbreteau.vodozemac.exception.DecryptionException;
 import io.github.fherbreteau.vodozemac.exception.KeyException;
 import io.github.fherbreteau.vodozemac.exception.PickleException;
@@ -490,6 +491,31 @@ class InboundGroupSessionTest {
             assertThat(session2.compare(session1))
                     .as("Unconnected compare should be symmetric")
                     .isEqualTo(SessionOrdering.UNCONNECTED);
+        }
+    }
+
+    @Test
+    void testOperationsWithSameSessionAreRejected() {
+        String sessionKey;
+        try (OutboundGroupSession outbound = new OutboundGroupSession(MegolmSessionVersion.V2)) {
+            sessionKey = outbound.sessionKey();
+        }
+
+        try (InboundGroupSession session = new InboundGroupSession(sessionKey, MegolmSessionVersion.V2)) {
+            assertThatThrownBy(() -> session.connected(session))
+                    .as("A session cannot check connectivity with itself")
+                    .isInstanceOf(ConversionException.class)
+                    .hasMessage("Cannot compare a session with itself");
+
+            assertThatThrownBy(() -> session.compare(session))
+                    .as("A session cannot be ordered against itself")
+                    .isInstanceOf(ConversionException.class)
+                    .hasMessage("Cannot compare a session with itself");
+
+            assertThatThrownBy(() -> session.merge(session))
+                    .as("A session cannot be merged with itself")
+                    .isInstanceOf(ConversionException.class)
+                    .hasMessage("Cannot compare a session with itself");
         }
     }
 
