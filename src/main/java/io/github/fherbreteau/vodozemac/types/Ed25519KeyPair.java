@@ -46,7 +46,7 @@ public final class Ed25519KeyPair extends NativeHandle {
      * @return the Ed25519 public key
      * @throws IllegalStateException if this key pair has been closed
      */
-    public Ed25519PublicKey publicKey() {
+    public synchronized Ed25519PublicKey publicKey() {
         checkNotClosed();
         return nativePublicKey(nativePtr());
     }
@@ -70,7 +70,7 @@ public final class Ed25519KeyPair extends NativeHandle {
      * @return the signature
      * @throws IllegalStateException if this key pair has been closed
      */
-    public Ed25519Signature sign(byte[] message) {
+    public synchronized Ed25519Signature sign(byte[] message) {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
         return nativeSign(nativePtr(), message);
@@ -85,7 +85,7 @@ public final class Ed25519KeyPair extends NativeHandle {
      * @return a JSON string representing the key pair
      * @throws IllegalStateException if this key pair has been closed
      */
-    public String pickle() {
+    public synchronized String pickle() {
         checkNotClosed();
         return nativePickle(nativePtr());
     }
