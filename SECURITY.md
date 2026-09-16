@@ -47,6 +47,38 @@ Security updates are provided for the following versions:
 - Implement proper error handling
 - Use cryptographic best practices
 
+## 🛡️ Repository Security Settings
+
+The following repository-level protections are enabled under
+*Settings > Code security and analysis*:
+
+| Capability | Status |
+|------------|--------|
+| Secret scanning | ✅ Enabled |
+| Secret scanning push protection | ✅ Enabled |
+| Secret scanning validity checks | ✅ Enabled |
+| Dependabot security updates | ✅ Enabled |
+| CodeQL + Trivy (scheduled) | ✅ Enabled (`.github/workflows/security.yml`) |
+| cargo-audit | ✅ Enabled (`.github/workflows/test.yml`) |
+
+**Push protection** blocks pushes containing recognized secret patterns
+(GitHub tokens, cloud provider keys, etc.) on every branch at push time,
+so a leaked credential cannot sit unnoticed in a feature branch or fork.
+Overriding a blocked push is possible with a stated reason and should be
+reserved for false positives and test fixtures.
+
+**Validity checks** validate detected secrets against the issuing
+provider, so alerts are marked active (live credential — act now) or
+inactive (revoked credential — archive), keeping triage focused on
+credentials that actually need rotation.
+
+**Partner alerts**: because this is a public repository, GitHub always
+notifies the secret's issuing partner when secret scanning detects a
+provider-pattern secret, independently of the repository settings above.
+Partners may revoke the exposed credential directly, so any secret
+pushed to a public branch should be considered compromised and rotated
+even if it is removed afterwards.
+
 ## 🔐 Cryptographic Security
 
 This project uses the Vodozemac library which implements:
