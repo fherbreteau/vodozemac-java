@@ -64,6 +64,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **CONTRIBUTING.md**: Created detailed contribution guidelines and development workflow (#1)
 - **CHANGELOG.md**: Added this changelog file for tracking changes (#1)
 - **Agent Changelog Rule**: `AGENTS.md` now instructs coding agents to update the `[Unreleased]` section of `CHANGELOG.md` with the PR's main purpose before creating or updating a pull request, ending each bullet with its PR number `(#NNN)` so release notes can attribute changes (#61)
+- **jOlm Migration Guide**: Added `MIGRATION-GUIDE.md` mapping the archived jOlm (libolm JNA bindings) API to vodozemac-java class by class, including the libolm pickle migration path through the `unpickleLegacy` entry points (#72)
 
 ### 🔧 Build System
 
