@@ -90,8 +90,8 @@ public abstract class NativeHandle implements AutoCloseable {
      * <p>
      * Subclasses whose native methods consume the native object and hand
      * its ownership to a new Java object (e.g. a {@code Sas} consumed by
-     * {@code diffieHellman}) must call this method instead of zeroing
-     * {@link #nativePtr} directly, so that the {@link Cleaner} safety net
+     * {@code diffieHellman}) must call this method instead of dropping
+     * the pointer themselves, so that the {@link Cleaner} safety net
      * does not release the already-transferred pointer a second time.
      * After this call the handle behaves as if it had been closed.
      */

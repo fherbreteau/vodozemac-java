@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🛡️ Security & Hardening
+
+- **Thread-Safe Native Handles**: All native-handle classes (`Account`, sessions, `Sas`/`EstablishedSas`, `Ecies`/`EstablishedEcies`, `Ed25519KeyPair`, `PkEncryption`/`PkDecryption`) are now safe to share across threads — instance methods touching native state are `synchronized`, eliminating aliased `&mut` JNI references, use-after-free and double-free races on `close()`; `InboundGroupSession.connected/compare/merge` lock both operands in deterministic order to prevent deadlocks (#52)
+
 ### 🚀 Features
 
 - **Ed25519 Key Pair Generator**: Added `Ed25519KeyPair` in `io.github.fherbreteau.vodozemac.types`, a native-handle class generating a random Ed25519 signing key pair with signing, public-key export, and JSON pickle/unpickle support, backed by a new Rust JNI module (`rust/src/types/keypair.rs`) (#73)
