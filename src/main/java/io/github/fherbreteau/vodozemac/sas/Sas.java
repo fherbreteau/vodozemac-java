@@ -35,7 +35,7 @@ public final class Sas extends NativeHandle {
      * establish a shared secret.
      */
     public Sas() {
-        super(nativeNew());
+        super(nativeNew(), Sas::nativeFree);
     }
 
     /**
@@ -47,7 +47,7 @@ public final class Sas extends NativeHandle {
      */
     public String publicKey() {
         checkNotClosed();
-        return nativePublicKey(nativePtr);
+        return nativePublicKey(nativePtr());
     }
 
     /**
@@ -70,9 +70,9 @@ public final class Sas extends NativeHandle {
         Objects.requireNonNull(theirPublicKey, "theirPublicKey");
         checkNotClosed();
         try {
-            return nativeDiffieHellman(nativePtr, theirPublicKey);
+            return nativeDiffieHellman(nativePtr(), theirPublicKey);
         } finally {
-            nativePtr = 0;  // only zero on success
+            invalidate();
         }
     }
 
@@ -82,5 +82,5 @@ public final class Sas extends NativeHandle {
 
     private native EstablishedSas nativeDiffieHellman(long ptr, String theirPublicKey);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 }

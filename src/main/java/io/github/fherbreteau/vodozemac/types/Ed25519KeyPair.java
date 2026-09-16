@@ -37,7 +37,7 @@ public final class Ed25519KeyPair extends NativeHandle {
     }
 
     private Ed25519KeyPair(long ptr) {
-        super(ptr);
+        super(ptr, Ed25519KeyPair::nativeFree);
     }
 
     /**
@@ -48,7 +48,7 @@ public final class Ed25519KeyPair extends NativeHandle {
      */
     public Ed25519PublicKey publicKey() {
         checkNotClosed();
-        return nativePublicKey(nativePtr);
+        return nativePublicKey(nativePtr());
     }
 
     /**
@@ -73,7 +73,7 @@ public final class Ed25519KeyPair extends NativeHandle {
     public Ed25519Signature sign(byte[] message) {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
-        return nativeSign(nativePtr, message);
+        return nativeSign(nativePtr(), message);
     }
 
     /**
@@ -87,7 +87,7 @@ public final class Ed25519KeyPair extends NativeHandle {
      */
     public String pickle() {
         checkNotClosed();
-        return nativePickle(nativePtr);
+        return nativePickle(nativePtr());
     }
 
     /**
@@ -99,8 +99,7 @@ public final class Ed25519KeyPair extends NativeHandle {
      */
     public static Ed25519KeyPair unpickle(String pickleData) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
-        long nativePtr = nativeUnpickle(pickleData);
-        return new Ed25519KeyPair(nativePtr);
+        return new Ed25519KeyPair(nativeUnpickle(pickleData));
     }
 
     private static native long nativeNew();
@@ -113,5 +112,5 @@ public final class Ed25519KeyPair extends NativeHandle {
 
     private native String nativePickle(long ptr);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 }

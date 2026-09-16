@@ -55,11 +55,11 @@ public final class InboundGroupSession extends NativeHandle {
     public InboundGroupSession(String sessionKey, MegolmSessionVersion version) {
         Objects.requireNonNull(sessionKey, "sessionKey");
         Objects.requireNonNull(version, "version");
-        super(nativeNew(sessionKey, version.value()));
+        this(nativeNew(sessionKey, version.value()));
     }
 
-    private InboundGroupSession(long nativePtr) {
-        super(nativePtr);
+    private InboundGroupSession(long ptr) {
+        super(ptr, InboundGroupSession::nativeFree);
     }
 
     /**
@@ -73,7 +73,7 @@ public final class InboundGroupSession extends NativeHandle {
      */
     public String sessionId() {
         checkNotClosed();
-        return nativeSessionId(nativePtr);
+        return nativeSessionId(nativePtr());
     }
 
     /**
@@ -90,7 +90,7 @@ public final class InboundGroupSession extends NativeHandle {
      */
     public int firstKnownIndex() {
         checkNotClosed();
-        return nativeFirstKnownIndex(nativePtr);
+        return nativeFirstKnownIndex(nativePtr());
     }
 
     /**
@@ -105,7 +105,7 @@ public final class InboundGroupSession extends NativeHandle {
     public DecryptedMessage decrypt(MegolmMessage message) {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
-        return nativeDecrypt(nativePtr, message.toString());
+        return nativeDecrypt(nativePtr(), message.toString());
     }
 
     /**
@@ -116,7 +116,7 @@ public final class InboundGroupSession extends NativeHandle {
      */
     public String pickle() {
         checkNotClosed();
-        return nativePickle(nativePtr);
+        return nativePickle(nativePtr());
     }
 
     /**
@@ -132,7 +132,7 @@ public final class InboundGroupSession extends NativeHandle {
         Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
-        return nativeEncryptedPickle(nativePtr, key);
+        return nativeEncryptedPickle(nativePtr(), key);
     }
 
     /**
@@ -149,7 +149,7 @@ public final class InboundGroupSession extends NativeHandle {
      */
     public Optional<String> exportAt(int index) {
         checkNotClosed();
-        String result = nativeExportAt(nativePtr, index);
+        String result = nativeExportAt(nativePtr(), index);
         return Optional.ofNullable(result);
     }
 
@@ -164,7 +164,7 @@ public final class InboundGroupSession extends NativeHandle {
      */
     public Optional<String> exportAtFirstKnownIndex() {
         checkNotClosed();
-        String result = nativeExportAtFirstKnownIndex(nativePtr);
+        String result = nativeExportAtFirstKnownIndex(nativePtr());
         return Optional.ofNullable(result);
     }
 
@@ -181,7 +181,7 @@ public final class InboundGroupSession extends NativeHandle {
      */
     public boolean advanceTo(int index) {
         checkNotClosed();
-        return nativeAdvanceTo(nativePtr, index);
+        return nativeAdvanceTo(nativePtr(), index);
     }
 
     /**
@@ -198,7 +198,7 @@ public final class InboundGroupSession extends NativeHandle {
     public boolean connected(InboundGroupSession other) {
         checkNotClosed();
         other.checkNotClosed();
-        return nativeConnected(nativePtr, other.nativePtr);
+        return nativeConnected(nativePtr(), other.nativePtr());
     }
 
     /**
@@ -215,7 +215,7 @@ public final class InboundGroupSession extends NativeHandle {
     public SessionOrdering compare(InboundGroupSession other) {
         checkNotClosed();
         other.checkNotClosed();
-        return nativeCompare(nativePtr, other.nativePtr);
+        return nativeCompare(nativePtr(), other.nativePtr());
     }
 
     /**
@@ -236,7 +236,7 @@ public final class InboundGroupSession extends NativeHandle {
     public Optional<InboundGroupSession> merge(InboundGroupSession other) {
         checkNotClosed();
         other.checkNotClosed();
-        Long result = nativeMerge(nativePtr, other.nativePtr);
+        Long result = nativeMerge(nativePtr(), other.nativePtr());
         return Optional.ofNullable(result).map(InboundGroupSession::new);
     }
 
@@ -250,8 +250,7 @@ public final class InboundGroupSession extends NativeHandle {
      */
     public static InboundGroupSession unpickle(String pickleData) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
-        long nativePtr = nativeUnpickle(pickleData);
-        return new InboundGroupSession(nativePtr);
+        return new InboundGroupSession(nativeUnpickle(pickleData));
     }
 
     /**
@@ -268,8 +267,7 @@ public final class InboundGroupSession extends NativeHandle {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         Objects.requireNonNull(key, ParamNames.KEY);
         validateEncryptionKey(key);
-        long nativePtr = nativeEncryptedUnpickle(pickleData, key);
-        return new InboundGroupSession(nativePtr);
+        return new InboundGroupSession(nativeEncryptedUnpickle(pickleData, key));
     }
 
     /**
@@ -284,8 +282,7 @@ public final class InboundGroupSession extends NativeHandle {
     public static InboundGroupSession unpickleLegacy(String pickleData, byte[] pickleKey) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
-        long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
-        return new InboundGroupSession(nativePtr);
+        return new InboundGroupSession(nativeUnpickleLegacy(pickleData, pickleKey));
     }
 
     /**
@@ -326,8 +323,7 @@ public final class InboundGroupSession extends NativeHandle {
     public static InboundGroupSession importSession(String sessionKey, MegolmSessionVersion version) {
         Objects.requireNonNull(sessionKey, "sessionKey");
         Objects.requireNonNull(version, "version");
-        long nativePtr = nativeImport(sessionKey, version.value());
-        return new InboundGroupSession(nativePtr);
+        return new InboundGroupSession(nativeImport(sessionKey, version.value()));
     }
 
     private static native long nativeNew(String sessionKey, int version);
@@ -352,7 +348,7 @@ public final class InboundGroupSession extends NativeHandle {
 
     private native Long nativeMerge(long ptr, long otherPtr);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 
     private native String nativeEncryptedPickle(long ptr, byte[] key);
 

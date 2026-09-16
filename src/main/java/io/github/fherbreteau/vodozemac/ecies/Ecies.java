@@ -48,11 +48,11 @@ public final class Ecies extends NativeHandle {
      * {@link #withInfo(String)} instead.
      */
     public Ecies() {
-        super(nativeNew());
+        this(nativeNew());
     }
 
-    private Ecies(long nativePtr) {
-        super(nativePtr);
+    private Ecies(long ptr) {
+        super(ptr, Ecies::nativeFree);
     }
 
     /**
@@ -85,7 +85,7 @@ public final class Ecies extends NativeHandle {
      */
     public String publicKey() {
         checkNotClosed();
-        return nativePublicKey(nativePtr);
+        return nativePublicKey(nativePtr());
     }
 
     /**
@@ -117,9 +117,9 @@ public final class Ecies extends NativeHandle {
         Objects.requireNonNull(initialPlaintext, "initialPlaintext");
         checkNotClosed();
         try {
-            return nativeEstablishOutboundChannel(nativePtr, theirPublicKey, initialPlaintext);
+            return nativeEstablishOutboundChannel(nativePtr(), theirPublicKey, initialPlaintext);
         } finally {
-            nativePtr = 0;
+            invalidate();
         }
     }
 
@@ -150,9 +150,9 @@ public final class Ecies extends NativeHandle {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
         try {
-            return nativeEstablishInboundChannel(nativePtr, message);
+            return nativeEstablishInboundChannel(nativePtr(), message);
         } finally {
-            nativePtr = 0;
+            invalidate();
         }
     }
 
@@ -166,6 +166,6 @@ public final class Ecies extends NativeHandle {
 
     private native InboundCreationResult nativeEstablishInboundChannel(long ptr, String message);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 
 }

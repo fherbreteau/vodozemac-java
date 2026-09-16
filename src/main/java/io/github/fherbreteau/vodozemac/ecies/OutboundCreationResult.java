@@ -18,8 +18,8 @@ public final class OutboundCreationResult implements AutoCloseable {
 
     private final String initialMessage;
 
-    OutboundCreationResult(long nativePtr, String initialMessage) {
-        this.ecies = new EstablishedEcies(nativePtr);
+    OutboundCreationResult(long ptr, String initialMessage) {
+        this.ecies = new EstablishedEcies(ptr);
         this.initialMessage = initialMessage;
     }
 

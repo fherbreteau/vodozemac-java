@@ -75,8 +75,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEci
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let ecies = unsafe { &mut *(ptr as *mut EstablishedEcies) };
-            let message =
-                Message::decode(&message.to_string()).map_err(|e| throw_ecies_error(env, e))?;
+            let message = Message::decode(&message.try_to_string(env)?)
+                .map_err(|e| throw_ecies_error(env, e))?;
 
             let plaintext = ecies
                 .decrypt(&message)

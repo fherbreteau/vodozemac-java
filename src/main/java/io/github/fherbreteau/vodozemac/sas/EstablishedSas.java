@@ -33,8 +33,8 @@ public final class EstablishedSas extends NativeHandle {
         NativeLibraryLoader.loadLibrary();
     }
 
-    EstablishedSas(long nativePtr) {
-        super(nativePtr);
+    EstablishedSas(long ptr) {
+        super(ptr, EstablishedSas::nativeFree);
     }
 
     /**
@@ -52,7 +52,7 @@ public final class EstablishedSas extends NativeHandle {
     public SasBytes bytes(String info) {
         Objects.requireNonNull(info, ParamNames.INFO);
         checkNotClosed();
-        return nativeBytes(nativePtr, info);
+        return nativeBytes(nativePtr(), info);
     }
 
     /**
@@ -72,7 +72,7 @@ public final class EstablishedSas extends NativeHandle {
     public byte[] bytesRaw(String info, int count) {
         Objects.requireNonNull(info, ParamNames.INFO);
         checkNotClosed();
-        return nativeBytesRaw(nativePtr, info, count);
+        return nativeBytesRaw(nativePtr(), info, count);
     }
 
     /**
@@ -91,7 +91,7 @@ public final class EstablishedSas extends NativeHandle {
         Objects.requireNonNull(input, ParamNames.INPUT);
         Objects.requireNonNull(info, ParamNames.INFO);
         checkNotClosed();
-        return nativeCalculateMac(nativePtr, input, info);
+        return nativeCalculateMac(nativePtr(), input, info);
     }
 
     /**
@@ -112,7 +112,7 @@ public final class EstablishedSas extends NativeHandle {
         Objects.requireNonNull(input, ParamNames.INPUT);
         Objects.requireNonNull(info, ParamNames.INFO);
         checkNotClosed();
-        return nativeCalculateMacInvalidBase64(nativePtr, input, info);
+        return nativeCalculateMacInvalidBase64(nativePtr(), input, info);
     }
 
     /**
@@ -133,7 +133,7 @@ public final class EstablishedSas extends NativeHandle {
         Objects.requireNonNull(info, ParamNames.INFO);
         Objects.requireNonNull(mac, ParamNames.MAC);
         checkNotClosed();
-        nativeVerifyMac(nativePtr, input, info, mac);
+        nativeVerifyMac(nativePtr(), input, info, mac);
     }
 
     /**
@@ -145,7 +145,7 @@ public final class EstablishedSas extends NativeHandle {
      */
     public String ourPublicKey() {
         checkNotClosed();
-        return nativeOurPublicKey(nativePtr);
+        return nativeOurPublicKey(nativePtr());
     }
 
     /**
@@ -157,7 +157,7 @@ public final class EstablishedSas extends NativeHandle {
      */
     public String theirPublicKey() {
         checkNotClosed();
-        return nativeTheirPublicKey(nativePtr);
+        return nativeTheirPublicKey(nativePtr());
     }
 
     private native SasBytes nativeBytes(long ptr, String info);
@@ -174,5 +174,5 @@ public final class EstablishedSas extends NativeHandle {
 
     private native String nativeTheirPublicKey(long ptr);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 }

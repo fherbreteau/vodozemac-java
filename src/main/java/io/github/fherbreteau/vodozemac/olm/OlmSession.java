@@ -48,8 +48,8 @@ public final class OlmSession extends NativeHandle {
         NativeLibraryLoader.loadLibrary();
     }
 
-    OlmSession(long nativePtr) {
-        super(nativePtr);
+    OlmSession(long ptr) {
+        super(ptr, OlmSession::nativeFree);
     }
 
     /**
@@ -60,7 +60,7 @@ public final class OlmSession extends NativeHandle {
      */
     public String sessionId() {
         checkNotClosed();
-        return nativeSessionId(nativePtr);
+        return nativeSessionId(nativePtr());
     }
 
     /**
@@ -75,7 +75,7 @@ public final class OlmSession extends NativeHandle {
      */
     public SessionKeys sessionKeys() {
         checkNotClosed();
-        return nativeSessionKeys(nativePtr);
+        return nativeSessionKeys(nativePtr());
     }
 
     /**
@@ -90,7 +90,7 @@ public final class OlmSession extends NativeHandle {
      */
     public OlmSessionVersion sessionConfig() {
         checkNotClosed();
-        return OlmSessionVersion.fromVersion(nativeSessionConfig(nativePtr));
+        return OlmSessionVersion.fromVersion(nativeSessionConfig(nativePtr()));
     }
 
     /**
@@ -106,7 +106,7 @@ public final class OlmSession extends NativeHandle {
      */
     public boolean hasReceivedMessage() {
         checkNotClosed();
-        return nativeHasReceivedMessage(nativePtr);
+        return nativeHasReceivedMessage(nativePtr());
     }
 
     /**
@@ -125,7 +125,7 @@ public final class OlmSession extends NativeHandle {
     public OlmMessage encrypt(byte[] plaintext) {
         Objects.requireNonNull(plaintext, ParamNames.PLAINTEXT);
         checkNotClosed();
-        return nativeEncrypt(nativePtr, plaintext);
+        return nativeEncrypt(nativePtr(), plaintext);
     }
 
     /**
@@ -139,7 +139,7 @@ public final class OlmSession extends NativeHandle {
     public byte[] decrypt(OlmMessage message) {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
-        return nativeDecrypt(nativePtr, message.toJson());
+        return nativeDecrypt(nativePtr(), message.toJson());
     }
 
     /**
@@ -150,7 +150,7 @@ public final class OlmSession extends NativeHandle {
      */
     public String pickle() {
         checkNotClosed();
-        return nativePickle(nativePtr);
+        return nativePickle(nativePtr());
     }
 
     /**
@@ -166,7 +166,7 @@ public final class OlmSession extends NativeHandle {
         Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
-        return nativeEncryptedPickle(nativePtr, key);
+        return nativeEncryptedPickle(nativePtr(), key);
     }
 
     /**
@@ -178,8 +178,7 @@ public final class OlmSession extends NativeHandle {
      */
     public static OlmSession unpickle(String pickleData) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
-        long nativePtr = nativeUnpickle(pickleData);
-        return new OlmSession(nativePtr);
+        return new OlmSession(nativeUnpickle(pickleData));
     }
 
     /**
@@ -196,8 +195,7 @@ public final class OlmSession extends NativeHandle {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         Objects.requireNonNull(key, ParamNames.KEY);
         validateEncryptionKey(key);
-        long nativePtr = nativeEncryptedUnpickle(pickleData, key);
-        return new OlmSession(nativePtr);
+        return new OlmSession(nativeEncryptedUnpickle(pickleData, key));
     }
 
     /**
@@ -212,8 +210,7 @@ public final class OlmSession extends NativeHandle {
     public static OlmSession unpickleLegacy(String pickleData, byte[] pickleKey) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
-        long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
-        return new OlmSession(nativePtr);
+        return new OlmSession(nativeUnpickleLegacy(pickleData, pickleKey));
     }
 
     private native String nativeSessionId(long ptr);
@@ -238,6 +235,6 @@ public final class OlmSession extends NativeHandle {
 
     private static native long nativeUnpickleLegacy(String pickleData, byte[] pickleKey);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 
 }

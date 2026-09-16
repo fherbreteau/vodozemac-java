@@ -41,8 +41,8 @@ public final class PkEncryption extends NativeHandle {
         NativeLibraryLoader.loadLibrary();
     }
 
-    private PkEncryption(long nativePtr) {
-        super(nativePtr);
+    private PkEncryption(long ptr) {
+        super(ptr, PkEncryption::nativeFree);
     }
 
     /**
@@ -58,8 +58,7 @@ public final class PkEncryption extends NativeHandle {
      */
     public static PkEncryption fromKey(String key) {
         Objects.requireNonNull(key, ParamNames.KEY);
-        long nativePtr = nativeFromKey(key);
-        return new PkEncryption(nativePtr);
+        return new PkEncryption(nativeFromKey(key));
     }
 
     /**
@@ -76,13 +75,13 @@ public final class PkEncryption extends NativeHandle {
     public PkMessage encrypt(byte[] plaintext) {
         Objects.requireNonNull(plaintext, ParamNames.PLAINTEXT);
         checkNotClosed();
-        return nativeEncrypt(nativePtr, plaintext);
+        return nativeEncrypt(nativePtr(), plaintext);
     }
 
     private static native long nativeFromKey(String key);
 
     private native PkMessage nativeEncrypt(long ptr, byte[] plaintext);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 
 }

@@ -47,11 +47,11 @@ public final class PkDecryption extends NativeHandle {
      * Creates a new {@code PkDecryption} with a fresh random Curve25519 key pair.
      */
     public PkDecryption() {
-        super(nativeNew());
+        this(nativeNew());
     }
 
-    private PkDecryption(long nativePtr) {
-        super(nativePtr);
+    private PkDecryption(long ptr) {
+        super(ptr, PkDecryption::nativeFree);
     }
 
     /**
@@ -67,8 +67,7 @@ public final class PkDecryption extends NativeHandle {
      */
     public static PkDecryption fromKey(String key) {
         Objects.requireNonNull(key, ParamNames.KEY);
-        long nativePtr = nativeFromKey(key);
-        return new PkDecryption(nativePtr);
+        return new PkDecryption(nativeFromKey(key));
     }
 
     /**
@@ -83,7 +82,7 @@ public final class PkDecryption extends NativeHandle {
      */
     public String secretKey() {
         checkNotClosed();
-        return nativeSecretKey(nativePtr);
+        return nativeSecretKey(nativePtr());
     }
 
     /**
@@ -99,7 +98,7 @@ public final class PkDecryption extends NativeHandle {
      */
     public String publicKey() {
         checkNotClosed();
-        return nativePublicKey(nativePtr);
+        return nativePublicKey(nativePtr());
     }
 
     /**
@@ -119,7 +118,7 @@ public final class PkDecryption extends NativeHandle {
     public byte[] decrypt(PkMessage message) {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
-        return nativeDecrypt(nativePtr, message.ciphertext(), message.mac(), message.ephemeralKey());
+        return nativeDecrypt(nativePtr(), message.ciphertext(), message.mac(), message.ephemeralKey());
     }
 
     /**
@@ -134,8 +133,7 @@ public final class PkDecryption extends NativeHandle {
     public static PkDecryption unpickleLegacy(String pickleData, byte[] pickleKey) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
-        long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
-        return new PkDecryption(nativePtr);
+        return new PkDecryption(nativeUnpickleLegacy(pickleData, pickleKey));
     }
 
     /**
@@ -150,7 +148,7 @@ public final class PkDecryption extends NativeHandle {
     public String pickleLegacy(byte[] pickleKey) {
         Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
         checkNotClosed();
-        return nativePickleLegacy(nativePtr, pickleKey);
+        return nativePickleLegacy(nativePtr(), pickleKey);
     }
 
     private static native long nativeNew();
@@ -167,6 +165,6 @@ public final class PkDecryption extends NativeHandle {
 
     private native byte[] nativeDecrypt(long ptr, String ciphertext, String mac, String ephemeralKey);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 
 }

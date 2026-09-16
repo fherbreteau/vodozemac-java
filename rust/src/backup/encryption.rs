@@ -16,7 +16,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkEncryption_
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let public_key = Curve25519PublicKey::from_base64(&key.to_string())
+            let public_key = Curve25519PublicKey::from_base64(&key.try_to_string(env)?)
                 .map_err(|e| throw_key_error(env, e))?;
 
             let encryption = PkEncryption::from(public_key);

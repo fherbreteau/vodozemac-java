@@ -47,11 +47,11 @@ public final class OutboundGroupSession extends NativeHandle {
      * @param version the Megolm session protocol version to use
      */
     public OutboundGroupSession(MegolmSessionVersion version) {
-        super(nativeNew(version.value()));
+        this(nativeNew(version.value()));
     }
 
-    private OutboundGroupSession(long nativePtr) {
-        super(nativePtr);
+    private OutboundGroupSession(long ptr) {
+        super(ptr, OutboundGroupSession::nativeFree);
     }
 
     /**
@@ -66,7 +66,7 @@ public final class OutboundGroupSession extends NativeHandle {
      */
     public String sessionId() {
         checkNotClosed();
-        return nativeSessionId(nativePtr);
+        return nativeSessionId(nativePtr());
     }
 
     /**
@@ -80,7 +80,7 @@ public final class OutboundGroupSession extends NativeHandle {
      */
     public int messageIndex() {
         checkNotClosed();
-        return nativeMessageIndex(nativePtr);
+        return nativeMessageIndex(nativePtr());
     }
 
     /**
@@ -98,7 +98,7 @@ public final class OutboundGroupSession extends NativeHandle {
      */
     public String sessionKey() {
         checkNotClosed();
-        return nativeSessionKey(nativePtr);
+        return nativeSessionKey(nativePtr());
     }
 
     /**
@@ -113,7 +113,7 @@ public final class OutboundGroupSession extends NativeHandle {
      */
     public MegolmSessionVersion sessionConfig() {
         checkNotClosed();
-        return MegolmSessionVersion.fromVersion(nativeSessionConfig(nativePtr));
+        return MegolmSessionVersion.fromVersion(nativeSessionConfig(nativePtr()));
     }
 
     /**
@@ -129,7 +129,7 @@ public final class OutboundGroupSession extends NativeHandle {
     public MegolmMessage encrypt(byte[] plaintext) {
         Objects.requireNonNull(plaintext, ParamNames.PLAINTEXT);
         checkNotClosed();
-        return nativeEncrypt(nativePtr, plaintext);
+        return nativeEncrypt(nativePtr(), plaintext);
     }
 
     /**
@@ -140,7 +140,7 @@ public final class OutboundGroupSession extends NativeHandle {
      */
     public String pickle() {
         checkNotClosed();
-        return nativePickle(nativePtr);
+        return nativePickle(nativePtr());
     }
 
     /**
@@ -156,7 +156,7 @@ public final class OutboundGroupSession extends NativeHandle {
         Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
-        return nativeEncryptedPickle(nativePtr, key);
+        return nativeEncryptedPickle(nativePtr(), key);
     }
 
     /**
@@ -169,8 +169,7 @@ public final class OutboundGroupSession extends NativeHandle {
      */
     public static OutboundGroupSession unpickle(String pickleData) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
-        long nativePtr = nativeUnpickle(pickleData);
-        return new OutboundGroupSession(nativePtr);
+        return new OutboundGroupSession(nativeUnpickle(pickleData));
     }
 
     /**
@@ -187,8 +186,7 @@ public final class OutboundGroupSession extends NativeHandle {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         Objects.requireNonNull(key, ParamNames.KEY);
         validateEncryptionKey(key);
-        long nativePtr = nativeEncryptedUnpickle(pickleData, key);
-        return new OutboundGroupSession(nativePtr);
+        return new OutboundGroupSession(nativeEncryptedUnpickle(pickleData, key));
     }
 
     /**
@@ -203,8 +201,7 @@ public final class OutboundGroupSession extends NativeHandle {
     public static OutboundGroupSession unpickleLegacy(String pickleData, byte[] pickleKey) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
-        long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
-        return new OutboundGroupSession(nativePtr);
+        return new OutboundGroupSession(nativeUnpickleLegacy(pickleData, pickleKey));
     }
 
     private static native long nativeNew(int version);
@@ -229,6 +226,6 @@ public final class OutboundGroupSession extends NativeHandle {
 
     private static native long nativeUnpickleLegacy(String pickleData, byte[] pickleKey);
 
-    protected native void nativeFree(long ptr);
+    private static native void nativeFree(long ptr);
 
 }

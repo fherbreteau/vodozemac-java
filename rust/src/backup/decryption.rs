@@ -32,8 +32,8 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let bytes =
-                base64_decode(key.to_string()).map_err(|e| throw_conversion_error(env, e))?;
+            let bytes = base64_decode(key.try_to_string(env)?)
+                .map_err(|e| throw_conversion_error(env, e))?;
             let bytes: [u8; 32] = wrap(env, bytes)?;
             let secret_key = Curve25519SecretKey::from_slice(&bytes);
 
@@ -95,11 +95,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let pk_decryption = unsafe { &*(ptr as *const PkDecryption) };
-            let ciphertext = base64_decode(ciphertext.to_string())
+            let ciphertext = base64_decode(ciphertext.try_to_string(env)?)
                 .map_err(|e| throw_conversion_error(env, e))?;
-            let mac = base64_decode(mac.to_string()).map_err(|e| throw_conversion_error(env, e))?;
-            let ephemeral_key = Curve25519PublicKey::from_base64(&ephemeral_key.to_string())
-                .map_err(|e| throw_key_error(env, e))?;
+            let mac = base64_decode(mac.try_to_string(env)?)
+                .map_err(|e| throw_conversion_error(env, e))?;
+            let ephemeral_key =
+                Curve25519PublicKey::from_base64(&ephemeral_key.try_to_string(env)?)
+                    .map_err(|e| throw_key_error(env, e))?;
 
             let message = Message {
                 ciphertext,
@@ -126,7 +128,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
 ) -> jlong {
     let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
-            let pickle_str: String = pickle_data.to_string();
+            let pickle_str = pickle_data.try_to_string(env)?;
             let pickle_key = env.convert_byte_array(pickle_key)?;
 
             let from_olm = PkDecryption::from_libolm_pickle(&pickle_str, &pickle_key)
