@@ -137,7 +137,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
             let session_box = RawBox::new(session);
             let result = env.new_object(
                 OLM_SESSION,
-                jni_sig!((nativePtr: long) -> void),
+                jni_sig!((ptr: long) -> void),
                 &[JValue::Long(session_box.as_jlong())],
             )?;
             session_box.leak();

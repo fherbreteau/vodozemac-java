@@ -55,11 +55,11 @@ public final class InboundGroupSession extends NativeHandle {
     public InboundGroupSession(String sessionKey, MegolmSessionVersion version) {
         Objects.requireNonNull(sessionKey, "sessionKey");
         Objects.requireNonNull(version, "version");
-        super(nativeNew(sessionKey, version.value()), InboundGroupSession::nativeFree);
+        this(nativeNew(sessionKey, version.value()));
     }
 
-    private InboundGroupSession(long nativePtr) {
-        super(nativePtr, InboundGroupSession::nativeFree);
+    private InboundGroupSession(long ptr) {
+        super(ptr, InboundGroupSession::nativeFree);
     }
 
     /**
@@ -250,8 +250,7 @@ public final class InboundGroupSession extends NativeHandle {
      */
     public static InboundGroupSession unpickle(String pickleData) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
-        long nativePtr = nativeUnpickle(pickleData);
-        return new InboundGroupSession(nativePtr);
+        return new InboundGroupSession(nativeUnpickle(pickleData));
     }
 
     /**
@@ -268,8 +267,7 @@ public final class InboundGroupSession extends NativeHandle {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         Objects.requireNonNull(key, ParamNames.KEY);
         validateEncryptionKey(key);
-        long nativePtr = nativeEncryptedUnpickle(pickleData, key);
-        return new InboundGroupSession(nativePtr);
+        return new InboundGroupSession(nativeEncryptedUnpickle(pickleData, key));
     }
 
     /**
@@ -284,8 +282,7 @@ public final class InboundGroupSession extends NativeHandle {
     public static InboundGroupSession unpickleLegacy(String pickleData, byte[] pickleKey) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
-        long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
-        return new InboundGroupSession(nativePtr);
+        return new InboundGroupSession(nativeUnpickleLegacy(pickleData, pickleKey));
     }
 
     /**
@@ -326,8 +323,7 @@ public final class InboundGroupSession extends NativeHandle {
     public static InboundGroupSession importSession(String sessionKey, MegolmSessionVersion version) {
         Objects.requireNonNull(sessionKey, "sessionKey");
         Objects.requireNonNull(version, "version");
-        long nativePtr = nativeImport(sessionKey, version.value());
-        return new InboundGroupSession(nativePtr);
+        return new InboundGroupSession(nativeImport(sessionKey, version.value()));
     }
 
     private static native long nativeNew(String sessionKey, int version);

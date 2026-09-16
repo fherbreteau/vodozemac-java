@@ -33,8 +33,8 @@ public final class EstablishedSas extends NativeHandle {
         NativeLibraryLoader.loadLibrary();
     }
 
-    EstablishedSas(long nativePtr) {
-        super(nativePtr, EstablishedSas::nativeFree);
+    EstablishedSas(long ptr) {
+        super(ptr, EstablishedSas::nativeFree);
     }
 
     /**

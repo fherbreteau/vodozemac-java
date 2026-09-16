@@ -47,11 +47,11 @@ public final class OutboundGroupSession extends NativeHandle {
      * @param version the Megolm session protocol version to use
      */
     public OutboundGroupSession(MegolmSessionVersion version) {
-        super(nativeNew(version.value()), OutboundGroupSession::nativeFree);
+        this(nativeNew(version.value()));
     }
 
-    private OutboundGroupSession(long nativePtr) {
-        super(nativePtr, OutboundGroupSession::nativeFree);
+    private OutboundGroupSession(long ptr) {
+        super(ptr, OutboundGroupSession::nativeFree);
     }
 
     /**
@@ -169,8 +169,7 @@ public final class OutboundGroupSession extends NativeHandle {
      */
     public static OutboundGroupSession unpickle(String pickleData) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
-        long nativePtr = nativeUnpickle(pickleData);
-        return new OutboundGroupSession(nativePtr);
+        return new OutboundGroupSession(nativeUnpickle(pickleData));
     }
 
     /**
@@ -187,8 +186,7 @@ public final class OutboundGroupSession extends NativeHandle {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         Objects.requireNonNull(key, ParamNames.KEY);
         validateEncryptionKey(key);
-        long nativePtr = nativeEncryptedUnpickle(pickleData, key);
-        return new OutboundGroupSession(nativePtr);
+        return new OutboundGroupSession(nativeEncryptedUnpickle(pickleData, key));
     }
 
     /**
@@ -203,8 +201,7 @@ public final class OutboundGroupSession extends NativeHandle {
     public static OutboundGroupSession unpickleLegacy(String pickleData, byte[] pickleKey) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
-        long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
-        return new OutboundGroupSession(nativePtr);
+        return new OutboundGroupSession(nativeUnpickleLegacy(pickleData, pickleKey));
     }
 
     private static native long nativeNew(int version);

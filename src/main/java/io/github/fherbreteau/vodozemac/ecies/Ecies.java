@@ -48,11 +48,11 @@ public final class Ecies extends NativeHandle {
      * {@link #withInfo(String)} instead.
      */
     public Ecies() {
-        super(nativeNew(), Ecies::nativeFree);
+        this(nativeNew());
     }
 
-    private Ecies(long nativePtr) {
-        super(nativePtr, Ecies::nativeFree);
+    private Ecies(long ptr) {
+        super(ptr, Ecies::nativeFree);
     }
 
     /**

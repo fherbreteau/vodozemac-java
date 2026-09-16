@@ -45,11 +45,11 @@ public final class Account extends NativeHandle {
      * Creates a new {@code Account} with new random identity keys.
      */
     public Account() {
-        super(nativeNew(), Account::nativeFree);
+        this(nativeNew());
     }
 
-    private Account(long nativePtr) {
-        super(nativePtr, Account::nativeFree);
+    private Account(long ptr) {
+        super(ptr, Account::nativeFree);
     }
 
     /**
@@ -361,8 +361,7 @@ public final class Account extends NativeHandle {
      */
     public static Account unpickle(String pickleData) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
-        long nativePtr = nativeUnpickle(pickleData);
-        return new Account(nativePtr);
+        return new Account(nativeUnpickle(pickleData));
     }
 
     /**
@@ -379,8 +378,7 @@ public final class Account extends NativeHandle {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         Objects.requireNonNull(key, ParamNames.KEY);
         validateEncryptionKey(key);
-        long nativePtr = nativeEncryptedUnpickle(pickleData, key);
-        return new Account(nativePtr);
+        return new Account(nativeEncryptedUnpickle(pickleData, key));
     }
 
     /**
@@ -395,8 +393,7 @@ public final class Account extends NativeHandle {
     public static Account unpickleLegacy(String pickleData, byte[] pickleKey) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
-        long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
-        return new Account(nativePtr);
+        return new Account(nativeUnpickleLegacy(pickleData, pickleKey));
     }
 
     /**
@@ -442,8 +439,7 @@ public final class Account extends NativeHandle {
         Objects.requireNonNull(nonce, "nonce");
         Objects.requireNonNull(key, ParamNames.KEY);
         validateEncryptionKey(key);
-        long nativePtr = nativeFromDehydratedDevice(ciphertext, nonce, key);
-        return new Account(nativePtr);
+        return new Account(nativeFromDehydratedDevice(ciphertext, nonce, key));
     }
 
     private static native long nativeNew();

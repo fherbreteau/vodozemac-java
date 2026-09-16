@@ -64,7 +64,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeDiffie
             let established_sas_box = RawBox::new(established_sas);
             let result = env.new_object(
                 ESTABLISHED_SAS,
-                jni_sig!((nativePtr: long) -> void),
+                jni_sig!((ptr: long) -> void),
                 &[JValue::Long(established_sas_box.as_jlong())],
             )?;
             established_sas_box.leak();

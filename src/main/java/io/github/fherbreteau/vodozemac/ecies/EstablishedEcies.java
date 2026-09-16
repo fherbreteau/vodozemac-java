@@ -38,8 +38,8 @@ public final class EstablishedEcies extends NativeHandle {
         NativeLibraryLoader.loadLibrary();
     }
 
-    EstablishedEcies(long nativePtr) {
-        super(nativePtr, EstablishedEcies::nativeFree);
+    EstablishedEcies(long ptr) {
+        super(ptr, EstablishedEcies::nativeFree);
     }
 
     /**

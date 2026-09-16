@@ -84,7 +84,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeEs
             let message_str = env.new_string(message)?;
             let result = env.new_object(
                 ECIES_OUTBOUND_CREATION_RESULT,
-                jni_sig!((nativePtr: long, initialMessage: java.lang.String) -> void),
+                jni_sig!((ptr: long, initialMessage: java.lang.String) -> void),
                 &[
                     JValue::Long(established_ecies_box.as_jlong()),
                     JValue::Object(&message_str),
@@ -118,7 +118,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeEs
             let plaintext_bytes = env.byte_array_from_slice(&creation_result.message)?;
             let result = env.new_object(
                 ECIES_INBOUND_CREATION_RESULT,
-                jni_sig!((nativePtr: long, plaintext: byte[]) -> void),
+                jni_sig!((ptr: long, plaintext: byte[]) -> void),
                 &[
                     JValue::Long(established_ecies_box.as_jlong()),
                     JValue::Object(&plaintext_bytes),

@@ -19,8 +19,8 @@ public final class InboundCreationResult implements AutoCloseable {
 
     private final byte[] plaintext;
 
-    InboundCreationResult(long nativePtr, byte[] plaintext) {
-        this.ecies = new EstablishedEcies(nativePtr);
+    InboundCreationResult(long ptr, byte[] plaintext) {
+        this.ecies = new EstablishedEcies(ptr);
         this.plaintext = plaintext;
     }
 

@@ -35,9 +35,9 @@ public abstract class NativeHandle implements AutoCloseable {
     private final LongConsumer nativeFreer;
     private final Cleaner.Cleanable cleanable;
 
-    protected NativeHandle(long nativePtr, LongConsumer nativeFreer) {
+    protected NativeHandle(long ptr, LongConsumer nativeFreer) {
         this.nativeFreer = Objects.requireNonNull(nativeFreer, "nativeFreer");
-        this.state = new State(nativePtr);
+        this.state = new State(ptr);
         this.cleanable = CLEANER.register(this, new LeakGuard(state, nativeFreer, getClass().getSimpleName()));
     }
 

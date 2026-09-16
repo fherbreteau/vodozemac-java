@@ -99,8 +99,7 @@ public final class Ed25519KeyPair extends NativeHandle {
      */
     public static Ed25519KeyPair unpickle(String pickleData) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
-        long nativePtr = nativeUnpickle(pickleData);
-        return new Ed25519KeyPair(nativePtr);
+        return new Ed25519KeyPair(nativeUnpickle(pickleData));
     }
 
     private static native long nativeNew();

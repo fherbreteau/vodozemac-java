@@ -47,11 +47,11 @@ public final class PkDecryption extends NativeHandle {
      * Creates a new {@code PkDecryption} with a fresh random Curve25519 key pair.
      */
     public PkDecryption() {
-        super(nativeNew(), PkDecryption::nativeFree);
+        this(nativeNew());
     }
 
-    private PkDecryption(long nativePtr) {
-        super(nativePtr, PkDecryption::nativeFree);
+    private PkDecryption(long ptr) {
+        super(ptr, PkDecryption::nativeFree);
     }
 
     /**
@@ -67,8 +67,7 @@ public final class PkDecryption extends NativeHandle {
      */
     public static PkDecryption fromKey(String key) {
         Objects.requireNonNull(key, ParamNames.KEY);
-        long nativePtr = nativeFromKey(key);
-        return new PkDecryption(nativePtr);
+        return new PkDecryption(nativeFromKey(key));
     }
 
     /**
@@ -134,8 +133,7 @@ public final class PkDecryption extends NativeHandle {
     public static PkDecryption unpickleLegacy(String pickleData, byte[] pickleKey) {
         Objects.requireNonNull(pickleData, ParamNames.PICKLE_DATA);
         Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
-        long nativePtr = nativeUnpickleLegacy(pickleData, pickleKey);
-        return new PkDecryption(nativePtr);
+        return new PkDecryption(nativeUnpickleLegacy(pickleData, pickleKey));
     }
 
     /**
