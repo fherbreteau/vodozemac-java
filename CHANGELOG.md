@@ -7,20 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### 🛡️ Security & Hardening
-
-- **Thread-Safe Native Handles**: All native-handle classes (`Account`, sessions, `Sas`/`EstablishedSas`, `Ecies`/`EstablishedEcies`, `Ed25519KeyPair`, `PkEncryption`/`PkDecryption`) are now safe to share across threads — instance methods touching native state are `synchronized`, eliminating aliased `&mut` JNI references, use-after-free and double-free races on `close()`; `InboundGroupSession.connected/compare/merge` lock both operands in deterministic order to prevent deadlocks (#52)
-
 ### 🚀 Features
 
 - **Ed25519 Key Pair Generator**: Added `Ed25519KeyPair` in `io.github.fherbreteau.vodozemac.types`, a native-handle class generating a random Ed25519 signing key pair with signing, public-key export, and JSON pickle/unpickle support, backed by a new Rust JNI module (`rust/src/types/keypair.rs`) (#73)
+
 ### 🛡️ Security & Hardening
 
 - **Hardening Backlog (issue #64)**: Landed the low-severity hardening backlog from the deep main analysis — scheduled `cargo-audit` in `security.yml` (L1), `Locale.ROOT`-safe platform detection plus documented temp-file cleanup in `NativeLibraryLoader` (L2), a best-effort `java.lang.Cleaner` safety net that releases native memory and logs a warning when a `NativeHandle` is garbage collected without being closed (L3), tolerant `git-commit-id-maven-plugin` settings for builds without a `.git` directory (L4), exact JNI error propagation via `JString::try_to_string` instead of the `<NULL>` fallback (L5), README documentation restricting `pk_encryption` to Matrix backup/libolm interoperability (L6), and documentation of the secret-material heap-dump exposure in `README.md`/`SECURITY.md` (M2) (#74)
-
-### 🛡️ Security & Hardening
-
 - **Secret-Scanning Settings**: Enabled secret-scanning push protection (blocks pushes containing recognized secret patterns on every branch) and validity checks (provider-validated active/inactive alerts) at the repository level, and documented the active repository security settings in SECURITY.md (#75)
+- **Thread-Safe Native Handles**: All native-handle classes (`Account`, sessions, `Sas`/`EstablishedSas`, `Ecies`/`EstablishedEcies`, `Ed25519KeyPair`, `PkEncryption`/`PkDecryption`) are now safe to share across threads — instance methods touching native state are `synchronized`, eliminating aliased `&mut` JNI references, use-after-free and double-free races on `close()`; `InboundGroupSession.connected/compare/merge` lock both operands in deterministic order to prevent deadlocks (#52)
 
 ### 🔧 Build System
 
