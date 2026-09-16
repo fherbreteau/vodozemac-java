@@ -142,19 +142,40 @@ for compatibility). Do not use it for anything other than Megolm key backup.
 | `sas.calculateMac(message, info)` | `established.calculateMac(input, info)` / `established.verifyMac(input, info, mac)` (throws on mismatch) |
 | — | New: `established.bytes(info)` → `SasBytes` with `emojiIndices()` / `decimals()` for emoji verification, and `bytesRaw(info, count)` |
 
-### PK signing — no direct equivalent
+### PK signing and cross-signing keys
 
-jOlm's `PkSigning` (seed-based Ed25519 signing detached from the account) has
-**no equivalent** in Vodozemac Java. Device-key signing is done through
-`Account.sign(...)`. If you rely on standalone `PkSigning`, keep tracking the
-project or implement seed-based signing on top of an Ed25519 library
-(vodozemac's Java API does not currently expose it).
+jOlm's `PkSigning` (seed-based Ed25519 signing detached from the account) maps
+to the standalone **`Ed25519KeyPair`** (`io.github.fherbreteau.vodozemac.types`)
+— the same primitive you need for a **Matrix cross-signing key** (the master,
+self-signing, and user-signing keys are all Ed25519 key pairs):
+
+| jOlm | Vodozemac Java |
+|---|---|
+| `PkSigning` (from seed) | `new Ed25519KeyPair()` — generates a random key pair (native handle, use try-with-resources) |
+| `signing.seed()` | — (no seed API) — persist the key pair instead with `pickle()` |
+| `signing.sign(message)` | `keyPair.sign(String)` / `keyPair.sign(byte[])` → `Ed25519Signature` |
+| `signing.publicKey()` | `keyPair.publicKey()` → `Ed25519PublicKey` (verify with `publicKey.verify(message, signature)`) |
+| — | New: `pickle()` / `Ed25519KeyPair.unpickle(pickleData)` — persist and restore the full key pair |
+
+Notes for cross-signing setups:
+
+- There is **no seed-based construction** (`PkSigning.fromSeed` equivalent).
+  Generate each key pair once, then treat `pickle()` output as the recoverable
+  secret: it is JSON containing the **private key in clear text**, so store it
+  in your secret storage (SSSS/keystore) and restore with
+  `Ed25519KeyPair.unpickle(...)` — the restored pair produces identical
+  signatures.
+- Publish `keyPair.publicKey().toBase64()` wherever you previously published
+  the `PkSigning` public key.
+- The instance is thread-safe and `AutoCloseable` like every other handle.
 
 ### New capabilities with no jOlm equivalent
 
 - **ECIES** (`Ecies`, `EstablishedEcies`, `CheckCode`) — the
   [MSC3886](https://github.com/matrix-org/matrix-spec-proposals/pull/3886)
   channel for QR-code-based device login.
+- **`Ed25519KeyPair`** — standalone Ed25519 signing key pair usable as a
+  cross-signing key (replaces jOlm's `PkSigning`, see above).
 - **Encrypted pickles** for every native-handle type (AES with a 32-byte key).
 - **Session protocol versions** (`OlmSessionVersion`, `MegolmSessionVersion`) —
   v1 keeps interoperability with libolm peers, v2 is the newer experiment.
@@ -215,8 +236,11 @@ instead of raw strings where you can.
   that `InboundCreationResult.close()` closes the session it wraps — extract
   the session only if you intend to keep using it, and close whichever handle
   you keep.
-- **Instances are not thread-safe** — guard them externally, exactly as with
-  jOlm.
+- **Instances are thread-safe** — every handle class serializes its native
+  calls with an internal monitor, so sharing one handle across threads is safe
+  (no external locking needed); distinct handles can be used concurrently.
+  Value classes are immutable. This is stricter than jOlm, where concurrent
+  use of a single account/session was undefined.
 - **No system libolm anymore**: remove any packaging/install scripts for
   libolm; the native library ships inside the JAR. If your environment blocks
   temp-file execution, see `NativeLibraryLoader` for how the library is
@@ -231,9 +255,10 @@ instead of raw strings where you can.
 3. ☐ Remove libolm installation/packaging steps
 4. ☐ Replace `Utility.sha256` with a standard SHA-256 implementation
 5. ☐ Replace `Utility.verifyEd25519` with `Ed25519PublicKey.verify(...)` (boolean result)
-6. ☐ Adapt session creation/decryption to the typed API (`OlmMessage`, `DecryptedMessage`, `InboundCreationResult`)
-7. ☐ Replace one-time key bookkeeping (`removeOneTimeKeys` is automatic)
-8. ☐ Convert all pickle handling: `unpickleLegacy` + re-pickle with 32-byte keys
-9. ☐ Wrap every handle in try-with-resources (`close()` instead of `clear()`)
-10. ☐ Map `OlmException` handling to the `VodozemacException` hierarchy
-11. ☐ Test interop: messages encrypted by a libolm peer must decrypt with the migrated code (v1 protocol), and legacy pickles must import cleanly
+6. ☐ Replace `PkSigning` with `Ed25519KeyPair` (cross-signing keys: persist with `pickle()`, restore with `unpickle()`)
+7. ☐ Adapt session creation/decryption to the typed API (`OlmMessage`, `DecryptedMessage`, `InboundCreationResult`)
+8. ☐ Replace one-time key bookkeeping (`removeOneTimeKeys` is automatic)
+9. ☐ Convert all pickle handling: `unpickleLegacy` + re-pickle with 32-byte keys
+10. ☐ Wrap every handle in try-with-resources (`close()` instead of `clear()`)
+11. ☐ Map `OlmException` handling to the `VodozemacException` hierarchy
+12. ☐ Test interop: messages encrypted by a libolm peer must decrypt with the migrated code (v1 protocol), and legacy pickles must import cleanly
