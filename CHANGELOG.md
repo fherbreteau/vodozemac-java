@@ -85,32 +85,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **GitHub Integration**: Added proper .github/workflows/ directory (#1)
 - **License File**: Apache-2.0 `LICENSE` declared in the project root and in the Maven POM (#1)
 
-## [1.0.0] - 2026-08-13
+### 🛠️ Early Development
 
-### 🎉 Initial Release
+Absorbed pre-release milestones that were tracked as versions `0.1.0` and
+`1.0.0` but never published to Maven Central nor tagged — the first real
+release is `1.0.0-rc1`:
 
-- **Core Functionality**: Java bindings for Vodozemac cryptographic operations
-- **JNI Implementation**: Rust JNI bindings for Curve25519, Ed25519, and message signing
-- **Maven Integration**: Automatic Rust compilation and native library packaging
-- **Cross-Platform**: Support for Linux, macOS, and Windows
-- **Resource Management**: AutoCloseable implementation for safe native resource handling
-
-### 📦 Initial Features
-
-- `VodozemacAccount` class with cryptographic operations
-- Native library loading and management
-- Maven-based build system
-- Basic test coverage
-- GitHub Actions CI/CD pipeline
-
-## [0.1.0] - 2025-07-24
-
-### 🛠️ Initial Development
-
-- Project scaffolding and basic structure
-- Initial JNI bindings prototype
-- Basic Maven configuration
-- Proof of concept implementation
+- **0.1.0 (2025-07-24)**: Project scaffolding and basic structure, initial JNI bindings prototype, basic Maven configuration, proof-of-concept implementation.
+- **1.0.0 (2026-08-13)**: Java bindings for Vodozemac cryptographic operations (Curve25519, Ed25519, message signing), automatic Rust compilation and native library packaging through Maven, cross-platform support (Linux, macOS, Windows), `AutoCloseable` resource handling (then `VodozemacAccount`, since renamed `Account`), native library loading, first GitHub Actions CI/CD pipeline.
 
 ---
 
