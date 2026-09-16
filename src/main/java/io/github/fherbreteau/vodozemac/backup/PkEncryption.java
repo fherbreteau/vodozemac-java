@@ -76,7 +76,7 @@ public final class PkEncryption extends NativeHandle {
     public PkMessage encrypt(byte[] plaintext) {
         Objects.requireNonNull(plaintext, ParamNames.PLAINTEXT);
         checkNotClosed();
-        return nativeEncrypt(nativePtr, plaintext);
+        return nativeEncrypt(nativePtr(), plaintext);
     }
 
     private static native long nativeFromKey(String key);

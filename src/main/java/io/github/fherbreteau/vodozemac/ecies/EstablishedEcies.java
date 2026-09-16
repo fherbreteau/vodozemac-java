@@ -51,7 +51,7 @@ public final class EstablishedEcies extends NativeHandle {
      */
     public String publicKey() {
         checkNotClosed();
-        return nativePublicKey(nativePtr);
+        return nativePublicKey(nativePtr());
     }
 
     /**
@@ -67,7 +67,7 @@ public final class EstablishedEcies extends NativeHandle {
      */
     public CheckCode checkCode() {
         checkNotClosed();
-        return nativeCheckCode(nativePtr);
+        return nativeCheckCode(nativePtr());
     }
 
     /**
@@ -84,7 +84,7 @@ public final class EstablishedEcies extends NativeHandle {
     public String encrypt(byte[] plaintext) {
         Objects.requireNonNull(plaintext, ParamNames.PLAINTEXT);
         checkNotClosed();
-        return nativeEncrypt(nativePtr, plaintext);
+        return nativeEncrypt(nativePtr(), plaintext);
     }
 
     /**
@@ -104,7 +104,7 @@ public final class EstablishedEcies extends NativeHandle {
     public byte[] decrypt(String message) {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
-        return nativeDecrypt(nativePtr, message);
+        return nativeDecrypt(nativePtr(), message);
     }
 
     @Override
@@ -112,12 +112,12 @@ public final class EstablishedEcies extends NativeHandle {
         if (!(o instanceof EstablishedEcies that)) {
             return false;
         }
-        return Objects.equals(nativePtr, that.nativePtr);
+        return Objects.equals(nativePtr(), that.nativePtr());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(nativePtr);
+        return Objects.hash(nativePtr());
     }
 
     private native String nativePublicKey(long ptr);

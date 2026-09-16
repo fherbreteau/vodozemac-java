@@ -66,7 +66,7 @@ public final class OutboundGroupSession extends NativeHandle {
      */
     public String sessionId() {
         checkNotClosed();
-        return nativeSessionId(nativePtr);
+        return nativeSessionId(nativePtr());
     }
 
     /**
@@ -80,7 +80,7 @@ public final class OutboundGroupSession extends NativeHandle {
      */
     public int messageIndex() {
         checkNotClosed();
-        return nativeMessageIndex(nativePtr);
+        return nativeMessageIndex(nativePtr());
     }
 
     /**
@@ -98,7 +98,7 @@ public final class OutboundGroupSession extends NativeHandle {
      */
     public String sessionKey() {
         checkNotClosed();
-        return nativeSessionKey(nativePtr);
+        return nativeSessionKey(nativePtr());
     }
 
     /**
@@ -113,7 +113,7 @@ public final class OutboundGroupSession extends NativeHandle {
      */
     public MegolmSessionVersion sessionConfig() {
         checkNotClosed();
-        return MegolmSessionVersion.fromVersion(nativeSessionConfig(nativePtr));
+        return MegolmSessionVersion.fromVersion(nativeSessionConfig(nativePtr()));
     }
 
     /**
@@ -129,7 +129,7 @@ public final class OutboundGroupSession extends NativeHandle {
     public MegolmMessage encrypt(byte[] plaintext) {
         Objects.requireNonNull(plaintext, ParamNames.PLAINTEXT);
         checkNotClosed();
-        return nativeEncrypt(nativePtr, plaintext);
+        return nativeEncrypt(nativePtr(), plaintext);
     }
 
     /**
@@ -140,7 +140,7 @@ public final class OutboundGroupSession extends NativeHandle {
      */
     public String pickle() {
         checkNotClosed();
-        return nativePickle(nativePtr);
+        return nativePickle(nativePtr());
     }
 
     /**
@@ -156,7 +156,7 @@ public final class OutboundGroupSession extends NativeHandle {
         Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
-        return nativeEncryptedPickle(nativePtr, key);
+        return nativeEncryptedPickle(nativePtr(), key);
     }
 
     /**

@@ -73,7 +73,7 @@ public final class InboundGroupSession extends NativeHandle {
      */
     public String sessionId() {
         checkNotClosed();
-        return nativeSessionId(nativePtr);
+        return nativeSessionId(nativePtr());
     }
 
     /**
@@ -90,7 +90,7 @@ public final class InboundGroupSession extends NativeHandle {
      */
     public int firstKnownIndex() {
         checkNotClosed();
-        return nativeFirstKnownIndex(nativePtr);
+        return nativeFirstKnownIndex(nativePtr());
     }
 
     /**
@@ -105,7 +105,7 @@ public final class InboundGroupSession extends NativeHandle {
     public DecryptedMessage decrypt(MegolmMessage message) {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
-        return nativeDecrypt(nativePtr, message.toString());
+        return nativeDecrypt(nativePtr(), message.toString());
     }
 
     /**
@@ -116,7 +116,7 @@ public final class InboundGroupSession extends NativeHandle {
      */
     public String pickle() {
         checkNotClosed();
-        return nativePickle(nativePtr);
+        return nativePickle(nativePtr());
     }
 
     /**
@@ -132,7 +132,7 @@ public final class InboundGroupSession extends NativeHandle {
         Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
-        return nativeEncryptedPickle(nativePtr, key);
+        return nativeEncryptedPickle(nativePtr(), key);
     }
 
     /**
@@ -149,7 +149,7 @@ public final class InboundGroupSession extends NativeHandle {
      */
     public Optional<String> exportAt(int index) {
         checkNotClosed();
-        String result = nativeExportAt(nativePtr, index);
+        String result = nativeExportAt(nativePtr(), index);
         return Optional.ofNullable(result);
     }
 
@@ -164,7 +164,7 @@ public final class InboundGroupSession extends NativeHandle {
      */
     public Optional<String> exportAtFirstKnownIndex() {
         checkNotClosed();
-        String result = nativeExportAtFirstKnownIndex(nativePtr);
+        String result = nativeExportAtFirstKnownIndex(nativePtr());
         return Optional.ofNullable(result);
     }
 
@@ -181,7 +181,7 @@ public final class InboundGroupSession extends NativeHandle {
      */
     public boolean advanceTo(int index) {
         checkNotClosed();
-        return nativeAdvanceTo(nativePtr, index);
+        return nativeAdvanceTo(nativePtr(), index);
     }
 
     /**
@@ -198,7 +198,7 @@ public final class InboundGroupSession extends NativeHandle {
     public boolean connected(InboundGroupSession other) {
         checkNotClosed();
         other.checkNotClosed();
-        return nativeConnected(nativePtr, other.nativePtr);
+        return nativeConnected(nativePtr(), other.nativePtr());
     }
 
     /**
@@ -215,7 +215,7 @@ public final class InboundGroupSession extends NativeHandle {
     public SessionOrdering compare(InboundGroupSession other) {
         checkNotClosed();
         other.checkNotClosed();
-        return nativeCompare(nativePtr, other.nativePtr);
+        return nativeCompare(nativePtr(), other.nativePtr());
     }
 
     /**
@@ -236,7 +236,7 @@ public final class InboundGroupSession extends NativeHandle {
     public Optional<InboundGroupSession> merge(InboundGroupSession other) {
         checkNotClosed();
         other.checkNotClosed();
-        Long result = nativeMerge(nativePtr, other.nativePtr);
+        Long result = nativeMerge(nativePtr(), other.nativePtr());
         return Optional.ofNullable(result).map(InboundGroupSession::new);
     }
 

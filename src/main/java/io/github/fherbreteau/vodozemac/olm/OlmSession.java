@@ -60,7 +60,7 @@ public final class OlmSession extends NativeHandle {
      */
     public String sessionId() {
         checkNotClosed();
-        return nativeSessionId(nativePtr);
+        return nativeSessionId(nativePtr());
     }
 
     /**
@@ -75,7 +75,7 @@ public final class OlmSession extends NativeHandle {
      */
     public SessionKeys sessionKeys() {
         checkNotClosed();
-        return nativeSessionKeys(nativePtr);
+        return nativeSessionKeys(nativePtr());
     }
 
     /**
@@ -90,7 +90,7 @@ public final class OlmSession extends NativeHandle {
      */
     public OlmSessionVersion sessionConfig() {
         checkNotClosed();
-        return OlmSessionVersion.fromVersion(nativeSessionConfig(nativePtr));
+        return OlmSessionVersion.fromVersion(nativeSessionConfig(nativePtr()));
     }
 
     /**
@@ -106,7 +106,7 @@ public final class OlmSession extends NativeHandle {
      */
     public boolean hasReceivedMessage() {
         checkNotClosed();
-        return nativeHasReceivedMessage(nativePtr);
+        return nativeHasReceivedMessage(nativePtr());
     }
 
     /**
@@ -125,7 +125,7 @@ public final class OlmSession extends NativeHandle {
     public OlmMessage encrypt(byte[] plaintext) {
         Objects.requireNonNull(plaintext, ParamNames.PLAINTEXT);
         checkNotClosed();
-        return nativeEncrypt(nativePtr, plaintext);
+        return nativeEncrypt(nativePtr(), plaintext);
     }
 
     /**
@@ -139,7 +139,7 @@ public final class OlmSession extends NativeHandle {
     public byte[] decrypt(OlmMessage message) {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
-        return nativeDecrypt(nativePtr, message.toJson());
+        return nativeDecrypt(nativePtr(), message.toJson());
     }
 
     /**
@@ -150,7 +150,7 @@ public final class OlmSession extends NativeHandle {
      */
     public String pickle() {
         checkNotClosed();
-        return nativePickle(nativePtr);
+        return nativePickle(nativePtr());
     }
 
     /**
@@ -166,7 +166,7 @@ public final class OlmSession extends NativeHandle {
         Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
-        return nativeEncryptedPickle(nativePtr, key);
+        return nativeEncryptedPickle(nativePtr(), key);
     }
 
     /**

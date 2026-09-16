@@ -47,7 +47,7 @@ public final class Sas extends NativeHandle {
      */
     public String publicKey() {
         checkNotClosed();
-        return nativePublicKey(nativePtr);
+        return nativePublicKey(nativePtr());
     }
 
     /**
@@ -70,7 +70,7 @@ public final class Sas extends NativeHandle {
         Objects.requireNonNull(theirPublicKey, "theirPublicKey");
         checkNotClosed();
         try {
-            return nativeDiffieHellman(nativePtr, theirPublicKey);
+            return nativeDiffieHellman(nativePtr(), theirPublicKey);
         } finally {
             invalidate();
         }

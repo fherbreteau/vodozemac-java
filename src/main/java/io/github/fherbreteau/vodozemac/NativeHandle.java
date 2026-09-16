@@ -31,21 +31,22 @@ public abstract class NativeHandle implements AutoCloseable {
 
     private static final System.Logger LOGGER = System.getLogger(NativeHandle.class.getName());
 
-    protected long nativePtr;
-
     private final State state;
     private final LongConsumer nativeFreer;
     private final Cleaner.Cleanable cleanable;
 
     protected NativeHandle(long nativePtr, LongConsumer nativeFreer) {
-        this.nativePtr = nativePtr;
         this.nativeFreer = Objects.requireNonNull(nativeFreer, "nativeFreer");
         this.state = new State(nativePtr);
         this.cleanable = CLEANER.register(this, new LeakGuard(state, nativeFreer, getClass().getSimpleName()));
     }
 
+    protected final long nativePtr() {
+        return state.peek();
+    }
+
     protected final void checkNotClosed() {
-        if (nativePtr == 0) {
+        if (state.isTaken()) {
             throw new IllegalStateException(getClass().getSimpleName() + " has been closed");
         }
     }
@@ -58,7 +59,7 @@ public abstract class NativeHandle implements AutoCloseable {
      *         {@code false} otherwise
      */
     final boolean isClosed() {
-        return nativePtr == 0;
+        return state.isTaken();
     }
 
     /**
@@ -74,7 +75,6 @@ public abstract class NativeHandle implements AutoCloseable {
         if (ptr != 0) {
             cleanable.clean();
             nativeFreer.accept(ptr);
-            nativePtr = 0;
         }
     }
 
@@ -92,7 +92,6 @@ public abstract class NativeHandle implements AutoCloseable {
     protected final void invalidate() {
         state.take();
         cleanable.clean();
-        nativePtr = 0;
     }
 
     /**
@@ -112,6 +111,14 @@ public abstract class NativeHandle implements AutoCloseable {
             long held = this.ptr;
             this.ptr = 0;
             return held;
+        }
+
+        boolean isTaken() {
+            return ptr == 0;
+        }
+
+        long peek() {
+            return ptr;
         }
     }
 

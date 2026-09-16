@@ -60,7 +60,7 @@ public final class Account extends NativeHandle {
      */
     public IdentityKeys identityKeys() {
         checkNotClosed();
-        return nativeIdentityKeys(nativePtr);
+        return nativeIdentityKeys(nativePtr());
     }
 
     /**
@@ -71,7 +71,7 @@ public final class Account extends NativeHandle {
      */
     public Ed25519PublicKey ed25519Key() {
         checkNotClosed();
-        return nativeEd25519Key(nativePtr);
+        return nativeEd25519Key(nativePtr());
     }
 
     /**
@@ -82,7 +82,7 @@ public final class Account extends NativeHandle {
      */
     public Curve25519PublicKey curve25519Key() {
         checkNotClosed();
-        return nativeCurve25519Key(nativePtr);
+        return nativeCurve25519Key(nativePtr());
     }
 
     /**
@@ -107,7 +107,7 @@ public final class Account extends NativeHandle {
     public Ed25519Signature sign(byte[] message) {
         Objects.requireNonNull(message, ParamNames.MESSAGE);
         checkNotClosed();
-        return nativeSign(nativePtr, message);
+        return nativeSign(nativePtr(), message);
     }
 
     /**
@@ -119,7 +119,7 @@ public final class Account extends NativeHandle {
      */
     public long maxNumberOfOneTimeKeys() {
         checkNotClosed();
-        return nativeMaxNumberOfOneTimeKeys(nativePtr);
+        return nativeMaxNumberOfOneTimeKeys(nativePtr());
     }
 
     /**
@@ -155,7 +155,7 @@ public final class Account extends NativeHandle {
         Objects.requireNonNull(oneTimeKey, "oneTimeKey");
         checkNotClosed();
 
-        return nativeCreateOutboundSession(nativePtr, sessionVersion.value(), identityKey.toBase64(), oneTimeKey.toBase64());
+        return nativeCreateOutboundSession(nativePtr(), sessionVersion.value(), identityKey.toBase64(), oneTimeKey.toBase64());
     }
 
     /**
@@ -195,7 +195,7 @@ public final class Account extends NativeHandle {
         Objects.requireNonNull(preKeyMessage, "preKeyMessage");
         checkNotClosed();
 
-        return nativeCreateInboundSession(nativePtr, sessionVersion.value(), theirIdentityKey.toBase64(), preKeyMessage.toJson());
+        return nativeCreateInboundSession(nativePtr(), sessionVersion.value(), theirIdentityKey.toBase64(), preKeyMessage.toJson());
     }
 
     /**
@@ -217,7 +217,7 @@ public final class Account extends NativeHandle {
         if (count > ONE_TIME_KEYS_GENERATION_LIMIT) {
             throw new IllegalArgumentException("Too many one-time keys requested");
         }
-        return nativeGenerateOneTimeKeys(nativePtr, count);
+        return nativeGenerateOneTimeKeys(nativePtr(), count);
     }
 
     /**
@@ -232,7 +232,7 @@ public final class Account extends NativeHandle {
      */
     public long storedOneTimeKeyCount() {
         checkNotClosed();
-        return nativeStoredOneTimeKeyCount(nativePtr);
+        return nativeStoredOneTimeKeyCount(nativePtr());
     }
 
     /**
@@ -246,7 +246,7 @@ public final class Account extends NativeHandle {
      */
     public Map<String, Curve25519PublicKey> unpublishedOneTimeKeys() {
         checkNotClosed();
-        return nativeOneTimeKeys(nativePtr);
+        return nativeOneTimeKeys(nativePtr());
     }
 
     /**
@@ -261,7 +261,7 @@ public final class Account extends NativeHandle {
      */
     public Optional<Curve25519PublicKey> generateFallbackKey() {
         checkNotClosed();
-        return Optional.ofNullable(nativeGenerateFallbackKey(nativePtr));
+        return Optional.ofNullable(nativeGenerateFallbackKey(nativePtr()));
     }
 
     /**
@@ -275,7 +275,7 @@ public final class Account extends NativeHandle {
      */
     public Map<String, Curve25519PublicKey> unpublishedFallbackKey() {
         checkNotClosed();
-        return nativeFallbackKey(nativePtr);
+        return nativeFallbackKey(nativePtr());
     }
 
     /**
@@ -290,7 +290,7 @@ public final class Account extends NativeHandle {
      */
     public boolean forgetFallbackKey() {
         checkNotClosed();
-        return nativeForgetFallbackKey(nativePtr);
+        return nativeForgetFallbackKey(nativePtr());
     }
 
     /**
@@ -301,7 +301,7 @@ public final class Account extends NativeHandle {
      */
     public void markKeysAsPublished() {
         checkNotClosed();
-        nativeMarkKeysAsPublished(nativePtr);
+        nativeMarkKeysAsPublished(nativePtr());
     }
 
     /**
@@ -312,7 +312,7 @@ public final class Account extends NativeHandle {
      */
     public String pickle() {
         checkNotClosed();
-        return nativePickle(nativePtr);
+        return nativePickle(nativePtr());
     }
 
     /**
@@ -328,7 +328,7 @@ public final class Account extends NativeHandle {
         Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
-        return nativeEncryptedPickle(nativePtr, key);
+        return nativeEncryptedPickle(nativePtr(), key);
     }
 
     /**
@@ -349,7 +349,7 @@ public final class Account extends NativeHandle {
         Objects.requireNonNull(pickleKey, ParamNames.PICKLE_KEY);
         checkNotClosed();
         validateEncryptionKey(pickleKey);
-        return nativePickleLegacy(nativePtr, pickleKey);
+        return nativePickleLegacy(nativePtr(), pickleKey);
     }
 
     /**
@@ -424,7 +424,7 @@ public final class Account extends NativeHandle {
         Objects.requireNonNull(key, ParamNames.KEY);
         checkNotClosed();
         validateEncryptionKey(key);
-        return nativeToDehydratedDevice(nativePtr, key);
+        return nativeToDehydratedDevice(nativePtr(), key);
     }
 
     /**
