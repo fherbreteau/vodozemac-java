@@ -68,6 +68,7 @@ mod tests {
     use vodozemac::pk_encryption::PkDecryption;
 
     use super::*;
+    use jni::Env;
 
     #[test]
     fn test_pk_encryption_from_key() {
@@ -158,5 +159,38 @@ mod tests {
         let decrypted = decryption.decrypt(&message).expect("Should decrypt");
 
         assert!(decrypted.is_empty());
+    }
+    use crate::helpers::get_jvm;
+
+    use super::Java_io_github_fherbreteau_vodozemac_backup_PkEncryption_nativeFromKey as native_from_key;
+
+    unsafe fn call<R>(env: &mut Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
+        let unowned = unsafe { EnvUnowned::from_raw(env.get_raw()) };
+        let class = unsafe { JClass::from_raw(env, std::ptr::null_mut()) };
+        f(unowned, class)
+    }
+
+    #[test]
+    fn test_jni_from_key() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let secret_key = vodozemac::Curve25519SecretKey::new();
+                let key = env.new_string(Curve25519PublicKey::from(&secret_key).to_base64())?;
+                let ptr = call(env, |unowned, class| native_from_key(unowned, class, key));
+                assert!(ptr != 0, "A valid public key should create a PkEncryption");
+                native_free::<PkEncryption>(env, ptr);
+
+                let invalid = env.new_string("invalid")?;
+                let ptr = call(env, |unowned, class| {
+                    native_from_key(unowned, class, invalid)
+                });
+                assert_eq!(ptr, 0, "An invalid key should produce no PkEncryption");
+                assert!(env.exception_check(), "An invalid key should throw");
+                env.exception_clear();
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
     }
 }

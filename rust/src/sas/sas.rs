@@ -90,6 +90,9 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeFree(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use jni::Env;
+    use jni::objects::JObject;
+    use jni::{jni_sig, jni_str};
 
     #[test]
     fn test_sas_new_generates_public_key() {
@@ -165,5 +168,60 @@ mod tests {
 
         assert_eq!(alice_established.our_public_key(), alice_public);
         assert_eq!(alice_established.their_public_key(), bob_public);
+    }
+    use crate::helpers::get_jvm;
+
+    use super::Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeDiffieHellman as native_diffie_hellman;
+
+    unsafe fn call<R>(env: &mut Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
+        let unowned = unsafe { EnvUnowned::from_raw(env.get_raw()) };
+        let class = unsafe { JClass::from_raw(env, std::ptr::null_mut()) };
+        f(unowned, class)
+    }
+
+    #[test]
+    fn test_jni_diffie_hellman_transfers_ownership() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let sas = vodozemac::sas::Sas::new();
+                let ptr = Box::into_raw(Box::new(sas)) as jlong;
+
+                let their_key = env.new_string(Sas::new().public_key().to_base64())?;
+                let result = call(env, |unowned, class| {
+                    native_diffie_hellman(unowned, class, ptr, their_key)
+                });
+                assert!(!result.is_null(), "The DH should return an EstablishedSas");
+
+                let result_object = JObject::from_raw(env, result);
+                env.call_method(&result_object, jni_str!("close"), jni_sig!(() -> void), &[])?;
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_jni_diffie_hellman_invalid_key_throws() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let sas = vodozemac::sas::Sas::new();
+                let ptr = Box::into_raw(Box::new(sas)) as jlong;
+
+                let invalid = env.new_string("invalid")?;
+                let result = call(env, |unowned, class| {
+                    native_diffie_hellman(unowned, class, ptr, invalid)
+                });
+                assert!(
+                    result.is_null(),
+                    "An invalid key should produce no EstablishedSas"
+                );
+                assert!(env.exception_check(), "An invalid key should throw");
+                env.exception_clear();
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
     }
 }
