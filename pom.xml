@@ -155,6 +155,13 @@
         </profile>
         <profile>
             <id>sample</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.sharegov</groupId>
+                    <artifactId>mjson</artifactId>
+                    <version>1.4.0</version>
+                </dependency>
+            </dependencies>
             <build>
                 <plugins>
                     <plugin>
@@ -227,6 +234,16 @@
                                 </goals>
                                 <configuration>
                                     <mainClass>io.github.fherbreteau.vodozemac.examples.SampleBackup</mainClass>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>sample-cross-signing</id>
+                                <phase>test</phase>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                                <configuration>
+                                    <mainClass>io.github.fherbreteau.vodozemac.examples.SampleCrossSigning</mainClass>
                                 </configuration>
                             </execution>
                         </executions>
