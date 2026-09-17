@@ -242,6 +242,7 @@ class NativeHandleTest {
         consumedSas.established().close();
     }
 
+    @SuppressWarnings("resource")
     private static void newLeakedHandle(CountDownLatch freed) {
         new TestNativeHandle(freed);
     }
