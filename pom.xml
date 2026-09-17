@@ -155,6 +155,9 @@
         </profile>
         <profile>
             <id>sample</id>
+            <properties>
+                <demos.outputDirectory>${project.build.directory}/demos-classes</demos.outputDirectory>
+            </properties>
             <dependencies>
                 <dependency>
                     <groupId>org.sharegov</groupId>
@@ -164,20 +167,26 @@
             </dependencies>
             <build>
                 <plugins>
+                    <!-- Compile the demos into their own output directory so that
+                         demo classes never land in target/classes, where they
+                         would be packaged into the library jar and break the
+                         JaCoCo 0-missed-classes check on a subsequent default
+                         build (issue #86). -->
                     <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>add-source</id>
-                                <phase>generate-sources</phase>
+                                <id>compile-demos</id>
+                                <phase>process-test-sources</phase>
                                 <goals>
-                                    <goal>add-source</goal>
+                                    <goal>compile</goal>
                                 </goals>
                                 <configuration>
-                                    <sources>
-                                        <source>src/demos/java/</source>
-                                    </sources>
+                                    <compileSourceRoots>
+                                        <compileSourceRoot>src/demos/java</compileSourceRoot>
+                                    </compileSourceRoots>
+                                    <outputDirectory>${demos.outputDirectory}</outputDirectory>
                                 </configuration>
                             </execution>
                         </executions>
@@ -194,6 +203,9 @@
                                 </goals>
                                 <configuration>
                                     <mainClass>io.github.fherbreteau.vodozemac.examples.SampleOlm</mainClass>
+                                    <additionalClasspathElements>
+                                        <additionalClasspathElement>${demos.outputDirectory}</additionalClasspathElement>
+                                    </additionalClasspathElements>
                                 </configuration>
                             </execution>
                             <execution>
@@ -204,6 +216,9 @@
                                 </goals>
                                 <configuration>
                                     <mainClass>io.github.fherbreteau.vodozemac.examples.SampleMegolm</mainClass>
+                                    <additionalClasspathElements>
+                                        <additionalClasspathElement>${demos.outputDirectory}</additionalClasspathElement>
+                                    </additionalClasspathElements>
                                 </configuration>
                             </execution>
                             <execution>
@@ -214,6 +229,9 @@
                                 </goals>
                                 <configuration>
                                     <mainClass>io.github.fherbreteau.vodozemac.examples.SampleSas</mainClass>
+                                    <additionalClasspathElements>
+                                        <additionalClasspathElement>${demos.outputDirectory}</additionalClasspathElement>
+                                    </additionalClasspathElements>
                                 </configuration>
                             </execution>
                             <execution>
@@ -224,6 +242,9 @@
                                 </goals>
                                 <configuration>
                                     <mainClass>io.github.fherbreteau.vodozemac.examples.SampleEcies</mainClass>
+                                    <additionalClasspathElements>
+                                        <additionalClasspathElement>${demos.outputDirectory}</additionalClasspathElement>
+                                    </additionalClasspathElements>
                                 </configuration>
                             </execution>
                             <execution>
@@ -234,6 +255,9 @@
                                 </goals>
                                 <configuration>
                                     <mainClass>io.github.fherbreteau.vodozemac.examples.SampleBackup</mainClass>
+                                    <additionalClasspathElements>
+                                        <additionalClasspathElement>${demos.outputDirectory}</additionalClasspathElement>
+                                    </additionalClasspathElements>
                                 </configuration>
                             </execution>
                             <execution>
@@ -244,6 +268,9 @@
                                 </goals>
                                 <configuration>
                                     <mainClass>io.github.fherbreteau.vodozemac.examples.SampleCrossSigning</mainClass>
+                                    <additionalClasspathElements>
+                                        <additionalClasspathElement>${demos.outputDirectory}</additionalClasspathElement>
+                                    </additionalClasspathElements>
                                 </configuration>
                             </execution>
                         </executions>
