@@ -56,6 +56,9 @@
         <sonar.organization>fherbreteau</sonar.organization>
         <sonar.projectKey>fherbreteau_vodozemac-java</sonar.projectKey>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <sonar.sources>src/main/java,rust/src</sonar.sources>
+        <sonar.rust.cargo.manifestPath>rust/Cargo.toml</sonar.rust.cargo.manifestPath>
+        <sonar.rust.lcov.reportPaths>target/rust-lcov.info</sonar.rust.lcov.reportPaths>
         <sonar.coverage.exclusions>
             **/NativeLibraryLoader.java
         </sonar.coverage.exclusions>
