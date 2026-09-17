@@ -291,6 +291,11 @@ jobs:
         working-directory: rust
         run: |
           cargo llvm-cov --lcov --output-path ../target/rust-lcov.info
+          # SonarCloud matches lcov SF: paths against files relative to the
+          # project base dir: rewrite the absolute rust/ paths so the Rust
+          # coverage is actually imported instead of being counted at 0%.
+          sed -i.bak "s|SF:${GITHUB_WORKSPACE}/rust/|SF:rust/|" ../target/rust-lcov.info
+          rm ../target/rust-lcov.info.bak
 
       - name: Sonar check with Maven
         env:
