@@ -105,7 +105,7 @@ impl<T> RawBox<T> {
     }
 
     pub(crate) fn leak(self) {
-        std::mem::forget(self);
+        let _ = std::mem::ManuallyDrop::new(self);
     }
 }
 

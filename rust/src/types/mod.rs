@@ -90,13 +90,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_types_Curve25519Publ
 }
 
 pub(crate) trait JniBase64Value {
-    const JNI_CLASS: &'static jni::strings::JNIStr;
+    const JNI_CLASS: &jni::strings::JNIStr;
 
     fn to_base64(&self) -> String;
 }
 
 impl JniBase64Value for Curve25519PublicKey {
-    const JNI_CLASS: &'static jni::strings::JNIStr =
+    const JNI_CLASS: &jni::strings::JNIStr =
         jni_str!("io/github/fherbreteau/vodozemac/types/Curve25519PublicKey");
 
     fn to_base64(&self) -> String {
@@ -105,7 +105,7 @@ impl JniBase64Value for Curve25519PublicKey {
 }
 
 impl JniBase64Value for Ed25519PublicKey {
-    const JNI_CLASS: &'static jni::strings::JNIStr =
+    const JNI_CLASS: &jni::strings::JNIStr =
         jni_str!("io/github/fherbreteau/vodozemac/types/Ed25519PublicKey");
 
     fn to_base64(&self) -> String {
@@ -114,7 +114,7 @@ impl JniBase64Value for Ed25519PublicKey {
 }
 
 impl JniBase64Value for Ed25519Signature {
-    const JNI_CLASS: &'static jni::strings::JNIStr =
+    const JNI_CLASS: &jni::strings::JNIStr =
         jni_str!("io/github/fherbreteau/vodozemac/types/Ed25519Signature");
 
     fn to_base64(&self) -> String {
