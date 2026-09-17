@@ -45,7 +45,6 @@
         <versions-plugin.version>2.22.0</versions-plugin.version>
         <dependency-plugin.version>3.11.0</dependency-plugin.version>
         <enforcer-plugin.version>3.6.3</enforcer-plugin.version>
-        <build-helper-plugin.version>3.6.2</build-helper-plugin.version>
         <source-plugin.version>3.4.0</source-plugin.version>
         <javadoc-plugin.version>3.12.0</javadoc-plugin.version>
         <gpg-plugin.version>3.2.8</gpg-plugin.version>
@@ -155,6 +154,9 @@
         </profile>
         <profile>
             <id>sample</id>
+            <properties>
+                <demos.outputDirectory>${project.build.directory}/demos-classes</demos.outputDirectory>
+            </properties>
             <dependencies>
                 <dependency>
                     <groupId>org.sharegov</groupId>
@@ -164,20 +166,26 @@
             </dependencies>
             <build>
                 <plugins>
+                    <!-- Compile the demos into their own output directory so that
+                         demo classes never land in target/classes, where they
+                         would be packaged into the library jar and break the
+                         JaCoCo 0-missed-classes check on a subsequent default
+                         build (issue #86). -->
                     <plugin>
-                        <groupId>org.codehaus.mojo</groupId>
-                        <artifactId>build-helper-maven-plugin</artifactId>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-compiler-plugin</artifactId>
                         <executions>
                             <execution>
-                                <id>add-source</id>
-                                <phase>generate-sources</phase>
+                                <id>compile-demos</id>
+                                <phase>process-test-sources</phase>
                                 <goals>
-                                    <goal>add-source</goal>
+                                    <goal>compile</goal>
                                 </goals>
                                 <configuration>
-                                    <sources>
-                                        <source>src/demos/java/</source>
-                                    </sources>
+                                    <compileSourceRoots>
+                                        <compileSourceRoot>src/demos/java</compileSourceRoot>
+                                    </compileSourceRoots>
+                                    <outputDirectory>${demos.outputDirectory}</outputDirectory>
                                 </configuration>
                             </execution>
                         </executions>
@@ -194,6 +202,9 @@
                                 </goals>
                                 <configuration>
                                     <mainClass>io.github.fherbreteau.vodozemac.examples.SampleOlm</mainClass>
+                                    <additionalClasspathElements>
+                                        <additionalClasspathElement>${demos.outputDirectory}</additionalClasspathElement>
+                                    </additionalClasspathElements>
                                 </configuration>
                             </execution>
                             <execution>
@@ -204,6 +215,9 @@
                                 </goals>
                                 <configuration>
                                     <mainClass>io.github.fherbreteau.vodozemac.examples.SampleMegolm</mainClass>
+                                    <additionalClasspathElements>
+                                        <additionalClasspathElement>${demos.outputDirectory}</additionalClasspathElement>
+                                    </additionalClasspathElements>
                                 </configuration>
                             </execution>
                             <execution>
@@ -214,6 +228,9 @@
                                 </goals>
                                 <configuration>
                                     <mainClass>io.github.fherbreteau.vodozemac.examples.SampleSas</mainClass>
+                                    <additionalClasspathElements>
+                                        <additionalClasspathElement>${demos.outputDirectory}</additionalClasspathElement>
+                                    </additionalClasspathElements>
                                 </configuration>
                             </execution>
                             <execution>
@@ -224,6 +241,9 @@
                                 </goals>
                                 <configuration>
                                     <mainClass>io.github.fherbreteau.vodozemac.examples.SampleEcies</mainClass>
+                                    <additionalClasspathElements>
+                                        <additionalClasspathElement>${demos.outputDirectory}</additionalClasspathElement>
+                                    </additionalClasspathElements>
                                 </configuration>
                             </execution>
                             <execution>
@@ -234,6 +254,9 @@
                                 </goals>
                                 <configuration>
                                     <mainClass>io.github.fherbreteau.vodozemac.examples.SampleBackup</mainClass>
+                                    <additionalClasspathElements>
+                                        <additionalClasspathElement>${demos.outputDirectory}</additionalClasspathElement>
+                                    </additionalClasspathElements>
                                 </configuration>
                             </execution>
                             <execution>
@@ -244,6 +267,9 @@
                                 </goals>
                                 <configuration>
                                     <mainClass>io.github.fherbreteau.vodozemac.examples.SampleCrossSigning</mainClass>
+                                    <additionalClasspathElements>
+                                        <additionalClasspathElement>${demos.outputDirectory}</additionalClasspathElement>
+                                    </additionalClasspathElements>
                                 </configuration>
                             </execution>
                         </executions>
@@ -385,11 +411,6 @@
                     <version>${exec-plugin.version}</version>
                 </plugin>
                 <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>${build-helper-plugin.version}</version>
-                </plugin>
-                <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-resources-plugin</artifactId>
                     <version>${resource-plugin.version}</version>
@@ -453,6 +474,11 @@
                         </ruleSet>
                     </configuration>
                 </plugin>
+                <!-- IDE metadata (no build participation): teaches the Eclipse
+                     m2e plugin and the VS Code Java extension how to import the
+                     project (ignore the checkstyle:check execution, skip the
+                     exec:exec cargo invocations on incremental builds). Deliberately
+                     kept in pluginManagement — do not remove. -->
                 <plugin>
                     <groupId>org.eclipse.m2e</groupId>
                     <artifactId>lifecycle-mapping</artifactId>
