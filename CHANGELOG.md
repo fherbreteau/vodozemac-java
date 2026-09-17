@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🚀 Features
 
 - **Ed25519 Key Pair Generator**: Added `Ed25519KeyPair` in `io.github.fherbreteau.vodozemac.types`, a native-handle class generating a random Ed25519 signing key pair with signing, public-key export, and JSON pickle/unpickle support, backed by a new Rust JNI module (`rust/src/types/keypair.rs`) (#73)
-- **Cross-Signing Demo**: Added `SampleCrossSigning` to the sample profile, demonstrating `Ed25519KeyPair` on a real use case — generating and cross-signing the Matrix master/user-signing/self-signing keys and device keys per the Matrix specification, including pickle persistence of each signing key
+- **Cross-Signing Demo**: Added `SampleCrossSigning` to the sample profile, demonstrating `Ed25519KeyPair` on a real use case — generating and cross-signing the Matrix master/user-signing/self-signing keys and device keys per the Matrix specification, including pickle persistence of each signing key (#85)
 
 ### 🛡️ Security & Hardening
 
