@@ -10,7 +10,7 @@
     <packaging>jar</packaging>
     <name>Vodozemac Java binding</name>
     <description>Java binding for the vodozemac cryptographic Rust library</description>
-    <url>${project.scm.url}</url>
+    <url>https://github.com/fherbreteau/vodozemac-java</url>
 
     <properties>
         <java.version>25</java.version>
@@ -771,8 +771,11 @@
     </developers>
 
     <scm>
-        <connection>scm:git:${project.scm.url}.git</connection>
-        <developerConnection>scm:git:${project.scm.url}.git</developerConnection>
+        <!-- Maven deploys the raw pom.xml without interpolation: SCM URLs must be
+             literal, or the published POM on Maven Central contains unresolved
+             ${project.scm.url} expressions. -->
+        <connection>scm:git:https://github.com/fherbreteau/vodozemac-java.git</connection>
+        <developerConnection>scm:git:https://github.com/fherbreteau/vodozemac-java.git</developerConnection>
         <url>https://github.com/fherbreteau/vodozemac-java</url>
         <tag>@{project.version}</tag>
     </scm>
