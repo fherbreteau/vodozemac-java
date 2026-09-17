@@ -19,6 +19,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Build System
 
+- **CodeQL Action Update**: Bumped `github/codeql-action/{init,analyze,upload-sarif}` to 4.38.0 in a single commit — the three sub-actions must run the same version within a workflow run, so per-sub-path Dependabot PRs left mixed versions that crashed the CodeQL jobs; a `codeql-action` Dependabot group now keeps future bumps atomic (#87)
 - **Reusable Workflow Secrets**: The *Release* workflow now forwards its secrets to the reusable build workflow (`secrets: inherit`); called workflows do not inherit secrets, which made the Sonar job fail and skipped artifact publishing on release runs (#68)
 - **Release Credentials**: The *Release* workflow writes both Maven server credentials (GitHub Packages and Maven Central) explicitly, since `setup-java` only supports a single server entry and the GitHub Packages deploy lost its `github` server entry (#69)
 - **Central Auto-Publishing**: Maven Central deployments now publish automatically (`autoPublish`) and the release workflow waits until the artifacts are live (`waitUntil published`); the previously used `autoReleaseAfterClose` parameter was silently ignored by the Central Portal plugin (#70)
