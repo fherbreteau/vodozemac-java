@@ -474,6 +474,11 @@
                         </ruleSet>
                     </configuration>
                 </plugin>
+                <!-- IDE metadata (no build participation): teaches the Eclipse
+                     m2e plugin and the VS Code Java extension how to import the
+                     project (ignore the checkstyle:check execution, skip the
+                     exec:exec cargo invocations on incremental builds). Deliberately
+                     kept in pluginManagement — do not remove. -->
                 <plugin>
                     <groupId>org.eclipse.m2e</groupId>
                     <artifactId>lifecycle-mapping</artifactId>
