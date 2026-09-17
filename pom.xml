@@ -30,7 +30,7 @@
         <assertj.version>3.27.7</assertj.version>
 
         <!-- Tools dependencies versions -->
-        <exec-plugin.version>3.6.3</exec-plugin.version>
+        <exec-plugin.version>3.6.4</exec-plugin.version>
         <resource-plugin.version>3.5.0</resource-plugin.version>
         <compiler-plugin.version>3.16.0</compiler-plugin.version>
         <surefire-plugin.version>3.6.0</surefire-plugin.version>
