@@ -7,8 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [Unreleased]
-
 ### 🐛 Fixes
 
 - **Immutable Releases**: The *Release* workflow now creates the GitHub release as a **draft**, uploads the jars to it, and publishes it in a follow-up step — GitHub's newly-default immutable releases lock a release as soon as it is published, which made the previous create-then-upload flow fail (`1.0.0-rc2`'s GitHub release page could not carry its assets; the Maven Central deployment was unaffected) (#96)
