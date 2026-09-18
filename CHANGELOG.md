@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc4] - 2026-09-18
+
 ### 🐛 Fixes
 
 - **Release Pipeline De-duplication**: The *Release* workflow no longer runs twice per release — the *Prepare Release* tag push (authenticated with the `RELEASE_TOKEN` PAT, which *does* trigger `on: push` tag workflows, contrary to the previous assumption) fires it, and the redundant explicit dispatch that made the second run fail with a `409 Conflict` on the package deployments was removed; a `concurrency` group now cancels any accidental double run (#97)
