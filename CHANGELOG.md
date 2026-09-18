@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🐛 Fixes
+
+- **Release Pipeline De-duplication**: The *Release* workflow no longer runs twice per release — the *Prepare Release* tag push (authenticated with the `RELEASE_TOKEN` PAT, which *does* trigger `on: push` tag workflows, contrary to the previous assumption) fires it, and the redundant explicit dispatch that made the second run fail with a `409 Conflict` on the package deployments was removed; a `concurrency` group now cancels any accidental double run (#97)
+
+### 🧹 Refactoring
+
+- **Release Workflow Responsibilities**: The *Release* workflow is now publish-only — it checks out the immutable tag with the default `GITHUB_TOKEN` and never mutates files; the *next development version* bump moved to the *Prepare Release* workflow, which already owns the `main`-branch writes through the `RELEASE_TOKEN` identity (#97)
+
 ## [1.0.0-rc3] - 2026-09-18
 
 ### 🐛 Fixes

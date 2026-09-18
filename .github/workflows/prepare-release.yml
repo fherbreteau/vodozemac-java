@@ -22,10 +22,6 @@ jobs:
     environment: release
     permissions:
       contents: write
-      # Needed to dispatch the tag-triggered Release workflow at the end of
-      # the job (the actions:write permission is what the workflow dispatch
-      # API requires; anything unlisted in this block is dropped to none).
-      actions: write
 
     steps:
       - name: Check that the triggering actor is authorized
@@ -130,11 +126,21 @@ jobs:
           git tag -a "${{ steps.meta.outputs.tag }}" -m "Release ${{ steps.meta.outputs.version }}"
           git push origin "${{ steps.meta.outputs.tag }}"
 
-      - name: Trigger the Release workflow
+      - name: Bump to next development version
+        # The tag-triggered Release workflow builds from the immutable tag, so
+        # main can move on to the next development version right away. This
+        # mutation lives here (not in the Release workflow) because this
+        # workflow already owns the main-branch writes through the
+        # RELEASE_TOKEN identity.
+        if: steps.meta.outputs.isFinal == 'true'
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TAG: ${{ steps.meta.outputs.tag }}
+          NEXT_VERSION: ${{ steps.meta.outputs.nextVersion }}
+          CARGO_VERSION: ${{ steps.meta.outputs.cargoVersion }}
         run: |
-          # Tags pushed with GITHUB_TOKEN do not trigger workflows, so
-          # dispatch the tag-triggered Release workflow explicitly.
-          gh workflow run release.yml --ref main -f tag="$TAG"
+          mvn versions:set -DnewVersion="$NEXT_VERSION" -DgenerateBackupPoms=false
+          sed -i.bak "s/^version = \".*\"/version = \"$CARGO_VERSION\"/" rust/Cargo.toml
+          rm rust/Cargo.toml.bak
+          cargo update --manifest-path rust/Cargo.toml --package vodozemac-java --precise "$CARGO_VERSION"
+          git add pom.xml rust/Cargo.toml rust/Cargo.lock
+          git commit -m "chore(release): Prepare next development version (pom: $NEXT_VERSION, rust: $CARGO_VERSION)"
+          git push origin main
