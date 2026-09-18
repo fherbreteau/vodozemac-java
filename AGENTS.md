@@ -55,6 +55,10 @@ cargo clippy --manifest-path rust/Cargo.toml
 
 # Format check
 cargo fmt --manifest-path rust/Cargo.toml -- --check
+
+# Coverage report (HTML or LCOV for Sonar) — see the Coverage Rule below
+cargo llvm-cov --manifest-path rust/Cargo.toml --open
+cargo llvm-cov --lcov --output-path ../target/rust-lcov.info
 ```
 
 ## CI Requirements
@@ -64,6 +68,25 @@ All of the following must pass before committing:
 1. **Java**: `mvn verify` — compiles Java, builds Rust native library, runs tests, Checkstyle (0 violations), JaCoCo coverage (≥80% instructions, 0 missed methods/classes)
 2. **Rust**: `cargo clippy` (0 warnings), `cargo fmt -- --check` (0 issues), `cargo test` (0 failures)
 3. **Checkstyle config**: `checkstyle.xml` — enforces naming, imports, formatting, `FinalClass` (all classes with private constructors must be `final`)
+
+### Coverage Rule (≥80%, both languages)
+
+Code coverage must remain **above 80%** for Java and Rust. The SonarCloud
+Quality Gate enforces `new_coverage ≥ 80%` on every PR and on `main`, and a
+red coverage gate blocks the merge — never land code that drops coverage
+below the gate, and never waive it; add tests in the same change instead.
+
+- **Java**: enforced locally by `mvn verify` (JaCoCo check fails the build).
+- **Rust**: there is no local hard gate — verify the effect of your change
+  with `cargo llvm-cov` (from `rust/`: `cargo llvm-cov --lcov --output-path
+  ../target/rust-lcov.info`, or `cargo llvm-cov --open` for a browsable
+  report) and confirm the *Sonar code analysis* check stays green on the PR.
+- **JNI exports are invisible to pure-Rust tests**: every new
+  `extern "system"` export function needs a JVM-attached unit test
+  (`get_jvm()` + `EnvUnowned::from_raw(env.get_raw())`, mirroring how the JVM
+  invokes native methods — see the tests in `rust/src/types/keypair.rs` and
+  `rust/src/sas/established_sas.rs`), otherwise it drags the Rust coverage
+  down and breaks the gate.
 
 ## Pull Requests
 
