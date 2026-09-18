@@ -162,12 +162,21 @@ jobs:
             --jq '.body' > release-notes.md
 
       - name: Create GitHub Release
+        # Immutable releases only allow asset uploads while a release is a
+        # draft: create the release as a draft, upload the jars, then publish
+        # it in the next step (publishing locks the assets immutably).
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v2
         with:
           tag_name: ${{ inputs.tag || github.ref_name }}
           files: target/*.jar
           body_path: release-notes.md
+          draft: true
           prerelease: ${{ steps.meta.outputs.isFinal == 'false' }}
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release edit "${{ inputs.tag || github.ref_name }}" --draft=false
 
       - name: Bump to next development version
         if: steps.meta.outputs.isFinal == 'true'
