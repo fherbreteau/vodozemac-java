@@ -144,6 +144,26 @@ jobs:
           MAVEN_PASSWORD: ${{ secrets.OSSRH_TOKEN }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.OSSRH_GPG_SECRET_KEY_PASSWORD }}
 
+      - name: Verify the Javadoc is served on javadoc.io
+        # javadoc.io derives its pages from the Maven Central artifacts
+        # automatically (there is no upload API); poll until the released
+        # version is served so the documented Javadoc links are valid.
+        env:
+          VERSION: ${{ steps.version.outputs.VERSION }}
+        run: |
+          URL="https://www.javadoc.io/doc/io.github.fherbreteau/vodozemac-java/$VERSION"
+          for attempt in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' -L "$URL")
+            if [ "$code" = "200" ]; then
+              echo "javadoc.io serves version $VERSION"
+              exit 0
+            fi
+            echo "javadoc.io returned HTTP $code (attempt $attempt/30); retrying in 60s"
+            sleep 60
+          done
+          echo "::error::javadoc.io has not served version $VERSION after 30 minutes"
+          exit 1
+
       - name: Generate release notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
