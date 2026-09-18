@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🧹 Refactoring
 
-- **Release Workflow Responsibilities**: The *Release* workflow is now publish-only — it checks out the immutable tag with the default `GITHUB_TOKEN` and never mutates files; the *next development version* bump moved to the *Prepare Release* workflow, which already owns the `main`-branch writes through the `RELEASE_TOKEN` identity (#97)
+- **Release Workflow Responsibilities**: The *Release* workflow is now publish-only — it checks out the immutable tag with the default `GITHUB_TOKEN` and never mutates files; the *next development version* bump moved to the *Prepare Release* workflow, which already owns the `main`-branch writes through the `RELEASE_TOKEN` identity, and now applies to pre-releases too — preparing `X.Y.Z-rcN` resets `main` to the associated final version (pom `X.Y.0-SNAPSHOT`, Cargo `X.Y.0`) instead of leaving it on the release version (#97)
 
 ## [1.0.0-rc3] - 2026-09-18
 

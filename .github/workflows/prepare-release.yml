@@ -69,6 +69,11 @@ jobs:
           fi
           if [[ "$VERSION" =~ -rc[0-9]+$ ]]; then
             echo "isFinal=false" >> "$GITHUB_OUTPUT"
+            # Pre-release development versions anticipate the associated final
+            # version: X.Y.Z-rcN -> pom X.Y.0-SNAPSHOT, Cargo X.Y.0.
+            BASE="${VERSION%-rc*}"
+            echo "nextVersion=$BASE-SNAPSHOT" >> "$GITHUB_OUTPUT"
+            echo "cargoVersion=$BASE" >> "$GITHUB_OUTPUT"
           else
             echo "isFinal=true" >> "$GITHUB_OUTPUT"
             IFS='.' read -r major minor patch <<< "$VERSION"
@@ -132,7 +137,8 @@ jobs:
         # mutation lives here (not in the Release workflow) because this
         # workflow already owns the main-branch writes through the
         # RELEASE_TOKEN identity.
-        if: steps.meta.outputs.isFinal == 'true'
+        # - final release X.Y.Z      -> pom X.(Y+1).0-SNAPSHOT, Cargo X.(Y+1).0
+        # - pre-release X.Y.Z-rcN    -> pom X.Y.0-SNAPSHOT,      Cargo X.Y.0
         env:
           NEXT_VERSION: ${{ steps.meta.outputs.nextVersion }}
           CARGO_VERSION: ${{ steps.meta.outputs.cargoVersion }}
