@@ -149,6 +149,22 @@ Keep this section in sync with `pom.xml` and `rust/Cargo.toml` when dependencies
 
 **Never remove `org.eclipse.m2e:lifecycle-mapping` from `pom.xml`**: it is intentional IDE metadata (no build participation) used by the Eclipse m2e plugin and the VS Code Java extension to import the project properly (ignores `checkstyle:check` executions, skips `exec:exec` cargo invocations on incremental builds).
 
+## Documentation Site (`site/`)
+
+The user guide lives in `site/` (MkDocs Material) and is deployed to
+<https://fherbreteau.github.io/vodozemac-java/> by the *GitHub Pages*
+workflow (`.github/workflows/pages.yml`) on every push to `main` touching
+`site/`.
+
+**Update the site in the same PR** whenever a change affects user-facing
+documentation: new/changed public APIs (`site/docs/api.md`), usage behavior,
+installation requirements, thread-safety or resource-management semantics,
+security guidance, or the migration guide. `README.md` stays the repository
+landing page; the site is the canonical user guide. Verify locally with
+`pip install -r site/requirements.txt && (cd site && mkdocs build --strict)`
+— strict mode fails on broken internal links. Never edit the deployed site
+manually.
+
 ## Working Files (`docs/`)
 
 The `docs/` folder contains working documents (`docs/CODE_REVIEW.md` and `docs/IMPLEMENTATION_PLAN.md`) used to track progress during a task. The `docs/` folder must not be created, modified, or deleted unless in the appropriate PR.
