@@ -14,6 +14,13 @@ on:
 env:
   JAVA_VERSION: "25"
 
+concurrency:
+  # Safety net against two runs racing on the same release (double tag push
+  # or a manual dispatch): the loser is cancelled instead of failing with a
+  # 409 Conflict on the package deployments.
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: true
+
 jobs:
   build-native:
     # Reuses the same job as build.yml (extract into a reusable workflow).
@@ -37,12 +44,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ inputs.tag || github.ref }}
-          # The final-release version bump pushes directly to main; the
-          # main-branch ruleset only waives its pull-request requirement for
-          # the repository-admin role, so authenticate as the RELEASE_TOKEN
-          # identity (GITHUB_TOKEN itself stays subject to the rule).
-          token: ${{ secrets.RELEASE_TOKEN || secrets.GITHUB_TOKEN }}
+          ref: ${{ inputs.tag || github.ref_name }}
+          # Read-only checkout of the immutable tag: this workflow never
+          # mutates files (the next-development-version bump belongs to the
+          # Prepare Release workflow), so the default GITHUB_TOKEN suffices.
+          persist-credentials: false
 
       - name: Setup Java
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
@@ -178,23 +184,3 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release edit "${{ inputs.tag || github.ref_name }}" --draft=false
 
-      - name: Bump to next development version
-        if: steps.meta.outputs.isFinal == 'true'
-        env:
-          HAS_RELEASE_TOKEN: ${{ secrets.RELEASE_TOKEN != '' }}
-          NEXT_VERSION: ${{ steps.meta.outputs.nextVersion }}
-          CARGO_VERSION: ${{ steps.meta.outputs.cargoVersion }}
-        run: |
-          if [ "$HAS_RELEASE_TOKEN" != "true" ]; then
-            echo "::error::The RELEASE_TOKEN secret is not configured. Create a fine-grained personal access token with Contents read/write on this repository and store it as the RELEASE_TOKEN secret; the main-branch ruleset waives its pull-request requirement only for the repository-admin role this token authenticates as."
-            exit 1
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mvn versions:set -DnewVersion=${{ steps.meta.outputs.nextVersion }} -DgenerateBackupPoms=false
-          sed -i.bak 's/^version = ".*"/version = "'"${CARGO_VERSION}"'"/' rust/Cargo.toml
-          rm rust/Cargo.toml.bak
-          cargo update --manifest-path rust/Cargo.toml --package vodozemac-java --precise "${CARGO_VERSION}"
-          git add pom.xml rust/Cargo.toml rust/Cargo.lock
-          git commit -m "chore(release): Prepare next development version (pom: $NEXT_VERSION, rust: $CARGO_VERSION)"
-          git push origin HEAD:main
