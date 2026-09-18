@@ -112,6 +112,22 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_types_Ed25519KeyPair
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::helpers::get_jvm;
+
+    use super::Java_io_github_fherbreteau_vodozemac_types_Ed25519KeyPair_nativeFree as jni_free;
+    use super::Java_io_github_fherbreteau_vodozemac_types_Ed25519KeyPair_nativeNew as jni_new;
+    use super::Java_io_github_fherbreteau_vodozemac_types_Ed25519KeyPair_nativePickle as jni_pickle;
+    use super::Java_io_github_fherbreteau_vodozemac_types_Ed25519KeyPair_nativePublicKey as jni_public_key;
+    use super::Java_io_github_fherbreteau_vodozemac_types_Ed25519KeyPair_nativeSign as jni_sign;
+    use super::Java_io_github_fherbreteau_vodozemac_types_Ed25519KeyPair_nativeUnpickle as jni_unpickle;
+
+    /// Calls a JNI export with a fresh unowned env view of the current
+    /// attachment, mirroring how the JVM invokes native methods.
+    unsafe fn call<R>(env: &mut jni::Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
+        let unowned = unsafe { EnvUnowned::from_raw(env.get_raw()) };
+        let class = unsafe { JClass::from_raw(env, std::ptr::null_mut()) };
+        f(unowned, class)
+    }
 
     #[test]
     fn test_keypair_sign_verify_roundtrip() {
@@ -148,5 +164,106 @@ mod tests {
             keypair.sign(b"message"),
             "Restored key pair should produce the same signature"
         );
+    }
+
+    #[test]
+    fn test_jni_lifecycle_roundtrip() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let ptr = unsafe { call(env, |unowned, class| jni_new(unowned, class)) };
+            assert!(ptr != 0, "nativeNew should return a valid native pointer");
+
+            let key = unsafe { call(env, |unowned, class| jni_public_key(unowned, class, ptr)) };
+            assert!(!key.is_null(), "nativePublicKey should return a Java key");
+
+            let byte_array = env.byte_array_from_slice(b"Hello Matrix")?;
+            let signature = unsafe {
+                call(env, |unowned, class| {
+                    jni_sign(unowned, class, ptr, byte_array)
+                })
+            };
+            assert!(!signature.is_null(), "nativeSign should return a signature");
+
+            let pickle = unsafe { call(env, |unowned, class| jni_pickle(unowned, class, ptr)) };
+            let pickle_string = unsafe { JString::from_raw(env, pickle) }.try_to_string(env)?;
+            assert!(
+                pickle_string.starts_with('{') && pickle_string.ends_with('}'),
+                "nativePickle should return a JSON object"
+            );
+
+            let unpickled_ptr = unsafe {
+                let pickle_jstring = env.new_string(&pickle_string)?;
+                call(env, |unowned, class| {
+                    jni_unpickle(unowned, class, pickle_jstring)
+                })
+            };
+            assert!(
+                unpickled_ptr != 0,
+                "nativeUnpickle should restore the key pair"
+            );
+
+            let repickled = unsafe {
+                call(env, |unowned, class| {
+                    jni_pickle(unowned, class, unpickled_ptr)
+                })
+            };
+            let repickled_string =
+                unsafe { JString::from_raw(env, repickled) }.try_to_string(env)?;
+            assert_eq!(
+                pickle_string, repickled_string,
+                "The restored key pair should pickle identically"
+            );
+
+            unsafe {
+                native_free::<Ed25519Keypair>(env, unpickled_ptr);
+                call(env, |unowned, class| jni_free(unowned, class, ptr));
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_jni_null_pointer_throws() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let key = unsafe { call(env, |unowned, class| jni_public_key(unowned, class, 0)) };
+            assert!(key.is_null(), "A null native pointer should produce no key");
+            assert!(env.exception_check(), "check_ptr should throw");
+            env.exception_clear();
+
+            let byte_array = env.byte_array_from_slice(b"message")?;
+            let signature = unsafe {
+                call(env, |unowned, class| {
+                    jni_sign(unowned, class, 0, byte_array)
+                })
+            };
+            assert!(signature.is_null());
+            assert!(env.exception_check());
+            env.exception_clear();
+
+            let pickle = unsafe { call(env, |unowned, class| jni_pickle(unowned, class, 0)) };
+            assert!(pickle.is_null());
+            assert!(env.exception_check());
+            env.exception_clear();
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_jni_unpickle_invalid_json_throws() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            let ptr = unsafe {
+                let invalid = env.new_string("not-json")?;
+                call(env, |unowned, class| jni_unpickle(unowned, class, invalid))
+            };
+            assert_eq!(ptr, 0, "Unpickling invalid JSON should produce no key pair");
+            assert!(env.exception_check(), "from_json should throw");
+            env.exception_clear();
+            Ok(())
+        })
+        .expect("JVM test failed");
     }
 }

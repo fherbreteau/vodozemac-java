@@ -885,4 +885,38 @@ mod tests {
             alice.create_outbound_session(SessionConfig::version_2(), bob_identity, bob_one_time);
         let _ = session;
     }
+
+    #[test]
+    fn test_one_time_keys_generation_limits_through_jni() {
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeGenerateOneTimeKeys as native_generate;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeNew as native_new;
+
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let unowned = EnvUnowned::from_raw(env.get_raw());
+                let class = JClass::from_raw(env, std::ptr::null_mut());
+                let ptr = native_new(unowned, class);
+                assert!(ptr != 0, "nativeNew should return a valid native pointer");
+
+                for count in [0, 200] {
+                    let unowned = EnvUnowned::from_raw(env.get_raw());
+                    let class = JClass::from_raw(env, std::ptr::null_mut());
+                    let result = native_generate(unowned, class, ptr, count);
+                    assert!(result.is_null(), "count {count} should be rejected");
+                    assert!(env.exception_check(), "count {count} should throw");
+                    env.exception_clear();
+                }
+
+                let unowned = EnvUnowned::from_raw(env.get_raw());
+                let class = JClass::from_raw(env, std::ptr::null_mut());
+                let result = native_generate(unowned, class, ptr, 1);
+                assert!(!result.is_null(), "count 1 should succeed");
+
+                native_free::<Account>(env, ptr);
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
 }

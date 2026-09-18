@@ -32,6 +32,7 @@ mod tests {
     use vodozemac::megolm::GroupSession;
 
     use super::*;
+    use jni::Env;
 
     #[test]
     fn test_megolm_message_from_base64_roundtrip() {
@@ -132,5 +133,35 @@ mod tests {
 
         let decrypted = inbound.decrypt(&restored).expect("Should decrypt");
         assert_eq!(decrypted.plaintext, plaintext.as_bytes());
+    }
+    use crate::helpers::get_jvm;
+
+    use super::Java_io_github_fherbreteau_vodozemac_megolm_MegolmMessage_nativeFromBase64 as native_from_base64;
+
+    unsafe fn call<R>(env: &mut Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
+        let unowned = unsafe { EnvUnowned::from_raw(env.get_raw()) };
+        let class = unsafe { JClass::from_raw(env, std::ptr::null_mut()) };
+        f(unowned, class)
+    }
+
+    #[test]
+    fn test_jni_from_base64_invalid_throws() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let invalid = env.new_string("not-a-megolm-message")?;
+                let result = call(env, |unowned, class| {
+                    native_from_base64(unowned, class, invalid)
+                });
+                assert!(
+                    result.is_null(),
+                    "An invalid message should produce no object"
+                );
+                assert!(env.exception_check(), "An invalid message should throw");
+                env.exception_clear();
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
     }
 }

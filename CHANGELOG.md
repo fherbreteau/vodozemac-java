@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🧪 Testing
+
+- **Rust JNI Coverage**: Added 15 JVM-attached Rust unit tests that invoke the JNI exports directly (`Ed25519KeyPair` lifecycle, key/signature validation and verification, SAS bytes and MAC flows, DH ownership transfer, base64 utilities, one-time-keys limits, `RawBox` guard semantics), lifting the Rust new-code coverage on SonarCloud above the 80% Quality Gate requirement (#93)
+
 ### 🚀 Features
 
 - **Ed25519 Key Pair Generator**: Added `Ed25519KeyPair` in `io.github.fherbreteau.vodozemac.types`, a native-handle class generating a random Ed25519 signing key pair with signing, public-key export, and JSON pickle/unpickle support, backed by a new Rust JNI module (`rust/src/types/keypair.rs`) (#73)

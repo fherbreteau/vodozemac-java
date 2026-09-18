@@ -188,7 +188,15 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::helpers::get_jvm;
+    use jni::objects::JObject;
+    use jni::{jni_sig, jni_str};
     use vodozemac::sas::Sas;
+
+    use super::Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_nativeBytes as native_bytes;
+    use super::Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_nativeBytesRaw as native_bytes_raw;
+    use super::Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_nativeCalculateMacInvalidBase64 as native_calculate_mac_invalid_base64;
+    use super::Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_nativeVerifyMac as native_verify_mac;
 
     fn establish_sas_pair() -> (EstablishedSas, EstablishedSas) {
         let alice = Sas::new();
@@ -375,5 +383,133 @@ mod tests {
         let (alice, _) = establish_sas_pair();
         let bytes = alice.bytes("INFO");
         assert_eq!(bytes.as_bytes().len(), 6);
+    }
+
+    /// Calls a JNI export with a fresh unowned env view of the current
+    /// attachment, mirroring how the JVM invokes native methods.
+    unsafe fn call<R>(env: &mut Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
+        let unowned = unsafe { EnvUnowned::from_raw(env.get_raw()) };
+        let class = unsafe { JClass::from_raw(env, std::ptr::null_mut()) };
+        f(unowned, class)
+    }
+
+    #[test]
+    fn test_jni_bytes_creates_value_object() {
+        let jvm = get_jvm();
+        let ptr = Box::into_raw(Box::new(establish_sas_pair().0)) as jlong;
+        jvm.attach_current_thread(move |env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let info = env.new_string("SAS_INFO")?;
+                let result = call(env, |unowned, class| {
+                    native_bytes(unowned, class, ptr, info)
+                });
+                assert!(
+                    !result.is_null(),
+                    "nativeBytes should return a SasBytes object"
+                );
+
+                let result_object = JObject::from_raw(env, result);
+                let raw_bytes = env
+                    .call_method(
+                        &result_object,
+                        jni_str!("bytes"),
+                        jni_sig!(() -> byte[]),
+                        &[],
+                    )?
+                    .l()?;
+                assert!(
+                    !raw_bytes.is_null(),
+                    "The SasBytes should expose its raw bytes"
+                );
+
+                native_free::<EstablishedSas>(env, ptr);
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_jni_bytes_raw_invalid_count_throws() {
+        let jvm = get_jvm();
+        let ptr = Box::into_raw(Box::new(establish_sas_pair().0)) as jlong;
+        jvm.attach_current_thread(move |env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let info = env.new_string("SAS_INFO")?;
+                let result = call(env, |unowned, class| {
+                    native_bytes_raw(unowned, class, ptr, info, 32 * 255 + 2)
+                });
+                assert!(
+                    result.is_null(),
+                    "An out-of-range count should produce no SasBytes"
+                );
+                assert!(env.exception_check(), "An out-of-range count should throw");
+                env.exception_clear();
+
+                native_free::<EstablishedSas>(env, ptr);
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_jni_calculate_mac_invalid_base64_and_verify_mac() {
+        let jvm = get_jvm();
+        let established = establish_sas_pair().0;
+        let valid_mac = established.calculate_mac("input", "info").to_base64();
+        let ptr = Box::into_raw(Box::new(established)) as jlong;
+        jvm.attach_current_thread(move |env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let input = env.new_string("input")?;
+                let info = env.new_string("info")?;
+                let mac = call(env, |unowned, class| {
+                    native_calculate_mac_invalid_base64(unowned, class, ptr, input, info)
+                });
+                let mac = JString::from_raw(env, mac);
+                let mac = mac.try_to_string(env)?;
+                assert!(!mac.is_empty(), "The MAC should be a non-empty string");
+
+                let input = env.new_string("input")?;
+                let info = env.new_string("info")?;
+                let mac = env.new_string(&valid_mac)?;
+                call(env, |unowned, class| {
+                    native_verify_mac(unowned, class, ptr, input, info, mac)
+                });
+                assert!(!env.exception_check(), "A valid MAC should verify");
+
+                let input = env.new_string("input")?;
+                let info = env.new_string("info")?;
+                let invalid_mac = env.new_string("not-a-base64-mac")?;
+                call(env, |unowned, class| {
+                    native_verify_mac(unowned, class, ptr, input, info, invalid_mac)
+                });
+                assert!(env.exception_check(), "An invalid MAC should throw");
+                env.exception_clear();
+
+                native_free::<EstablishedSas>(env, ptr);
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_jni_null_pointer_throws() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let info = env.new_string("SAS_INFO")?;
+                let result = call(env, |unowned, class| native_bytes(unowned, class, 0, info));
+                assert!(
+                    result.is_null(),
+                    "A null native pointer should produce no SasBytes"
+                );
+                assert!(env.exception_check(), "check_ptr should throw");
+                env.exception_clear();
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
     }
 }

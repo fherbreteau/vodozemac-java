@@ -133,3 +133,132 @@ pub(crate) fn to_java_base64_value<'local, T: JniBase64Value>(
         &[JValue::Object(&encoded)],
     )
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::helpers::get_jvm;
+
+    use super::Java_io_github_fherbreteau_vodozemac_types_Curve25519PublicKey_nativeValidate as curve25519_validate;
+    use super::Java_io_github_fherbreteau_vodozemac_types_Ed25519PublicKey_nativeValidate as ed25519_key_validate;
+    use super::Java_io_github_fherbreteau_vodozemac_types_Ed25519PublicKey_nativeVerify as ed25519_verify;
+    use super::Java_io_github_fherbreteau_vodozemac_types_Ed25519Signature_nativeValidate as ed25519_signature_validate;
+
+    unsafe fn call<R>(env: &mut Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
+        let unowned = unsafe { EnvUnowned::from_raw(env.get_raw()) };
+        let class = unsafe { JClass::from_raw(env, std::ptr::null_mut()) };
+        f(unowned, class)
+    }
+
+    #[test]
+    fn test_jni_validate_accepts_valid_keys() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let key = env.new_string("NnTo+WL1n6ZjGN1EdHKtrYMRKAlrNUlxrZLtX0hDkbs")?;
+                call(env, |unowned, class| {
+                    ed25519_key_validate(unowned, class, key)
+                });
+                assert!(!env.exception_check(), "A valid Ed25519 key should validate");
+
+                let signature = env.new_string(
+                    "SucffO/oXYCEPa2lSLPiutmbbN+F3fKMd4Bps8ONOQJ/QjjwlpuXL/ag0kfa9vC0LeH0b+Y7/Qy+83jpExuUCQ",
+                )?;
+                call(env, |unowned, class| {
+                    ed25519_signature_validate(unowned, class, signature)
+                });
+                assert!(!env.exception_check(), "A valid signature should validate");
+
+                let curve_key = env.new_string("WHKTK+K7GSjf83JuPfGV0KAZjxQU/3HKOb0DD1MaOm4")?;
+                call(env, |unowned, class| {
+                    curve25519_validate(unowned, class, curve_key)
+                });
+                assert!(!env.exception_check(), "A valid Curve25519 key should validate");
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_jni_validate_rejects_invalid_keys() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let invalid = env.new_string("invalid")?;
+
+                call(env, |unowned, class| {
+                    ed25519_key_validate(unowned, class, invalid)
+                });
+                assert!(env.exception_check(), "An invalid Ed25519 key should throw");
+                env.exception_clear();
+
+                let invalid = env.new_string("invalid")?;
+                call(env, |unowned, class| {
+                    ed25519_signature_validate(unowned, class, invalid)
+                });
+                assert!(env.exception_check(), "An invalid signature should throw");
+                env.exception_clear();
+
+                let invalid = env.new_string("invalid")?;
+                call(env, |unowned, class| {
+                    curve25519_validate(unowned, class, invalid)
+                });
+                assert!(
+                    env.exception_check(),
+                    "An invalid Curve25519 key should throw"
+                );
+                env.exception_clear();
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_jni_verify_signatures() {
+        use vodozemac::Ed25519Keypair;
+
+        let keypair = Ed25519Keypair::new();
+        let key_base64 = keypair.public_key().to_base64();
+        let signature_base64 = keypair.sign(b"Hello Matrix").to_base64();
+
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let key = env.new_string(&key_base64)?;
+                let signature = env.new_string(&signature_base64)?;
+                let message = env.byte_array_from_slice(b"Hello Matrix")?;
+                let verified = call(env, |unowned, class| {
+                    ed25519_verify(unowned, class, key, message, signature)
+                });
+                assert!(verified, "A matching signature should verify");
+
+                let key = env.new_string(&key_base64)?;
+                let signature = env.new_string(&signature_base64)?;
+                let message = env.byte_array_from_slice(b"other message")?;
+                let verified = call(env, |unowned, class| {
+                    ed25519_verify(unowned, class, key, message, signature)
+                });
+                assert!(
+                    !verified,
+                    "A signature over another message should not verify"
+                );
+
+                let key = env.new_string(&key_base64)?;
+                let invalid = env.new_string("not-a-signature")?;
+                let message = env.byte_array_from_slice(b"Hello Matrix")?;
+                call(env, |unowned, class| {
+                    ed25519_verify(unowned, class, key, message, invalid)
+                });
+                assert!(
+                    env.exception_check(),
+                    "An undecodable signature should throw"
+                );
+                env.exception_clear();
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+}

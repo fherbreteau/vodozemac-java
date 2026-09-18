@@ -136,3 +136,20 @@ pub(crate) fn get_jvm() -> jni::JavaVM {
     });
     jni::JavaVM::singleton().expect("JVM should be initialized")
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_raw_box_leak_transfers_ownership() {
+        let raw = RawBox::new(0u8);
+        raw.leak();
+    }
+
+    #[test]
+    fn test_raw_box_drop_frees() {
+        let raw = RawBox::new(1u8);
+        drop(raw);
+    }
+}
