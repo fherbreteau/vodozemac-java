@@ -45,6 +45,13 @@ nav:
       - Resource management: guide/resource-management.md
       - Thread safety: guide/thread-safety.md
       - Key material handling: guide/key-material.md
+  - Samples:
+      - Olm sessions: samples/olm.md
+      - Megolm group sessions: samples/megolm.md
+      - SAS verification: samples/sas.md
+      - ECIES channels: samples/ecies.md
+      - PK encryption (backup): samples/backup.md
+      - Cross-signing keys: samples/cross-signing.md
   - API reference: api.md
   - Migration from jOlm: migration.md
   - Security: security.md

@@ -39,6 +39,14 @@ try (Account account = new Account()) {
 
 See [Installation](installation.md) and [Getting started](guide/getting-started.md).
 
+## Samples
+
+Runnable, feature-by-feature walkthroughs — [Olm sessions](samples/olm.md),
+[Megolm group sessions](samples/megolm.md), [SAS verification](samples/sas.md),
+[ECIES channels](samples/ecies.md), [PK encryption](samples/backup.md) and
+[cross-signing keys](samples/cross-signing.md) — are all derived from the
+demos shipped under `src/demos/java` (run with `mvn -Psample test`).
+
 ## API documentation
 
 The complete Javadoc for every released version is available on
