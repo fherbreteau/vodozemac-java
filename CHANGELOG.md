@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc2] - 2026-09-18
+
 ### 🧪 Testing
 
 - **Rust JNI Coverage**: Added 15 JVM-attached Rust unit tests that invoke the JNI exports directly (`Ed25519KeyPair` lifecycle, key/signature validation and verification, SAS bytes and MAC flows, DH ownership transfer, base64 utilities, one-time-keys limits, `RawBox` guard semantics), lifting the Rust new-code coverage on SonarCloud above the 80% Quality Gate requirement (#93)
