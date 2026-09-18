@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🐛 Fixes
+
+- **Dependabot not checking rust dependencies**: The cargo ecosystem for Cargo in *dependabot.yml* was not pointing to the right folder. (#100)
+
 ## [1.0.0-rc4] - 2026-09-18
 
 ### 🐛 Fixes
