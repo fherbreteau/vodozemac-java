@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🚀 Features
+
+- **Javadoc Availability Check**: The *Release* workflow now polls javadoc.io after the Maven Central deployment (`waitUntil: published`) until the released version is served — javadoc.io derives its pages from Central automatically (there is no upload API), so the step verifies the documented Javadoc links become valid instead of leaving the propagation to chance (#101)
+
+### 📚 Documentation
+
+- **Site Maven Snippet Versioning**: The *Prepare Release* workflow now updates the Maven dependency snippet on the site's installation page to the released version for final releases, so the documented configuration always points at the latest final; pre-releases keep pointing consumers at the last final (#101)
+
 ### 🐛 Fixes
 
 - **Dependabot not checking rust dependencies**: The cargo ecosystem for Cargo in *dependabot.yml* was not pointing to the right folder. (#100)
