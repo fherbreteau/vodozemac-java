@@ -3,7 +3,10 @@
 > Complete Javadoc for every released version: [javadoc.io/doc/io.github.fherbreteau/vodozemac-java](https://javadoc.io/doc/io.github.fherbreteau/vodozemac-java)
 
 
-## Account
+## Account & Olm sessions
+*Packages: `io.github.fherbreteau.vodozemac.account`, `io.github.fherbreteau.vodozemac.olm`*
+
+### Account
 
 Main class for Olm account management — identity keys, one-time keys, fallback keys, session creation, signing, pickle/unpickle, and dehydrated devices.
 
@@ -31,7 +34,7 @@ Main class for Olm account management — identity keys, one-time keys, fallback
 | `DehydratedDeviceResult toDehydratedDevice(byte[] key)` | Create a dehydrated device |
 | `static Account fromDehydratedDevice(...)` | Restore from a dehydrated device |
 
-## OlmSession
+### OlmSession
 
 Represents an Olm session for 1-to-1 encrypted communication.
 
@@ -47,7 +50,7 @@ Represents an Olm session for 1-to-1 encrypted communication.
 | `static OlmSession unpickle(...)` | Restore from pickle |
 | `static OlmSession unpickleLegacy(...)` | Restore from libolm legacy pickle |
 
-## OlmMessage
+### OlmMessage
 
 A structured Olm message consisting of a `MessageType` and a base64-encoded ciphertext body.
 Produced by `OlmSession.encrypt()` and consumed by `OlmSession.decrypt()` and
@@ -59,7 +62,7 @@ Produced by `OlmSession.encrypt()` and consumed by `OlmSession.decrypt()` and
 | `String body()` | Get the base64-encoded ciphertext body |
 | `String toJson()` | Get the JSON representation for Matrix wire format |
 
-## MessageType
+### MessageType
 
 Represents the type of an Olm message.
 
@@ -68,7 +71,7 @@ Represents the type of an Olm message.
 | `PRE_KEY` (0) | Pre-key message, used to establish a new Olm session |
 | `NORMAL` (1) | Normal message, sent over an already-established session |
 
-## SessionKeys
+### SessionKeys
 
 The set of Curve25519 public keys that were used to establish an Olm session.
 
@@ -79,7 +82,12 @@ The set of Curve25519 public keys that were used to establish an Olm session.
 | `Curve25519PublicKey baseKey()` | Get the ephemeral Curve25519 base key created by the initiator |
 | `Curve25519PublicKey oneTimeKey()` | Get the one-time Curve25519 key used to establish the session |
 
-## OutboundGroupSession
+
+
+## Megolm group sessions
+*Packages: `io.github.fherbreteau.vodozemac.megolm`*
+
+### OutboundGroupSession
 
 Megolm outbound group session for multi-recipient encrypted communication.
 
@@ -94,7 +102,7 @@ Megolm outbound group session for multi-recipient encrypted communication.
 | `static OutboundGroupSession unpickle(...)` | Restore from pickle |
 | `static OutboundGroupSession unpickleLegacy(...)` | Restore from libolm legacy pickle |
 
-## InboundGroupSession
+### InboundGroupSession
 
 Megolm inbound group session for receiving encrypted group messages.
 
@@ -114,7 +122,7 @@ Megolm inbound group session for receiving encrypted group messages.
 | `static InboundGroupSession unpickle(...)` | Restore from pickle |
 | `static InboundGroupSession unpickleLegacy(...)` | Restore from libolm legacy pickle |
 
-## MegolmMessage
+### MegolmMessage
 
 An encrypted Megolm message produced by `OutboundGroupSession.encrypt()` and consumed by
 `InboundGroupSession.decrypt()`.
@@ -127,7 +135,7 @@ An encrypted Megolm message produced by `OutboundGroupSession.encrypt()` and con
 | `Ed25519Signature signature()` | Get the Ed25519 signature of the ciphertext |
 | `static MegolmMessage fromBase64(String base64)` | Decode and validate a base64-encoded message |
 
-## DecryptedMessage
+### DecryptedMessage
 
 The result of a successful Megolm decryption.
 
@@ -136,7 +144,12 @@ The result of a successful Megolm decryption.
 | `byte[] plaintext()` | Get the decrypted plaintext bytes |
 | `int messageIndex()` | Get the message index the message was encrypted at |
 
-## Sas
+
+
+## SAS verification
+*Packages: `io.github.fherbreteau.vodozemac.sas`*
+
+### Sas
 
 Short Authentication String (SAS) verification for interactive key verification between devices.
 
@@ -145,7 +158,7 @@ Short Authentication String (SAS) verification for interactive key verification 
 | `String publicKey()` | Get the ephemeral Curve25519 public key |
 | `EstablishedSas diffieHellman(String theirPublicKey)` | Establish shared secret (consumes this `Sas`) |
 
-## EstablishedSas
+### EstablishedSas
 
 An established SAS channel with a shared secret, used for key verification and MAC exchange.
 
@@ -159,7 +172,7 @@ An established SAS channel with a shared secret, used for key verification and M
 | `String ourPublicKey()` | Get our Curve25519 public key |
 | `String theirPublicKey()` | Get the other party's Curve25519 public key |
 
-## SasBytes
+### SasBytes
 
 Short authentication string bytes for visual key verification (emoji indices and decimal numbers).
 
@@ -169,7 +182,12 @@ Short authentication string bytes for visual key verification (emoji indices and
 | `String[] decimals()` | Get 3 decimal numbers for visual verification |
 | `byte[] bytes()` | Get the raw 6 bytes of the SAS |
 
-## Ecies
+
+
+## ECIES channels
+*Packages: `io.github.fherbreteau.vodozemac.ecies`*
+
+### Ecies
 
 Unestablished ECIES channel for QR-code-based device login (MSC3886).
 
@@ -181,7 +199,7 @@ Unestablished ECIES channel for QR-code-based device login (MSC3886).
 | `OutboundCreationResult establishOutboundChannel(String theirPublicKey, byte[] plaintext)` | Establish outbound channel (consumes this `Ecies`) |
 | `InboundCreationResult establishInboundChannel(String message)` | Establish inbound channel from initial message (consumes this `Ecies`) |
 
-## EstablishedEcies
+### EstablishedEcies
 
 An established ECIES channel for encrypting and decrypting messages using ChaCha20-Poly1305.
 
@@ -192,7 +210,7 @@ An established ECIES channel for encrypting and decrypting messages using ChaCha
 | `String encrypt(byte[] plaintext)` | Encrypt a message (base64-encoded) |
 | `byte[] decrypt(String message)` | Decrypt a base64-encoded message |
 
-## CheckCode
+### CheckCode
 
 A two-digit check code for out-of-band verification of an ECIES session.
 
@@ -201,7 +219,12 @@ A two-digit check code for out-of-band verification of an ECIES session.
 | `byte[] asBytes()` | Get the raw 2-byte check code |
 | `int toDigit()` | Get the check code as a two-digit number (0–99) |
 
-## PkEncryption
+
+
+## PK encryption (Megolm key backup)
+*Packages: `io.github.fherbreteau.vodozemac.backup`*
+
+### PkEncryption
 
 The encryption component of the PK Encryption module for Megolm key backup. Implements `m.megolm_backup.v1.curve25519-aes-sha2`.
 
@@ -212,7 +235,7 @@ The encryption component of the PK Encryption module for Megolm key backup. Impl
 | `static PkEncryption fromKey(String publicKey)` | Create from a base64-encoded Curve25519 public key |
 | `PkMessage encrypt(byte[] plaintext)` | Encrypt plaintext and return a `PkMessage` |
 
-## PkDecryption
+### PkDecryption
 
 The decryption component of the PK Encryption module, holding a Curve25519 secret key.
 
@@ -228,7 +251,7 @@ The decryption component of the PK Encryption module, holding a Curve25519 secre
 | `String pickleLegacy(byte[] pickleKey)` | Serialize to libolm legacy pickle format |
 | `static PkDecryption unpickleLegacy(String pickleData, byte[] pickleKey)` | Restore from a libolm legacy pickle |
 
-## PkMessage
+### PkMessage
 
 An encrypted message produced by `PkEncryption`, consisting of three base64-encoded components.
 
@@ -238,12 +261,17 @@ An encrypted message produced by `PkEncryption`, consisting of three base64-enco
 | `String mac()` | Get the base64-encoded MAC (does not authenticate the ciphertext) |
 | `String ephemeralKey()` | Get the base64-encoded ephemeral Curve25519 public key |
 
-## Cryptographic Key Types
+
+
+## Cryptographic key types
+*Package: `io.github.fherbreteau.vodozemac.types`*
+
+
 
 Typed wrappers around base64-encoded cryptographic keys, providing validation on construction
 and type-safe usage throughout the API. Located in `io.github.fherbreteau.vodozemac.types`.
 
-#### Ed25519PublicKey
+### Ed25519PublicKey
 
 An Ed25519 public key used for signature verification.
 
@@ -254,7 +282,7 @@ An Ed25519 public key used for signature verification.
 | `boolean verify(String message, Ed25519Signature signature)` | Verify a signature (returns `false` on failure) |
 | `boolean verify(byte[] message, Ed25519Signature signature)` | Verify a signature over raw bytes |
 
-#### Ed25519Signature
+### Ed25519Signature
 
 An Ed25519 signature produced by `Account.sign()`.
 
@@ -263,7 +291,7 @@ An Ed25519 signature produced by `Account.sign()`.
 | `static Ed25519Signature fromBase64(String base64)` | Decode and validate a base64 signature |
 | `String toBase64()` | Get the base64-encoded signature |
 
-#### Curve25519PublicKey
+### Curve25519PublicKey
 
 A Curve25519 public key used for X25519 key agreement.
 
@@ -272,7 +300,7 @@ A Curve25519 public key used for X25519 key agreement.
 | `static Curve25519PublicKey fromBase64(String base64)` | Decode and validate a base64 key |
 | `String toBase64()` | Get the base64-encoded key |
 
-#### Ed25519KeyPair
+### Ed25519KeyPair
 
 An Ed25519 key pair used to sign and verify messages. Native resource — use with
 try-with-resources.
@@ -285,6 +313,16 @@ try-with-resources.
 | `Ed25519Signature sign(byte[] message)` | Sign raw bytes with the private key |
 | `String pickle()` | Serialize the key pair to a JSON string |
 | `static Ed25519KeyPair unpickle(String pickleData)` | Restore a key pair from its JSON representation |
+
+## Vodozemac
+
+Utility class providing base64 encoding/decoding and access to the vodozemac library version.
+
+| Method | Description |
+|--------|-------------|
+| `static String base64Encode(byte[] src)` | Encode bytes to unpadded base64 |
+| `static byte[] base64Decode(String src)` | Decode base64 (padded or unpadded) to bytes |
+| `static String version()` | Get the vodozemac Rust crate version |
 
 ## Exceptions
 
@@ -301,14 +339,4 @@ All exceptions extend `VodozemacException` (which extends `RuntimeException`):
 | `EciesException` | ECIES channel establishment or decryption errors |
 | `EncryptionException` | PK encryption failures (e.g. non-contributory key) |
 | `ConversionException` | Rust types that could not be parsed into Java types |
-
-## Vodozemac
-
-Utility class providing base64 encoding/decoding and access to the vodozemac library version.
-
-| Method | Description |
-|--------|-------------|
-| `static String base64Encode(byte[] src)` | Encode bytes to unpadded base64 |
-| `static byte[] base64Decode(String src)` | Decode base64 (padded or unpadded) to bytes |
-| `static String version()` | Get the vodozemac Rust crate version |
 
