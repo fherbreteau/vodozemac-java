@@ -82,6 +82,19 @@ mvn clean package
 mvn package -DskipRustBuild=true
 ```
 
+### Documentation Site
+
+The user guide lives in `site/` (MkDocs Material) and deploys to
+<https://fherbreteau.github.io/vodozemac-java/> on every push to `main`
+touching `site/`. Preview it locally:
+
+```bash
+pip install -r site/requirements.txt
+cd site && mkdocs serve   # http://127.0.0.1:8000
+```
+
+Use `mkdocs build --strict` to check for broken internal links.
+
 ### Development Workflow
 
 ```bash

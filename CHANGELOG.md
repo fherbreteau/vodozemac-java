@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 📚 Documentation
+
+- **Project Web Page**: Added a MkDocs Material user guide at <https://fherbreteau.github.io/vodozemac-java/> (`site/`), structured from the README (getting started, resource management, thread safety, key material, full API reference, jOlm migration pointer, security) and deployed by a new `pages.yml` workflow (strict build, SHA-pinned actions) on pushes to `main` touching `site/`; the README and `pom.xml` link the site, Javadoc is served by javadoc.io for every release, and `AGENTS.md` now requires agents to update the site with any user-facing change (#76) (#100)
+
 ## [1.0.0-rc4] - 2026-09-18
 
 ### 🐛 Fixes

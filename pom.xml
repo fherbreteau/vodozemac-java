@@ -10,7 +10,7 @@
     <packaging>jar</packaging>
     <name>Vodozemac Java binding</name>
     <description>Java binding for the vodozemac cryptographic Rust library</description>
-    <url>https://github.com/fherbreteau/vodozemac-java</url>
+    <url>https://fherbreteau.github.io/vodozemac-java/</url>
 
     <properties>
         <java.version>25</java.version>
