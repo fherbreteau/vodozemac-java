@@ -826,7 +826,7 @@ dependencies = [
 
 [[package]]
 name = "vodozemac-java"
-version = "1.0.0-rc2"
+version = "1.0.0-rc3"
 dependencies = [
  "jni",
  "serde",
