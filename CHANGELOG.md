@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc5] - 2026-09-19
+
 ### 🧹 Refactoring
 
 - **Release Publish-Only Cleanup**: The *Release* workflow no longer touches the pom — the tagged commit already carries the release version (set by *Prepare Release*, which also owns the next-development-version bump), so the `versions:set` step, the tag-version extraction step and the unused next-version computation were all removed; the workflow now only determines whether the release is final (drives the GitHub release's pre-release flag) (#101)
