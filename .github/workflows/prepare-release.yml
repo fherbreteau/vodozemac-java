@@ -91,6 +91,22 @@ jobs:
           fi
           python3 .github/scripts/prepare_changelog.py "${ARGS[@]}"
 
+      - name: Point the site Maven snippet at the release version
+        # The site's installation page should always advertise the latest
+        # final version; pre-releases keep pointing consumers at the last
+        # final release.
+        if: steps.meta.outputs.isFinal == 'true'
+        env:
+          VERSION: ${{ steps.meta.outputs.version }}
+        run: |
+          SITE="site/docs/installation.md"
+          perl -0pi -e 's|(<artifactId>vodozemac-java</artifactId>\s*<version>)[^<]*(</version>)|${1}'"\$VERSION"'${2}|' "$SITE"
+          if ! grep -q "<version>$VERSION</version>" "$SITE"; then
+            echo "::error::Failed to update the Maven snippet in $SITE"
+            exit 1
+          fi
+          echo "The site Maven snippet now points at $VERSION"
+
       - name: Setup Java
         uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6.0.1
         with:
@@ -122,7 +138,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add CHANGELOG.md pom.xml rust/Cargo.toml rust/Cargo.lock
+          git add CHANGELOG.md site/docs/installation.md pom.xml rust/Cargo.toml rust/Cargo.lock
           git commit -m "chore(release): Prepare ${{ steps.meta.outputs.tag }}"
           git push origin main
 

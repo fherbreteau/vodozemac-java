@@ -6,12 +6,12 @@
 [![Java 25+](https://img.shields.io/badge/Java-25+-red.svg)](https://www.oracle.com/java/technologies/downloads/)
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.fherbreteau/vodozemac-java.svg)](https://search.maven.org/artifact/io.github.fherbreteau/vodozemac-java)
 [![User guide](https://img.shields.io/badge/user%20guide-mkdocs--material-8CA1E1.svg)](https://fherbreteau.github.io/vodozemac-java/)
-[![API docs](https://img.shields.io/badge/Javadoc-javadoc.io-41B096.svg)](https://javadoc.io/doc/io.github.fherbreteau/vodozemac-java)
+[![API docs](https://img.shields.io/badge/Javadoc-apidocs%2Flatest-41B096.svg)](https://fherbreteau.github.io/vodozemac-java/apidocs/latest/index.html)
 
 **Java bindings for the [Vodozemac](https://github.com/matrix-org/vodozemac) Matrix cryptography library**
 
 📖 **[User guide](https://fherbreteau.github.io/vodozemac-java/)** ·
-📚 **[Javadoc](https://javadoc.io/doc/io.github.fherbreteau/vodozemac-java)**
+📚 **[Javadoc](https://fherbreteau.github.io/vodozemac-java/apidocs/latest/index.html)**
 — the complete documentation site is built from `site/` with MkDocs Material.
 
 ## 🚀 Overview

@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🧹 Refactoring
+
+- **Release Publish-Only Cleanup**: The *Release* workflow no longer touches the pom — the tagged commit already carries the release version (set by *Prepare Release*, which also owns the next-development-version bump), so the `versions:set` step, the tag-version extraction step and the unused next-version computation were all removed; the workflow now only determines whether the release is final (drives the GitHub release's pre-release flag) (#101)
+- **Release Run Slimming**: Removed the redundancies from the release pipeline — the `setup-java` server entries (overwritten by the explicit `settings.xml` step) and the `secrets: inherit` into the build workflow (replaced by a selective mapping of the single secret the build consumes, `SONAR_TOKEN`, keeping the full secret set out of the called workflow). The Sonar analysis of release tags was kept: it is what tells SonarCloud about the new project version — its automatic new-code detection anchors on `sonar.projectVersion` comparisons between analyses (#101)
+
+### 🚀 Features
+
+- **Self-Hosted Javadoc**: The site now serves the Javadoc of the latest Maven Central release under `/apidocs/latest/` — `pages.yml` fetches and unpacks the latest released javadoc jar at every site deployment, and the site workflow redeploys automatically on every successful *Release* completion (`workflow_run`). javadoc.io proved unreliable (it generated the Javadoc for only 1 of the 4 releases, with no API to force generation, and un-generated versions silently redirect to a versions-listing page), so all Javadoc links switched to the self-hosted copy (#101)
+
+### 📚 Documentation
+
+- **Site Maven Snippet Versioning**: The *Prepare Release* workflow now updates the Maven dependency snippet on the site's installation page to the released version for final releases, so the documented configuration always points at the latest final; pre-releases keep pointing consumers at the last final (#101)
+
 ### 🐛 Fixes
 
 - **Dependabot not checking rust dependencies**: The cargo ecosystem for Cargo in *dependabot.yml* was not pointing to the right folder. (#100)

@@ -1,6 +1,6 @@
 # API reference
 
-> Complete Javadoc for every released version: [javadoc.io/doc/io.github.fherbreteau/vodozemac-java](https://javadoc.io/doc/io.github.fherbreteau/vodozemac-java)
+> Complete Javadoc of the latest release: [/apidocs/latest/](https://fherbreteau.github.io/vodozemac-java/apidocs/latest/index.html)
 
 
 ## Account & Olm sessions
