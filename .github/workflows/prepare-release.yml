@@ -100,7 +100,7 @@ jobs:
           VERSION: ${{ steps.meta.outputs.version }}
         run: |
           SITE="site/docs/installation.md"
-          perl -0pi -e 's|(<artifactId>vodozemac-java</artifactId>\s*<version>)[^<]*(</version>)|${1}'"\$VERSION"'${2}|' "$SITE"
+          perl -0pi -e 's|(<artifactId>vodozemac-java</artifactId>\s*<version>)[^<]*(</version>)|${1}'"$VERSION"'${2}|' "$SITE"
           if ! grep -q "<version>$VERSION</version>" "$SITE"; then
             echo "::error::Failed to update the Maven snippet in $SITE"
             exit 1

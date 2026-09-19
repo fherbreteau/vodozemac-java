@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🐛 Fixes
 
+- **Site Maven Snippet Update**: Fixed a stray backslash in the *Prepare Release* step that updates the site's Maven snippet (`"\$VERSION"` instead of `"$VERSION"`) — the Perl replacement then wrote an empty version (treating `$VERSION` as an undefined Perl variable), failing the workflow with `Failed to update the Maven snippet in site/docs/installation.md` on final releases (#105)
+
+### 🐛 Fixes
+
 - **Release Startup Failure**: Declared `SONAR_TOKEN` in `build.yml`'s `workflow_call` trigger — passing a secret that the called workflow has not declared makes the *Release* workflow fail with a `startup_failure` before any job runs (only `secrets: inherit` bypasses the declaration, which is why every release before `1.0.0-rc5` worked) (#104)
 
 ## [1.0.0-rc5] - 2026-09-19
