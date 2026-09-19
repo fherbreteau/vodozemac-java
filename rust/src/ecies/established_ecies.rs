@@ -104,6 +104,7 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEci
 #[cfg(test)]
 mod tests {
     use vodozemac::ecies::Ecies;
+    use vodozemac::hpke::DigitMode;
 
     use super::*;
 
@@ -151,8 +152,11 @@ mod tests {
     fn test_established_ecies_check_code_to_digit() {
         let (alice, bob) = establish_ecies_pair();
 
-        assert_eq!(alice.check_code().to_digit(), bob.check_code().to_digit());
-        assert!((0..=99).contains(&alice.check_code().to_digit()));
+        assert_eq!(
+            alice.check_code().to_digit(DigitMode::AllowLeadingZero),
+            bob.check_code().to_digit(DigitMode::AllowLeadingZero)
+        );
+        assert!((0..=99).contains(&alice.check_code().to_digit(DigitMode::AllowLeadingZero)));
     }
 
     #[test]

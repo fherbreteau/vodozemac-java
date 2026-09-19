@@ -551,8 +551,16 @@ class AccountTest {
                     .isNotNull()
                     .extracting(Curve25519PublicKey::toBase64, STRING)
                     .isNotEmpty();
-            assertThat(account.pickleLegacy(pickleKey))
-                .isEqualTo(pickleData);
+            try (Account repickled = Account.unpickleLegacy(account.pickleLegacy(pickleKey), pickleKey)) {
+                assertThat(repickled.ed25519Key())
+                        .as("Re-pickled legacy account should preserve the Ed25519 key")
+                        .extracting(Ed25519PublicKey::toBase64, STRING)
+                        .isEqualTo(account.ed25519Key().toBase64());
+                assertThat(repickled.curve25519Key())
+                        .as("Re-pickled legacy account should preserve the Curve25519 key")
+                        .extracting(Curve25519PublicKey::toBase64, STRING)
+                        .isEqualTo(account.curve25519Key().toBase64());
+            }
         }
     }
 
