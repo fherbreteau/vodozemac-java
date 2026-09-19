@@ -110,28 +110,19 @@ jobs:
           cp downloaded-natives/native-lib-windows-x86_64/*.dll src/main/resources/native/windows-x86_64/
           cp downloaded-natives/native-lib-windows-aarch64/*.dll src/main/resources/native/windows-aarch64/
 
-      - name: Extract version from tag
-        id: version
-        env:
-          TAG: ${{ inputs.tag || github.ref_name }}
-        run: echo "VERSION=${TAG#v}" >> $GITHUB_OUTPUT
-
-      - name: Determine next development version
+      - name: Determine whether the release is final
+        # The tagged commit already carries the release version (set by the
+        # Prepare Release workflow) and the next-development-version bump is
+        # also its responsibility - this workflow only publishes.
         id: meta
         env:
           TAG: ${{ inputs.tag || github.ref_name }}
         run: |
           if [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "isFinal=true" >> "$GITHUB_OUTPUT"
-            IFS='.' read -r major minor patch <<< "${TAG#v}"
-            echo "nextVersion=$major.$((minor + 1)).0-SNAPSHOT" >> "$GITHUB_OUTPUT"
-            echo "cargoVersion=$major.$((minor + 1)).0" >> "$GITHUB_OUTPUT"
           else
             echo "isFinal=false" >> "$GITHUB_OUTPUT"
           fi
-
-      - name: Update pom.xml version
-        run: mvn versions:set -DnewVersion=${{ steps.version.outputs.VERSION }}
 
       - name: Publish to GitHub Packages
         run: >-

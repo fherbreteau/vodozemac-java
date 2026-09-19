@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🧹 Refactoring
+
+- **Release Publish-Only Cleanup**: The *Release* workflow no longer touches the pom — the tagged commit already carries the release version (set by *Prepare Release*, which also owns the next-development-version bump), so the `versions:set` step, the tag-version extraction step and the unused next-version computation were all removed; the workflow now only determines whether the release is final (drives the GitHub release's pre-release flag) (#101)
+
 ### 🚀 Features
 
 - **Self-Hosted Javadoc**: The site now serves the Javadoc of the latest Maven Central release under `/apidocs/latest/` — `pages.yml` fetches and unpacks the latest released javadoc jar at every site deployment, and the *Release* workflow triggers a site redeploy after publishing. javadoc.io proved unreliable (it generated the Javadoc for only 1 of the 4 releases, with no API to force generation, and un-generated versions silently redirect to a versions-listing page), so all Javadoc links switched to the self-hosted copy (#101)
