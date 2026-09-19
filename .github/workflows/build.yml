@@ -255,9 +255,7 @@ jobs:
   # JOB 4: Sonar code Analysis
   # ============================================
   quality:
-    # Skipped for workflow_call (release) runs: the release tag is not a
-    # Sonar analysis target - main and pull requests are.
-    if: ${{ github.repository == 'fherbreteau/vodozemac-java' && github.event_name != 'workflow_call' }}
+    if: ${{ github.repository == 'fherbreteau/vodozemac-java' }}
     name: Sonar code analysis
     needs: [package-maven, test]
     runs-on: ubuntu-latest

@@ -24,12 +24,16 @@ concurrency:
 jobs:
   build-native:
     # Reuses the same job as build.yml (extract into a reusable workflow).
-    # build.yml's Sonar job is skipped for workflow_call (release) runs - the
-    # release tag is not a Sonar analysis target (main and PRs are) - so no
-    # secrets need to cross the workflow boundary.
+    # The Sonar analysis of the release tag is what tells SonarCloud about
+    # the new project version (its automatic new-code detection anchors on
+    # sonar.projectVersion comparisons between analyses), so it must run on
+    # releases too. Only the one secret build.yml consumes crosses the
+    # workflow boundary - do not use secrets: inherit here.
     uses: ./.github/workflows/build.yml
     with:
       ref: ${{ inputs.tag || github.ref }}
+    secrets:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
   publish:
     name: Publish to GitHub Packages
