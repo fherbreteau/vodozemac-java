@@ -49,6 +49,7 @@ demos shipped under `src/demos/java` (run with `mvn -Psample test`).
 
 ## API documentation
 
-The complete Javadoc for every released version is available on
-[javadoc.io](https://javadoc.io/doc/io.github.fherbreteau/vodozemac-java),
-and the [API reference](api.md) page summarizes the full API surface.
+The complete Javadoc of the latest release is self-hosted at
+[`/apidocs/latest/`](https://fherbreteau.github.io/vodozemac-java/apidocs/latest/index.html)
+and redeployed with every release, and the [API reference](api.md) page
+summarizes the full API surface.
