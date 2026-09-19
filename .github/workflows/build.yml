@@ -11,6 +11,10 @@ on:
         description: 'Git ref to check out (defaults to the triggering commit)'
         required: false
         type: string
+    secrets:
+      SONAR_TOKEN:
+        description: 'SonarCloud token for the quality gate analysis'
+        required: false
 
 env:
   RUST_VERSION: "1.88.0"

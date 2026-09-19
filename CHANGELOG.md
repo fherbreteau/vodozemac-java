@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🐛 Fixes
+
+- **Release Startup Failure**: Declared `SONAR_TOKEN` in `build.yml`'s `workflow_call` trigger — passing a secret that the called workflow has not declared makes the *Release* workflow fail with a `startup_failure` before any job runs (only `secrets: inherit` bypasses the declaration, which is why every release before `1.0.0-rc5` worked) (#104)
+
 ## [1.0.0-rc5] - 2026-09-19
 
 ### 🧹 Refactoring
