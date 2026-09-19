@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 🧹 Refactoring
 
 - **Release Publish-Only Cleanup**: The *Release* workflow no longer touches the pom — the tagged commit already carries the release version (set by *Prepare Release*, which also owns the next-development-version bump), so the `versions:set` step, the tag-version extraction step and the unused next-version computation were all removed; the workflow now only determines whether the release is final (drives the GitHub release's pre-release flag) (#101)
+- **Release Run Slimming**: Removed the last redundancies from the release pipeline — the `setup-java` server entries (overwritten by the explicit `settings.xml` step), the `secrets: inherit` into the build workflow (no longer needed since the Sonar job is skipped for release runs, keeping the full secret set out of the called workflow) and the Sonar analysis of release tags (main and pull requests are the analysis targets) (#101)
 
 ### 🚀 Features
 
