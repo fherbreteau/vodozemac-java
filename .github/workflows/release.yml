@@ -36,11 +36,8 @@ jobs:
     needs: build-native
     runs-on: ubuntu-latest
     permissions:
-      # actions: write dispatches the site redeploy after publishing, so the
-      # self-hosted Javadoc of the fresh release becomes available.
       contents: write
       packages: write
-      actions: write
 
     steps:
       - name: Checkout repository
@@ -176,11 +173,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: gh release edit "${{ inputs.tag || github.ref_name }}" --draft=false
-
-      - name: Trigger the site redeploy
-        # The site serves the Javadoc of the latest release under /apidocs/:
-        # redeploy it so the fresh release's Javadoc becomes available.
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: gh workflow run pages.yml --ref main
 

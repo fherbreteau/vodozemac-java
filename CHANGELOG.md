@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚀 Features
 
-- **Self-Hosted Javadoc**: The site now serves the Javadoc of the latest Maven Central release under `/apidocs/latest/` — `pages.yml` fetches and unpacks the latest released javadoc jar at every site deployment, and the *Release* workflow triggers a site redeploy after publishing. javadoc.io proved unreliable (it generated the Javadoc for only 1 of the 4 releases, with no API to force generation, and un-generated versions silently redirect to a versions-listing page), so all Javadoc links switched to the self-hosted copy (#101)
+- **Self-Hosted Javadoc**: The site now serves the Javadoc of the latest Maven Central release under `/apidocs/latest/` — `pages.yml` fetches and unpacks the latest released javadoc jar at every site deployment, and the site workflow redeploys automatically on every successful *Release* completion (`workflow_run`). javadoc.io proved unreliable (it generated the Javadoc for only 1 of the 4 releases, with no API to force generation, and un-generated versions silently redirect to a versions-listing page), so all Javadoc links switched to the self-hosted copy (#101)
 
 ### 📚 Documentation
 

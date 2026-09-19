@@ -1,6 +1,11 @@
 name: GitHub Pages
 
 on:
+  workflow_run:
+    # Redeploy after every successful Release run so the site's
+    # /apidocs/latest/ serves the fresh release's Javadoc.
+    workflows: ["Release"]
+    types: [completed]
   push:
     branches: [main]
     paths:
@@ -17,6 +22,9 @@ concurrency:
 
 jobs:
   deploy:
+    # workflow_run fires on any conclusion: only redeploy after a successful
+    # release (site pushes and manual dispatches are unconditional).
+    if: ${{ github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success' }}
     name: Build and deploy the user guide
     runs-on: ubuntu-latest
     permissions:
