@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### 📚 Documentation
 
 - **Package Documentation**: Added `package-info.java` files describing the purpose and contents of every Java package (`account`, `backup`, `ecies`, `exception`, `megolm`, `olm`, `sas`, `types`, and the root package) (#106)
+### 🚀 Features
+
+- **JPMS Module Descriptor**: Added a `module-info.java` defining the `io.github.fherbreteau.vodozemac` module, exporting every public package and requiring `java.logging` (backing the `System.Logger` used by `NativeHandle`); tests and demos are compiled on the classpath so they need no module-specific descriptor (#107)
 
 ### 🔧 Build System
 
