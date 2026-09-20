@@ -185,6 +185,7 @@
                                     <goal>compile</goal>
                                 </goals>
                                 <configuration>
+                                    <useModulePath>false</useModulePath>
                                     <compileSourceRoots>
                                         <compileSourceRoot>src/demos/java</compileSourceRoot>
                                     </compileSourceRoots>
@@ -618,13 +619,24 @@
                 </executions>
             </plugin>
 
-            <!-- Plugin to generate JNI headers from the Java classes -->
+            <!-- Plugin to generate JNI headers from the Java classes.
+                 Tests are compiled on the classpath (not the module path) so
+                 they can keep using java.logging and the test frameworks
+                 without a test-specific module descriptor. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
                     <release>${java.version}</release>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>default-testCompile</id>
+                        <configuration>
+                            <useModulePath>false</useModulePath>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
