@@ -287,7 +287,7 @@ jobs:
           toolchain: ${{ env.RUST_VERSION }}
           components: llvm-tools-preview
 
-      - uses: taiki-e/install-action@26e9283f268b880168bdbd2c545dfcd60ec2c6ab # v2
+      - uses: taiki-e/install-action@94c31af3204a9f15ab40b35ad084410b905bbc73 # v2
         with:
           tool: cargo-llvm-cov
 
