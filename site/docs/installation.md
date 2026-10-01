@@ -23,6 +23,19 @@ The native library for your platform is packaged inside the JAR and extracted
 to a private, owner-only temporary directory on first use — there is nothing
 to install besides the dependency.
 
+## Java Platform Module System
+
+The library is a proper JPMS module named
+`io.github.fherbreteau.vodozemac`. In a modular application, declare the
+module in your `module-info.java`:
+
+```java
+requires io.github.fherbreteau.vodozemac;
+```
+
+The library remains fully usable on the classpath in non-modular
+applications.
+
 ## From source
 
 Building the project requires a JDK 25, Maven 3.6.3+ and a Rust toolchain:
