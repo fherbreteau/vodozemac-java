@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 📚 Documentation
+
+- **Package Documentation**: Added `package-info.java` files describing the purpose and contents of every Java package (`account`, `backup`, `ecies`, `exception`, `megolm`, `olm`, `sas`, `types`, and the root package) (#106)
+
 ### 🔧 Build System
 
 - **Vodozemac 0.11.0 Compatibility**: Adapted the Rust JNI layer and tests to the vodozemac 0.11.0 API — `CheckCode::to_digit` now requires a `DigitMode` (passed `AllowLeadingZero` to preserve the previous behavior), and the legacy libolm pickle roundtrip test was updated since 0.11.0 increments `next_key_id` on unpickle (#101)
