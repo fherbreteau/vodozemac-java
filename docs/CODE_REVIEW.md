@@ -1,203 +1,119 @@
 # Code Review — vodozemac-java
 
-- **Date**: 2026-09-07
-- **Scope reviewed**: `fix/More_Code_Improvement` @ `54511a6` (PR #47) — the most complete state of the codebase at review time
-- **Reviewer**: Mammouth Code (automated full review)
+- **Review date**: 2026-10-15
+- **Reviewed revision**: `b45f23c` (branch `docs/Code_Review_and_Implementation_Plan`)
+- **Scope**: Java API and tests, Rust JNI bridge and tests, Maven/Cargo configuration and lockfile, workflows, and user documentation.
+- **Method**: Static code review plus local lint, test, coverage, audit, demo, and documentation builds. This is a current-tree review; earlier review tasks are not carried forward unless still open.
 
-## 1. Verification Results
-
-All commands were executed against the reviewed commit.
+## Verification Results
 
 | Check | Command | Result |
 |---|---|---|
-| Rust lint | `cargo clippy --all-targets -- -D warnings` | ✅ 0 warnings |
-| Rust format | `cargo fmt -- --check` | ✅ clean |
-| Rust tests | `cargo test` | ✅ 110 passed, 0 failed |
-| Rust coverage | `cargo llvm-cov --cobertura` | ⚠️ 36.9% lines (1241/3363) — JNI entry points are exercised by Java integration tests and not attributed by llvm-cov (known caveat, also noted in the CI coverage report) |
-| Java lint | `mvn checkstyle:check` | ✅ 0 violations |
-| Java tests | `mvn verify` | ✅ 167 passed, 0 failed; JaCoCo coverage checks met |
-| Java coverage (JaCoCo) | JaCoCo XML | ✅ Lines 100% (676/676), Methods 100% (276/276), Instructions 100%; Branches 97.1% (101/104 — 3 unreachable-by-design branches, see R2) |
-| Workflow lint | `actionlint` | ✅ clean |
+| Java build, Checkstyle, tests, JaCoCo gate | `mvn verify` | **PASS** — build successful; Checkstyle 0 violations; 190 tests, 0 failures/errors/skips; JaCoCo configured coverage checks passed. |
+| Java demo programs | `mvn -Psample test` | **PASS** — 190 Java tests and all six demos (Olm, Megolm, SAS, ECIES, backup, cross-signing) completed. |
+| Rust formatting | `cargo fmt --manifest-path rust/Cargo.toml -- --check` | **PASS** — clean. |
+| Rust lint | `cargo clippy --manifest-path rust/Cargo.toml` | **PASS** — no warnings. |
+| Rust tests | `cargo test --manifest-path rust/Cargo.toml` | **PASS** — 130 passed, 0 failed. Includes JVM-attached JNI tests. |
+| Rust coverage | `cargo llvm-cov --manifest-path rust/Cargo.toml --summary-only` | **PASS, target gap** — 53.74% lines (58.67% regions), below the repository's documented 80% coverage target. |
+| Rust dependency audit | `cargo audit --file rust/Cargo.lock` | **PASS** — scanned 96 dependencies; no advisory findings reported. Run from repository root without `--file` fails because the lockfile is under `rust/`; CI correctly runs it from `rust/`. |
+| Site links/build | `python3 -m mkdocs build --strict` (from `site/`) | **PASS** — strict build completed without broken-link errors. |
+| Workflow lint | `actionlint` | **WARN** — workflow validation completed but ShellCheck reported SC2012 in `.github/workflows/build.yml` and SC2034 in `.github/workflows/prepare-release.yml`; see CR-7. |
 
-## 2. Open Items (tasks not completed)
+The local Rust coverage result is an aggregate measurement, not a claim that the CI new-code coverage gate failed. The stated repository-wide 80% target is nevertheless not currently met by this measurement and needs explicit resolution.
 
-Only unfinished work is listed here. Completed phases of the 2026-08-27 review are not repeated.
+## Outstanding Work — Incomplete Tasks Only
 
-| ID | Item | Status | Priority |
+| ID | Finding | Evidence | Priority |
 |---|---|---|---|
-| R1 | `pickleLegacy()` export for `OlmSession`, `InboundGroupSession`, `OutboundGroupSession` (decryption side `unpickleLegacy()` exists; PkDecryption already has `pickleLegacy()`) | 🔴 Blocked on upstream vodozemac exposing legacy pickle for session types | Low |
-| R2 | `equals`/`hashCode` of `olm.InboundCreationResult`, `ecies.InboundCreationResult`, `ecies.OutboundCreationResult` compare the native handle first, making the data-comparison branch unreachable for distinct objects (native handles always differ) and untestable for equal handles without a double-free risk. Leaves Java branch coverage at 97.1% | 🟡 Design decision needed — see plan Phase A | High |
-| R3 | Rust duplication: `to_java_curve25519` / `to_java_ed25519` / `to_java_signature` (`rust/src/types/mod.rs:90-122`) and `olm_session_config_from_version` / `megolm_session_config_from_version` (`rust/src/helpers.rs:21-45`) | 🟡 Open — see plan Phase C | Medium |
-| R4 | Java duplication: `PICKLE_DATA` constant repeated in 4 classes, `INPUT`/`INFO` in `EstablishedSas` (introduced by the S1192 fix) | 🟡 Open — see plan Phase B | Medium |
-| R5 | `SampleOlm`, `SampleMegolm`, `SampleSas`, `SampleEcies` are `main()`-based demos in the test sourceset with no `@Test`; they are compiled on every build but never executed by CI | 🟡 Open — see plan Phase D | Low |
-| R6 | `AGENTS.md` tool versions stale (Checkstyle 14.0.0 vs actual 14.1.0; JUnit listed without minor version vs 6.1.3) | 🟡 Open — normal PR (root file) | Low |
-| R7 | `docs/` working documents absent from `main` (only `.gitkeep`) | ✅ Resolved by this PR | High |
-| R8 | Rust coverage is not analyzed by SonarCloud (Rust analysis requires a paid plan) | ⚪ Accepted — compensated by cargo-audit, clippy and llvm-cov in CI; revisit if Sonar pricing changes | Low |
+| CR-1 | Plaintext is exposed by `toString()` on decrypted-value objects. Logging or debugging these objects can disclose application messages. | `src/main/java/io/github/fherbreteau/vodozemac/megolm/DecryptedMessage.java:68`; `src/main/java/io/github/fherbreteau/vodozemac/olm/InboundCreationResult.java:63`; `src/main/java/io/github/fherbreteau/vodozemac/ecies/InboundCreationResult.java:77` | High |
+| CR-2 | `EstablishedEcies.equals()` and `hashCode()` use the mutable native pointer. Closing changes the pointer to zero, changing the hash code and making distinct closed handles equal. | `src/main/java/io/github/fherbreteau/vodozemac/ecies/EstablishedEcies.java:110`; pointer is zeroed by `NativeHandle.close()` at `src/main/java/io/github/fherbreteau/vodozemac/NativeHandle.java:79` | Medium |
+| CR-3 | Megolm's Rust `u32` indices are cast to Java `int` (`jint`), which can expose negative values above `Integer.MAX_VALUE`. Resolve the supported range or widen the Java API; do not silently wrap. | `rust/src/megolm/mod.rs:29,47`; `rust/src/megolm/outbound_group_session.rs:59`; `rust/src/megolm/inbound_group_session.rs:69`; Java index accessors use `int`. | Medium |
+| CR-4 | The backup persistence example calls nonexistent `PkDecryption.pickle()` and `PkDecryption.unpickle(...)` methods. The available API is legacy pickle/unpickle. | `site/docs/samples/backup.md:42-48`; supported API at `src/main/java/io/github/fherbreteau/vodozemac/backup/PkDecryption.java:133-152` | Medium |
+| CR-5 | `AGENTS.md` dependency metadata is stale: it says vodozemac 0.10.0, Checkstyle 14.1.0, and Maven wrapper 3.9.16; current configuration is vodozemac requirement 0.11.0 (lock resolves 0.11.1), Checkstyle 14.3.0, and Maven wrapper 3.10.0. | `AGENTS.md:5,142-146`; `rust/Cargo.toml:12`; `rust/Cargo.lock`; `pom.xml:39`; `.mvn/wrapper/maven-wrapper.properties:3` | Low |
+| CR-6 | Rust line coverage is 53.74%, below the repository's documented 80% coverage target. Decide whether to raise coverage or formally reconcile the target with actual enforced gates, then track the result. | `cargo llvm-cov --manifest-path rust/Cargo.toml --summary-only`; stated target in `AGENTS.md:72-89` | Medium |
+| CR-7 | Workflow shell scripts have two outstanding ShellCheck findings: unsafe filename handling via `ls`/`head`, and an apparently unused `patch` variable. | `.github/workflows/build.yml:183`; `.github/workflows/prepare-release.yml:59-83` | Low |
 
-## 3. Duplicated Code
+## Duplicated Code
 
-### Java
-
-| Duplicate | Location | Notes |
+| Pattern | Locations | Review assessment |
 |---|---|---|
-| `PICKLE_DATA` constant | `Account.java`, `OlmSession.java`, `InboundGroupSession.java`, `OutboundGroupSession.java` | Same `"pickleData"` message constant declared 4×; centralise in a shared package-private constants holder (R4) |
-| `INPUT` / `INFO` constants | `EstablishedSas.java` | Same pattern as above |
-| Pickle/unpickle method trio | Account, OlmSession, InboundGroupSession, OutboundGroupSession | `unpickle(String)` → `unpickle(String, byte[])` → `unpickleLegacy(String, byte[])` follow an identical validate → requireNonNull → native → wrap template; acceptable structure, consider a shared helper if a 4th variant appears |
-| Static loader block | 15 classes | `static { NativeLibraryLoader.loadLibrary(); }` — required Java idiom for JNI classes; loader itself is idempotent |
-| Result classes | `olm.InboundCreationResult` ≈ `ecies.InboundCreationResult` ≈ `ecies.OutboundCreationResult` | Near-identical (native handle + payload + equals/hashCode/toString/close); acceptable without generics |
+| Result-object equality, hashing, lifecycle delegation, and formatting | `olm/InboundCreationResult.java`, `ecies/InboundCreationResult.java`, `ecies/OutboundCreationResult.java` | Similar value-wrapper boilerplate remains. Their payload and ownership semantics differ, so only consolidate if a shared abstraction makes behavior clearer; this is not currently a correctness defect. |
+| Static native-library loading blocks | JNI-backed Java classes | Repeated `NativeLibraryLoader.loadLibrary()` static initialization is conventional and delegates to the same idempotent loader; no change recommended. |
 
-### Rust
+Previously reported Java parameter-name duplication and Rust JNI conversion/session-config duplication have already been consolidated (`ParamNames.java`, `rust/src/types/mod.rs`, and `rust/src/helpers.rs`). Demo programs are already isolated in `src/demos/java` and run under the `sample` Maven profile. These are not open tasks.
 
-| Duplicate | Location | Notes |
-|---|---|---|
-| `to_java_curve25519` / `to_java_ed25519` / `to_java_signature` | `rust/src/types/mod.rs:90-122` | Identical bodies except class path and input type; a generic over a base64-encoding trait collapses the three (R3) |
-| `olm_session_config_from_version` / `megolm_session_config_from_version` | `rust/src/helpers.rs:21-45` | Identical `match` blocks (version 1/2/invalid) over two crate types; a macro or shared trait collapses the pair (R3) |
+## Summary Scorecard
 
-### Already deduplicated (verified, no action)
+| Category | Score | Basis |
+|---|---:|---|
+| Lint Compliance | 8/10 | Java Checkstyle, Rust fmt/Clippy pass; workflow ShellCheck has two findings. |
+| Code Quality | 7/10 | Core Java/Rust tests pass; mutable-handle equality and integer-boundary behavior remain. |
+| Security | 6/10 | Strong CI and JNI controls; decrypted plaintext appears in `toString()`, creating a logging disclosure risk. |
+| Maintainability | 7/10 | Clear module layout and shared helpers; wrapper boilerplate and outdated build metadata remain. |
+| Documentation | 6/10 | Strict site build passes, but a published example is incompatible with the API and `AGENTS.md` versions drift. |
+| Idempotency | 8/10 | Handle close and library loading are idempotent; pointer-based equality/hash behavior is unstable across close. |
+| **Overall** | **7/10** | Tests and principal build gates are green; several concrete API/security/docs gaps and a documented coverage-target gap remain. |
 
-- `KeyValidator.validateEncryptionKey` centralises 32-byte key checks (used by Account + all session classes)
-- `errors.rs` throw helpers generated via macro; `to_java_check_code` shared by ECIES module
-- `catch_panic`, `check_ptr`, `RawBox`, `native_free` shared JNI safety helpers
+## Repository Structure
 
-## 4. Summary Scorecard
-
-| Category | Score | Rationale |
-|---|---|---|
-| Lint Compliance | 10/10 | clippy `-D warnings` clean, `cargo fmt` clean, Checkstyle 0 violations, `actionlint` clean |
-| Code Quality | 9/10 | 277 tests green across two languages, 100% Java line/method/instruction coverage, typed APIs, zero TODO/FIXME; −1 for the unreachable `equals` branches (R2) |
-| Security | 9/10 | SHA-pinned actions, CodeQL/Trivy/cargo-audit, panic-guarded FFI, owner-only temp permissions, wrapper checksum verification; −1 for accepted residual risks (insecure-pk-encryption feature, non-zeroizable JVM key arrays) |
-| Maintainability | 8/10 | Clear module layout, centralised validation and JNI helpers; −2 for remaining Rust/Java duplication (R3, R4) |
-| Documentation | 9/10 | README/CHANGELOG/CONTRIBUTING recently aligned with code and verified accurate; Javadoc thorough; −1 for stale `AGENTS.md` versions (R6) |
-| Idempotency | 9/10 | `close()` idempotent on all native handles, `loadLibrary()` idempotent (synchronized + volatile), CI concurrency groups with cancel-in-progress, single-use semantics (`Sas.diffieHellman`, `Ecies.establish*`) documented; workflows re-runnable |
-| **Overall** | **9/10** | Production-ready; remaining items are hygiene and upstream-blocked work |
-
-## 5. Repository Structure
-
-```
+```text
 vodozemac-java/
 ├── .github/
-│   ├── workflows/
-│   │   ├── build.yml        # 6-platform native build + Maven package + Sonar
-│   │   ├── test.yml         # PR quick tests: Rust+Java tests, clippy, fmt, audit, coverage summary
-│   │   ├── release.yml      # Release pipeline (fat JAR with all 6 natives)
-│   │   └── security.yml     # CodeQL (Java) + Trivy dependency scanning
-│   ├── scripts/
-│   │   └── coverage-report.py   # Combined Rust (cobertura) + Java (JaCoCo) markdown for $GITHUB_STEP_SUMMARY
-│   └── CODEOWNERS
-├── rust/                    # Rust JNI bindings (cdylib + rlib)
-│   ├── Cargo.toml           # vodozemac 0.10.0, jni 0.22.4, [profile.release] lto/codegen-units/strip
-│   └── src/
-│       ├── lib.rs           # Module declarations
-│       ├── classes.rs       # Centralised JNI class-path constants
-│       ├── errors.rs        # Macro-generated throw_* error mapping
-│       ├── helpers.rs       # catch_panic, check_ptr, RawBox, native_free, session-config helpers
-│       ├── utils/mod.rs     # Vodozemac base64/version JNI
-│       ├── olm/             # account.rs, session.rs
-│       ├── megolm/          # inbound_group_session.rs, outbound_group_session.rs, message.rs
-│       ├── sas/             # sas.rs, established_sas.rs
-│       ├── ecies/           # ecies.rs, established_ecies.rs
-│       ├── types/mod.rs     # Ed25519/Curve25519/signature JNI + to_java_* helpers
-│       └── backup/          # encryption.rs, decryption.rs
-├── src/main/java/io/github/fherbreteau/vodozemac/
-│   ├── account/             # Account, IdentityKeys, OneTimeKeyGenerationResult, DehydratedDeviceResult
-│   ├── olm/                 # OlmSession, OlmSessionVersion, OlmMessage, MessageType, SessionKeys, InboundCreationResult
-│   ├── megolm/              # InboundGroupSession, OutboundGroupSession, MegolmSessionVersion, MegolmMessage, SessionOrdering, DecryptedMessage
-│   ├── sas/                 # Sas, EstablishedSas, SasBytes
-│   ├── ecies/               # Ecies, EstablishedEcies, CheckCode, OutboundCreationResult, InboundCreationResult
-│   ├── backup/              # PkEncryption, PkDecryption, PkMessage
-│   ├── types/               # Ed25519PublicKey, Ed25519Signature, Curve25519PublicKey
-│   ├── exception/           # VodozemacException + 9 typed subclasses
-│   ├── NativeHandle.java    # Native pointer lifecycle (idempotent close)
-│   ├── SessionVersion.java  # Shared fromVersion/fromValue lookup
-│   ├── KeyValidator.java    # 32-byte pickle key validation
-│   ├── Vodozemac.java       # Base64 + crate version
-│   └── NativeLibraryLoader.java
-├── src/test/java/           # 167 tests (Account, Olm, Megolm, SAS, ECIES, backup, types, exceptions, NativeHandle, samples)
-├── docs/                    # Working documents (this file, IMPLEMENTATION_PLAN.md)
-├── pom.xml                  # Maven (Java 25, enforcer ≥3.6.3, JaCoCo ≥80%, Checkstyle)
+│   ├── workflows/                 # Build, test, release, pages, security scans
+│   ├── scripts/                   # CI helper scripts, including coverage report
+│   └── dependabot.yml
+├── rust/
+│   ├── Cargo.toml / Cargo.lock    # JNI crate manifest and locked dependency graph
+│   └── src/                       # JNI exports, helpers, errors, crypto module bindings
+├── src/
+│   ├── main/java/io/github/...    # Public Java API and NativeHandle lifecycle
+│   ├── test/java/io/github/...    # JUnit/AssertJ Java integration tests
+│   └── demos/java/io/github/...   # Runnable examples, invoked by Maven sample profile
+├── site/                          # MkDocs user guide and runnable sample documentation
+├── pom.xml                        # Java build, native build, tests, coverage, Checkstyle
 ├── checkstyle.xml
-├── rust-toolchain.toml      # stable + clippy/rustfmt/llvm-tools-preview
-├── AGENTS.md / README.md / CHANGELOG.md / CONTRIBUTING.md / SECURITY.md / CODE_OF_CONDUCT.md
-└── LICENSE, LICENSES/
+├── rust-toolchain.toml
+└── README.md, CHANGELOG.md, AGENTS.md, SECURITY.md, CONTRIBUTING.md, etc.
 ```
 
-## 6. Security Review
+The structure separates public Java API, Rust JNI implementation, tests, demos, and user documentation. No repository-layout defect was identified in this review.
 
-### Controls in place (verified)
+## Security Review
 
-| Control | Implementation |
-|---|---|
-| Supply chain (CI actions) | All third-party actions pinned to full commit SHAs with version comments |
-| Dependency scanning | CodeQL (Java), Trivy (dependency scanning), `cargo audit` (Rust advisory DB) |
-| Maven wrapper | `distributionSha256Sum` checksum verification in `maven-wrapper.properties` |
-| FFI panic containment | Every JNI entry point wrapped in `catch_panic` (`rust/src/helpers.rs`); `native_free` panic-guarded; JVM aborts prevented by not using `panic = "abort"` (deliberate, documented deviation) |
-| Pointer safety | `check_ptr` null/dangling validation before use; `RawBox` RAII guard replacing `mem::forget` patterns |
-| Native library loading | Extracted to per-process temp dir with POSIX `rwx------` owner-only permissions; `deleteOnExit` cleanup; platform-specific resource fallback |
-| Input validation | `Objects.requireNonNull` on all public Java APIs; 32-byte key validation centralised in `KeyValidator`; Rust-side `u32::try_from` bounds on export/advance indices |
-| Secrets | No secrets in repository; workflows use `GITHUB_TOKEN` only |
-| Build hardening | `[profile.release]` with `lto`, `codegen-units = 1`, `strip`; reproducible builds via git commit timestamp |
-| Code quality gate | SonarCloud quality gate (reliability/security/maintainability A on new code, ≥80% new coverage); JaCoCo ≥80% instructions + 0 missed classes/methods |
+### Controls verified
 
-### Residual risks (accepted, documented)
+- Java and Rust CodeQL workflows plus Trivy filesystem scanning are configured in `.github/workflows/security.yml`.
+- Rust dependency audit is configured and the current `rust/Cargo.lock` audit found no advisories.
+- GitHub Actions references inspected are pinned to full commit SHAs.
+- JNI calls use panic containment and null-pointer checks; native handle release is centralized and idempotent.
+- Native library extraction uses owner-only POSIX permissions where supported; Windows extraction remains user-temp-directory scoped.
+- Strict input validation and typed exception mapping are used across the bindings.
+- The PK backup algorithm's lack of ciphertext authentication is prominently documented; it remains a compatibility limitation, not a newly discovered defect.
 
-| Risk | Mitigation |
-|---|---|
-| `insecure-pk-encryption` vodozemac feature: MAC does not authenticate ciphertext (`m.megolm_backup.v1.curve25519-aes-sha2` algorithm flaw) | Explicitly documented in README PkEncryption section; required for Matrix key-backup compatibility |
-| `experimental-session-config` and `libolm-compat` features | Required for session version negotiation and libolm migration; tracked upstream |
-| JVM `byte[]` secret keys cannot be zeroised after use | Native side (vodozemac) zeroises internally; Java-side copies unavoidable withoutUnsafe/foreign-memory APIs; documented accepted risk |
-| 70 `unsafe` blocks (JNI inherent) | Contained by `catch_panic`, `check_ptr`, `RawBox`; clippy clean; documented safety invariants |
-| Windows native extraction without POSIX permissions | Platform limitation (no POSIX ACLs); files land in user-scoped temp dir |
-| Rust not analysed by SonarCloud (paid language) | Compensated by clippy `-D warnings`, cargo-audit, llvm-cov in CI (R8) |
+### Open security and boundary concerns
 
-## 7. Dependency Matrix
+- **CR-1:** decrypted plaintext byte arrays are rendered by `toString()` and may leak through logs.
+- Java `byte[]` secret copies cannot be reliably zeroized; this is a JVM/API limitation and remains a residual risk.
+- Rust `check_ptr` can reject null pointers but cannot validate arbitrary dangling pointers; safety depends on the JNI ownership/lifecycle invariants.
+- **CR-3:** signed Java index conversions can misrepresent the full Megolm `u32` range.
 
-### Runtime / build dependencies
+## Dependency Matrix
 
-| Dependency | Version | Scope | Purpose | Notes |
-|---|---|---|---|---|
-| vodozemac (crate) | 0.10.0 | Rust runtime | Core crypto (Olm/Megolm/SAS/ECIES/PK) | Features: `libolm-compat`, `experimental-session-config`, `insecure-pk-encryption` |
-| jni (crate) | 0.22.4 | Rust runtime + dev (`invocation`) | JNI bridge | |
-| serde / serde_json | 1 / 1.0.141 | Rust runtime | `OlmMessage` JSON wire format | |
-| JUnit Jupiter | 6.1.3 | Java test | Test framework | |
-| AssertJ | 3.27.7 | Java test | Fluent assertions | |
-
-### Maven plugins
-
-| Plugin | Version |
-|---|---|
-| maven-compiler-plugin | 3.16.0 |
-| maven-surefire-plugin | 3.5.6 |
-| maven-jar-plugin | 3.5.1 |
-| maven-clean-plugin | 3.5.0 |
-| maven-resources-plugin | 3.5.0 |
-| maven-exec-plugin | 3.6.3 |
-| maven-dependency-plugin | 3.11.0 |
-| maven-enforcer-plugin | 3.6.3 (requires Maven ≥ 3.6.3) |
-| jacoco-maven-plugin | 0.8.15 |
-| checkstyle plugin / checkstyle | 3.6.0 / 14.1.0 |
-| sonar-maven-plugin | 5.7.0.6970 |
-| git-commit-id-plugin | 10.0.0 |
-| versions-plugin | 2.21.0 |
-
-### Toolchains
-
-| Tool | Version | Source |
+| Dependency/tool | Declared/current version | Scope and notes |
 |---|---|---|
-| Java | 25 | `pom.xml` (`maven.compiler.release`), CI `setup-java` (temurin) |
-| Maven | 3.9.16 | Wrapper (`maven-wrapper.properties`, SHA-256 verified) |
-| Rust | stable | `rust-toolchain.toml` (clippy, rustfmt, llvm-tools-preview) |
+| Java | 25 | Compiler release and CI runtime. |
+| Maven wrapper | 3.10.0 | SHA-256 distribution checksum is configured; minimum Maven enforced by the build is 3.6.3. |
+| vodozemac | Requirement 0.11.0; lock resolves 0.11.1 | Rust cryptography; enables `libolm-compat`, `experimental-session-config`, and `insecure-pk-encryption`. |
+| `jni` | 0.22.4 | Rust JNI runtime and invocation-enabled dev dependency. |
+| `serde` | 1.x | Rust serialization. |
+| `serde_json` | Requirement 1.0.141; lock resolves 1.0.154 | Rust JSON serialization. |
+| JUnit Jupiter | 6.1.3 | Java tests. |
+| AssertJ | 3.27.7 | Java test assertions. |
+| `mjson` | 1.4.2 | Demo-profile dependency. |
+| Maven Compiler / Surefire | 3.16.0 / 3.6.0 | Java compile and test execution. |
+| Maven Checkstyle / Checkstyle | 3.6.0 / 14.3.0 | Java style validation. |
+| JaCoCo | 0.8.15 | Java coverage and configured build gate. |
+| Maven Exec / Dependency / Enforcer | 3.6.4 / 3.11.0 / 3.6.3 | Native build invocation, dependency properties, and toolchain enforcement. |
+| Rust toolchain | Stable in `rust-toolchain.toml`; CI test pins 1.88.0 | Includes rustfmt, Clippy, and llvm-cov components. |
 
-### GitHub Actions (SHA-pinned)
-
-| Action | Pin | Version |
-|---|---|---|
-| actions/checkout | `3d3c42e…` | v7 |
-| actions/setup-java | `dd06d9c…` | v6.0.0 |
-| actions/upload-artifact | `043fb46…` | v7 |
-| actions/download-artifact | `3e5f45b…` | v8 |
-| dtolnay/rust-toolchain | `4360b52…` | v7 |
-| taiki-e/install-action | `ba47c86…` / `1ed6d7b…` | v2 |
-| Swatinem/rust-cache | `6323deb…` | v2 |
-| github/codeql-action (init/analyze/upload-sarif) | `cdf488f…` | v4 |
-| aquasecurity/trivy-action | `ed142fd…` | v0.36.0 |
-| softprops/action-gh-release | `efb3536…` | v2 |
+Dependency versions above were checked against `pom.xml`, `rust/Cargo.toml`, `rust/Cargo.lock`, the Maven wrapper properties, and CI workflow configuration. Version drift in `AGENTS.md` is tracked as CR-5.
