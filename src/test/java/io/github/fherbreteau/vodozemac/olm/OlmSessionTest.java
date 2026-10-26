@@ -363,7 +363,7 @@ class OlmSessionTest {
                             .isNotEqualTo(inbound3)
                             .isNotEqualTo("not a result")
                             .isNotEqualTo(null);
-                    assertThat(inbound1.toString()).contains("plaintext");
+                    assertThat(inbound1).hasToString("{plaintext='<redacted>'}");
                     assertThat(inbound1.hashCode()).isNotZero();
                 }
             }

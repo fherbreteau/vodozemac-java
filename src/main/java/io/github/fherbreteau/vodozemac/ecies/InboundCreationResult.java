@@ -75,9 +75,6 @@ public final class InboundCreationResult implements AutoCloseable {
 
     @Override
     public String toString() {
-        return "{" +
-            " ecies=" + ecies + " ," +
-            " plaintext='" + Arrays.toString(plaintext) + "'" +
-            "}";
+        return "{plaintext='<redacted>'}";
     }
 }
