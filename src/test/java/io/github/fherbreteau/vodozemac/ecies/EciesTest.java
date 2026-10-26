@@ -309,6 +309,10 @@ class EciesTest {
                     .isNotEqualTo(otherEcies)
                     .isNotEqualTo("not an ecies")
                     .isNotEqualTo(null);
+            EstablishedEcies copy = ecies;
+            copy.close();
+            assertThat(ecies).isEqualTo(copy)
+                    .hasSameHashCodeAs(copy);
         }
     }
 }

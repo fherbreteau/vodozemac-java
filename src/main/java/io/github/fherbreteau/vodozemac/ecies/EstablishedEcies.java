@@ -107,19 +107,6 @@ public final class EstablishedEcies extends NativeHandle {
         return nativeDecrypt(nativePtr(), message);
     }
 
-    @Override
-    public boolean equals(Object o) {
-        if (!(o instanceof EstablishedEcies that)) {
-            return false;
-        }
-        return Objects.equals(nativePtr(), that.nativePtr());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(nativePtr());
-    }
-
     private native String nativePublicKey(long ptr);
 
     private native CheckCode nativeCheckCode(long ptr);
