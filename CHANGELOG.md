@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🐛 Fixes
 
-- **Stable ECIES Channel Equality**: Use Java object identity for `EstablishedEcies` so equality and hash codes remain stable after closing native handles.
+- **Stable ECIES Channel Equality**: Use Java object identity for `EstablishedEcies` so equality and hash codes remain stable after closing native handles (#126).
 
 ### 🛡️ Security & Hardening
 
