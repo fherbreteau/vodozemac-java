@@ -65,11 +65,11 @@ jobs:
       - name: Rust security audit
         uses: taiki-e/install-action@8cca0918f8471c33515202b73f56ab27f2bed283 # v2
         with:
-          tool: cargo-audit --ignore RUSTSEC-2026-0385
+          tool: cargo-audit
 
       - name: Run cargo audit
         working-directory: rust
-        run: cargo audit
+        run: cargo audit --ignore RUSTSEC-2026-0385
 
       - name: Build and test Java
         run: mvn verify
