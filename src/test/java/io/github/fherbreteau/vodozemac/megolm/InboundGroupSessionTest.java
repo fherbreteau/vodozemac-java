@@ -734,8 +734,8 @@ class InboundGroupSessionTest {
                 .isNotEqualTo(differentMi)
                 .isNotEqualTo(differentPt)
                 .isNotEqualTo("not a message")
-                .isNotEqualTo(null);
-        assertThat(msg.toString()).contains("plaintext", "messageIndex");
+                .isNotEqualTo(null)
+                .hasToString("{plaintext='<redacted>', messageIndex=5}");
     }
 
     @Test
@@ -781,6 +781,7 @@ class InboundGroupSessionTest {
                 .isNotEqualTo(differentCt)
                 .isNotEqualTo(differentMi)
                 .isNotEqualTo(differentMac)
-                .isNotEqualTo(differentSi);
+                .isNotEqualTo(differentSi)
+                .hasToString("b64");
     }
 }

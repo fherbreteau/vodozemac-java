@@ -66,9 +66,6 @@ public final class DecryptedMessage {
 
     @Override
     public String toString() {
-        return "{" +
-            " plaintext='" + Arrays.toString(plaintext) + "'" +
-            ", messageIndex=" + messageIndex +
-            "}";
+        return "{plaintext='<redacted>', messageIndex=" + messageIndex + "}";
     }
 }

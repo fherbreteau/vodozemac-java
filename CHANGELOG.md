@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🛡️ Security & Hardening
+
+- **Redact Decrypted Plaintext in `toString()`**: Prevent decrypted message contents from appearing in diagnostic string representations (#125).
+
 ### 📚 Documentation
 
 - **Package Documentation**: Added `package-info.java` files describing the purpose and contents of every Java package (`account`, `backup`, `ecies`, `exception`, `megolm`, `olm`, `sas`, `types`, and the root package) (#106)

@@ -253,7 +253,7 @@ class EciesTest {
                     .isNotEqualTo(third)
                     .isNotEqualTo("not a result")
                     .isNotEqualTo(null);
-            assertThat(result.toString()).contains("ecies", "plaintext");
+            assertThat(result).hasToString("{plaintext='<redacted>'}");
         }
     }
 

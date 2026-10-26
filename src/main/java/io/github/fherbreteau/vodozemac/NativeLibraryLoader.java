@@ -130,7 +130,7 @@ public final class NativeLibraryLoader {
                 FileAttribute<Set<PosixFilePermission>> attr = PosixFilePermissions.asFileAttribute(perms);
                 tempDir = Files.createTempDirectory("vodozemac-native", attr);
             } else {
-                tempDir = Files.createTempDirectory("vodozemac-native");
+                tempDir = Files.createTempDirectory("vodozemac-native"); // NOSONAR
             }
             tempLib = tempDir.resolve(libName);
 
