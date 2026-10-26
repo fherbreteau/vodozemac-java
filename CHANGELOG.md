@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🛡️ Security & Hardening
 
-- **Redact Decrypted Plaintext in `toString()`**: Prevent decrypted message contents from appearing in diagnostic string representations.
+- **Redact Decrypted Plaintext in `toString()`**: Prevent decrypted message contents from appearing in diagnostic string representations (#125).
 
 ### 📚 Documentation
 
