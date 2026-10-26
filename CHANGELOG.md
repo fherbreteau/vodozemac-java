@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🐛 Fixes
+
+- **Stable ECIES Channel Equality**: Use Java object identity for `EstablishedEcies` so equality and hash codes remain stable after closing native handles (#126).
+
 ### 🛡️ Security & Hardening
 
 - **Redact Decrypted Plaintext in `toString()`**: Prevent decrypted message contents from appearing in diagnostic string representations (#125).
