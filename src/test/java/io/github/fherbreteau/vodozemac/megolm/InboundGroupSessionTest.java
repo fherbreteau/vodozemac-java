@@ -203,6 +203,29 @@ class InboundGroupSessionTest {
                     .isPresent()
                     .get(STRING)
                     .isNotEmpty();
+            assertThat(inbound.exportAt(Integer.MAX_VALUE))
+                    .as("Export at index above first known index should return a non-null key")
+                    .isPresent()
+                    .get(STRING)
+                    .isNotEmpty();
+            assertThat(inbound.exportAt(((long) Integer.MAX_VALUE) + 1))
+                    .as("Export at index above first known index should return a non-null key")
+                    .isPresent()
+                    .get(STRING)
+                    .isNotEmpty();
+            long maxUnsignedInt = Math.powExact(2L, 32) - 1;
+            assertThat(inbound.exportAt(maxUnsignedInt))
+                    .as("Export at index above first known index should return a non-null key")
+                    .isPresent()
+                    .get(STRING)
+                    .isNotEmpty();
+            long invalidIndex = Math.powExact(2L, 32);
+            assertThatThrownBy(() -> inbound.exportAt(invalidIndex))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("index must be a valid unsigned 32 bits integer");
+            assertThatThrownBy(() -> inbound.exportAt(-1))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("index must be positive");
         }
     }
 
@@ -336,6 +359,23 @@ class InboundGroupSessionTest {
             assertThat(inbound.firstKnownIndex())
                     .as("First known index should be 20 after advance")
                     .isEqualTo(20);
+            assertThat(inbound.advanceTo(Integer.MAX_VALUE))
+                    .as("Export at index above first known index should return a non-null key")
+                    .isTrue();
+            assertThat(inbound.advanceTo(((long) Integer.MAX_VALUE) + 1))
+                    .as("Export at index above first known index should return a non-null key")
+                    .isTrue();
+            long maxUnsignedInt = Math.powExact(2L, 32) - 1;
+            assertThat(inbound.advanceTo(maxUnsignedInt))
+                    .as("Export at index above first known index should return a non-null key")
+                    .isTrue();
+            long invalidIndex = Math.powExact(2L, 32);
+            assertThatThrownBy(() -> inbound.advanceTo(invalidIndex))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("index must be a valid unsigned 32 bits integer");
+            assertThatThrownBy(() -> inbound.advanceTo(-1))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessage("index must be positive");
         }
     }
 

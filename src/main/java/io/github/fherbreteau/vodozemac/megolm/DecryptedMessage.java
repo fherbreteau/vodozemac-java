@@ -16,7 +16,7 @@ import java.util.Objects;
  */
 public final class DecryptedMessage {
     private final byte[] plaintext;
-    private final int messageIndex;
+    private final long messageIndex;
 
     /**
      * Constructs a new {@code DecryptedMessage}.
@@ -24,7 +24,7 @@ public final class DecryptedMessage {
      * @param plaintext     the decrypted plaintext of the message
      * @param messageIndex  the message index at which the message was encrypted
      */
-    DecryptedMessage(byte[] plaintext, int messageIndex) {
+    DecryptedMessage(byte[] plaintext, long messageIndex) {
         this.plaintext = plaintext;
         this.messageIndex = messageIndex;
     }
@@ -46,7 +46,7 @@ public final class DecryptedMessage {
      *
      * @return the message index
      */
-    public int messageIndex() {
+    public long messageIndex() {
         return messageIndex;
     }
 

@@ -3,7 +3,7 @@ pub mod message;
 pub mod outbound_group_session;
 
 use jni::objects::JObject;
-use jni::sys::jint;
+use jni::sys::jlong;
 use jni::{Env, JValue, jni_sig};
 use vodozemac::base64_encode;
 use vodozemac::megolm::MegolmMessage;
@@ -22,11 +22,11 @@ pub(crate) fn to_java_megolm_message<'local>(
 
     env.new_object(
         MEGOLM_MESSAGE,
-        jni_sig!((base64: java.lang.String, ciphertext: java.lang.String, messageIndex: int, mac: java.lang.String, signature: io.github.fherbreteau.vodozemac.types.Ed25519Signature) -> void),
+        jni_sig!((base64: java.lang.String, ciphertext: java.lang.String, messageIndex: long, mac: java.lang.String, signature: io.github.fherbreteau.vodozemac.types.Ed25519Signature) -> void),
         &[
             JValue::Object(&base64),
             JValue::Object(&ciphertext),
-            JValue::Int(message.message_index() as jint),
+            JValue::Long(message.message_index() as jlong),
             JValue::Object(&mac),
             JValue::Object(&signature),
         ],
@@ -41,10 +41,10 @@ pub(crate) fn to_java_decrypted_message<'local>(
     let plaintext_bytes = env.byte_array_from_slice(plaintext)?;
     env.new_object(
         DECRYPTED_MESSAGE,
-        jni_sig!((plaintext: byte[], messageIndex: int) -> void),
+        jni_sig!((plaintext: byte[], messageIndex: long) -> void),
         &[
             JValue::Object(&plaintext_bytes),
-            JValue::Int(message_index as jint),
+            JValue::Long(message_index as jlong),
         ],
     )
 }

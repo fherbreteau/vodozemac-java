@@ -94,7 +94,7 @@ Megolm outbound group session for multi-recipient encrypted communication.
 | Method | Description |
 |--------|-------------|
 | `String sessionId()` | Get the session ID |
-| `int messageIndex()` | Get current message index |
+| `long messageIndex()` | Get current message index |
 | `String sessionKey()` | Get the session key for sharing with recipients |
 | `MegolmSessionVersion sessionConfig()` | Get the session protocol version |
 | `MegolmMessage encrypt(byte[] plaintext)` | Encrypt a message and return a typed `MegolmMessage` |
@@ -109,11 +109,11 @@ Megolm inbound group session for receiving encrypted group messages.
 | Method | Description |
 |--------|-------------|
 | `String sessionId()` | Get the session ID |
-| `int firstKnownIndex()` | Get the first known message index |
+| `long firstKnownIndex()` | Get the first known message index |
 | `DecryptedMessage decrypt(MegolmMessage message)` | Decrypt a `MegolmMessage` |
-| `Optional<String> exportAt(int index)` | Export session key at a given index |
+| `Optional<String> exportAt(long index)` | Export session key at a given index |
 | `Optional<String> exportAtFirstKnownIndex()` | Export session key at first known index |
-| `boolean advanceTo(int index)` | Advance the session to a given index |
+| `boolean advanceTo(long index)` | Advance the session to a given index |
 | `boolean connected(InboundGroupSession other)` | Check if two sessions are connected |
 | `SessionOrdering compare(InboundGroupSession other)` | Compare two sessions |
 | `Optional<InboundGroupSession> merge(InboundGroupSession other)` | Merge two connected sessions |
@@ -130,7 +130,7 @@ An encrypted Megolm message produced by `OutboundGroupSession.encrypt()` and con
 | Method | Description |
 |--------|-------------|
 | `String ciphertext()` | Get the base64-encoded ciphertext |
-| `int messageIndex()` | Get the message index this message was encrypted at |
+| `long messageIndex()` | Get the message index this message was encrypted at |
 | `String mac()` | Get the base64-encoded MAC |
 | `Ed25519Signature signature()` | Get the Ed25519 signature of the ciphertext |
 | `static MegolmMessage fromBase64(String base64)` | Decode and validate a base64-encoded message |
@@ -142,7 +142,7 @@ The result of a successful Megolm decryption.
 | Method | Description |
 |--------|-------------|
 | `byte[] plaintext()` | Get the decrypted plaintext bytes |
-| `int messageIndex()` | Get the message index the message was encrypted at |
+| `long messageIndex()` | Get the message index the message was encrypted at |
 
 
 
