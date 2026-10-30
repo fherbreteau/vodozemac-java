@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🐛 Fixes
 
+- **Preserve Full Megolm Index Range**: Use `long` consistently across Java/JNI for Megolm indices and validate unsigned 32-bit inputs (#127).
+
 - **Stable ECIES Channel Equality**: Use Java object identity for `EstablishedEcies` so equality and hash codes remain stable after closing native handles (#126).
 
 ### 🛡️ Security & Hardening

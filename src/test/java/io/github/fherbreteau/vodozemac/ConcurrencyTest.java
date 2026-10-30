@@ -58,7 +58,7 @@ class ConcurrencyTest {
             assertThat(failures).isEmpty();
             assertThat(messages).hasSize(THREADS * ITERATIONS);
 
-            Set<Integer> indexes = new HashSet<>();
+            Set<Long> indexes = new HashSet<>();
             for (MegolmMessage message : messages) {
                 DecryptedMessage decrypted = inbound.decrypt(message);
                 assertThat(new String(decrypted.plaintext(), UTF_8)).startsWith("secret-");

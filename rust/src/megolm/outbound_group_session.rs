@@ -50,13 +50,13 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroup
     mut env: EnvUnowned,
     _class: JClass,
     ptr: jlong,
-) -> jint {
-    let outcome = env.with_env(|env| -> Result<jint, jni::errors::Error> {
+) -> jlong {
+    let outcome = env.with_env(|env| -> Result<jlong, jni::errors::Error> {
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
             let session = unsafe { &*(ptr as *const GroupSession) };
 
-            Ok(session.message_index() as jint)
+            Ok(session.message_index() as jlong)
         })
     });
     outcome.resolve::<jni::errors::ThrowRuntimeExAndDefault>()

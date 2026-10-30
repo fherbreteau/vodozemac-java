@@ -219,7 +219,7 @@ Key handling during migration:
 | Runtime failures surfaced as `RuntimeException`/`IllegalStateException` | `IllegalStateException` on closed handles, `IllegalArgumentException` for invalid arguments |
 | `Message.type()` → `Long` (0/1) | `OlmMessage.type()` → `MessageType.PRE_KEY` / `MessageType.NORMAL` enum |
 | Plain text as `String` everywhere | Plaintexts are `byte[]`; convert with `new String(bytes, StandardCharsets.UTF_8)` |
-| Message index `long` | `messageIndex()` is `int` |
+| Message index `long` | `messageIndex()` is `long` |
 
 All Java-visual types (`Curve25519PublicKey`, `Ed25519PublicKey`,
 `Ed25519Signature`) convert with `fromBase64(String)` /

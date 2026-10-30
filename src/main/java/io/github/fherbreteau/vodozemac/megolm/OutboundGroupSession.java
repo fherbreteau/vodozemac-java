@@ -78,7 +78,7 @@ public final class OutboundGroupSession extends NativeHandle {
      * @return the current message index
      * @throws IllegalStateException if this session has been closed
      */
-    public synchronized int messageIndex() {
+    public synchronized long messageIndex() {
         checkNotClosed();
         return nativeMessageIndex(nativePtr());
     }
@@ -208,7 +208,7 @@ public final class OutboundGroupSession extends NativeHandle {
 
     private native String nativeSessionId(long ptr);
 
-    private native int nativeMessageIndex(long ptr);
+    private native long nativeMessageIndex(long ptr);
 
     private native String nativeSessionKey(long ptr);
 

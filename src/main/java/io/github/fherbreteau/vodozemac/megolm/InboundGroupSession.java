@@ -1,5 +1,6 @@
 package io.github.fherbreteau.vodozemac.megolm;
 
+import static io.github.fherbreteau.vodozemac.megolm.IndexValidator.checkIndexRange;
 import static io.github.fherbreteau.vodozemac.KeyValidator.validateEncryptionKey;
 
 import java.util.Objects;
@@ -91,7 +92,7 @@ public final class InboundGroupSession extends NativeHandle {
      * @return the first known message index
      * @throws IllegalStateException if this session has been closed
      */
-    public synchronized int firstKnownIndex() {
+    public synchronized long firstKnownIndex() {
         checkNotClosed();
         return nativeFirstKnownIndex(nativePtr());
     }
@@ -150,8 +151,9 @@ public final class InboundGroupSession extends NativeHandle {
      *         if the session has been ratcheted beyond the given index
      * @throws IllegalStateException if this session has been closed
      */
-    public synchronized Optional<String> exportAt(int index) {
+    public synchronized Optional<String> exportAt(long index) {
         checkNotClosed();
+        checkIndexRange(index);
         String result = nativeExportAt(nativePtr(), index);
         return Optional.ofNullable(result);
     }
@@ -159,7 +161,7 @@ public final class InboundGroupSession extends NativeHandle {
     /**
      * Exports the session at its first known message index.
      * <p>
-     * This is equivalent to calling {@link #exportAt(int)} with
+     * This is equivalent to calling {@link #exportAt(long)} with
      * {@link #firstKnownIndex()}.
      *
      * @return the exported session key as a base64 string
@@ -182,8 +184,9 @@ public final class InboundGroupSession extends NativeHandle {
      *         {@code false} if the ratchet was already advanced beyond the given index
      * @throws IllegalStateException if this session has been closed
      */
-    public synchronized boolean advanceTo(int index) {
+    public synchronized boolean advanceTo(long index) {
         checkNotClosed();
+        checkIndexRange(index);
         return nativeAdvanceTo(nativePtr(), index);
     }
 
@@ -301,7 +304,7 @@ public final class InboundGroupSession extends NativeHandle {
      * Creates a new {@code InboundGroupSession} from an exported session key with the default version.
      * <p>
      * An exported session key can be obtained from another recipient's
-     * {@link InboundGroupSession} using {@link #exportAt(int)} or
+     * {@link InboundGroupSession} using {@link #exportAt(long)} or
      * {@link #exportAtFirstKnownIndex()}.
      * <p>
      * <b>Warning</b>: Extra care is required to ensure the authenticity of
@@ -320,7 +323,7 @@ public final class InboundGroupSession extends NativeHandle {
      * Creates a new {@code InboundGroupSession} from an exported session key.
      * <p>
      * An exported session key can be obtained from another recipient's
-     * {@link InboundGroupSession} using {@link #exportAt(int)} or
+     * {@link InboundGroupSession} using {@link #exportAt(long)} or
      * {@link #exportAtFirstKnownIndex()}.
      * <p>
      * <b>Warning</b>: Extra care is required to ensure the authenticity of
@@ -372,17 +375,17 @@ public final class InboundGroupSession extends NativeHandle {
 
     private native String nativeSessionId(long ptr);
 
-    private native int nativeFirstKnownIndex(long ptr);
+    private native long nativeFirstKnownIndex(long ptr);
 
     private native DecryptedMessage nativeDecrypt(long ptr, String message);
 
     private native String nativePickle(long ptr);
 
-    private native String nativeExportAt(long ptr, int index);
+    private native String nativeExportAt(long ptr, long index);
 
     private native String nativeExportAtFirstKnownIndex(long ptr);
 
-    private native boolean nativeAdvanceTo(long ptr, int index);
+    private native boolean nativeAdvanceTo(long ptr, long index);
 
     private native boolean nativeConnected(long ptr, long otherPtr);
 

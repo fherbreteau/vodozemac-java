@@ -32,11 +32,11 @@ public final class MegolmMessage {
 
     private final String base64;
     private final String ciphertext;
-    private final int messageIndex;
+    private final long messageIndex;
     private final String mac;
     private final Ed25519Signature signature;
 
-    MegolmMessage(String base64, String ciphertext, int messageIndex, String mac, Ed25519Signature signature) {
+    MegolmMessage(String base64, String ciphertext, long messageIndex, String mac, Ed25519Signature signature) {
         this.base64 = base64;
         this.ciphertext = ciphertext;
         this.messageIndex = messageIndex;
@@ -59,7 +59,7 @@ public final class MegolmMessage {
      *
      * @return the message index
      */
-    public int messageIndex() {
+    public long messageIndex() {
         return messageIndex;
     }
 
