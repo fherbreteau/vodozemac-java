@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 📚 Documentation
 
-- **Synchronize Dependency Metadata**: Align `AGENTS.md` with current Java, Rust, wrapper, and CI dependency versions, distinguish declared/resolved/pinned versions, and document the update checklist; align the vodozemac Cargo requirement with its lockfile.
+- **Synchronize Dependency Metadata**: Align `AGENTS.md` with current Java, Rust, wrapper, and CI dependency versions, distinguish declared/resolved/pinned versions, and document the update checklist; align the vodozemac Cargo requirement with its lockfile (#134).
 
 ### 🐛 Fixes
 
