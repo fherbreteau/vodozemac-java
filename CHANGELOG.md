@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 📚 Documentation
+
+- **Synchronize Dependency Metadata**: Align `AGENTS.md` with current Java, Rust, wrapper, and CI dependency versions, distinguish declared/resolved/pinned versions, and document the update checklist; align the vodozemac Cargo requirement with its lockfile.
+
 ### 🐛 Fixes
 
 - **Preserve Full Megolm Index Range**: Use `long` consistently across Java/JNI for Megolm indices and validate unsigned 32-bit inputs (#127).

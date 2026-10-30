@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Java bindings for the [vodozemac](https://github.com/matrix-org/vodozemac) Rust cryptographic library (v0.10.0), providing Olm, Megolm, SAS, ECIES, and PK Encryption/Decryption functionality for the Matrix protocol.
+Java bindings for the [vodozemac](https://github.com/matrix-org/vodozemac) Rust cryptographic library (v0.11.1), providing Olm, Megolm, SAS, ECIES, and PK Encryption/Decryption functionality for the Matrix protocol.
 
 ## Project Documentation
 
@@ -139,13 +139,44 @@ The PR reference matters: the release notes separate changelog-covered changes f
 
 ## Dependencies
 
-- **Java 25**, **Maven 3.9.16** (wrapper), **Maven ≥ 3.6.3** (enforcer)
-- **Rust** (stable, `rust-toolchain.toml`), Cargo
-- **vodozemac 0.10.0** (Rust crate with features: `libolm-compat`, `experimental-session-config`, `insecure-pk-encryption`)
-- **JNI 0.22.4** (Rust crate)
-- **JUnit Jupiter 6.1.3**, **AssertJ 3.27.7**, JaCoCo 0.8.15, Checkstyle 14.1.0
+### Runtime and toolchain
 
-Keep this section in sync with `pom.xml` and `rust/Cargo.toml` when dependencies are bumped.
+| Dependency or tool | Version source and value |
+|---|---|
+| Java | 25; `pom.xml` compiler release and GitHub Actions Java version. |
+| Maven | Wrapper downloads 3.10.0 from `.mvn/wrapper/maven-wrapper.properties`; Maven Enforcer requires at least 3.6.3 (`pom.xml`). |
+| Rust | `rust-toolchain.toml` selects the moving `stable` channel with `clippy`, `rustfmt`, and `llvm-tools-preview`. CI separately pins Rust 1.88.0 in `.github/workflows/test.yml` and `build.yml`; do not treat that CI pin as the local toolchain declaration. |
+| vodozemac | Cargo requirement `0.11.1` in `rust/Cargo.toml`; `rust/Cargo.lock` resolves `0.11.1`. Features: `libolm-compat`, `experimental-session-config`, `insecure-pk-encryption`. |
+| JNI | Cargo requirement `0.22.4` in `rust/Cargo.toml`; `rust/Cargo.lock` resolves `0.22.4`. The `invocation` feature is enabled for dev-dependencies. |
+| serde | Cargo requirement `1` with `derive`; resolved version is recorded in `rust/Cargo.lock`. |
+| serde_json | Cargo requirement `1.0.141`; `rust/Cargo.lock` currently resolves `1.0.154`. |
+
+### Java test and build dependencies
+
+| Dependency or plugin | Version | Source |
+|---|---:|---|
+| JUnit Jupiter | 6.1.3 | `junit5.version` in `pom.xml` |
+| AssertJ | 3.27.7 | `assertj.version` in `pom.xml` |
+| Maven Compiler | 3.16.0 | `compiler-plugin.version` in `pom.xml` |
+| Maven Surefire | 3.6.1 | `surefire-plugin.version` in `pom.xml` |
+| Maven Exec | 3.6.4 | `exec-plugin.version` in `pom.xml` |
+| Maven Resources | 3.5.0 | `resource-plugin.version` in `pom.xml` |
+| Maven Jar | 3.5.1 | `jar-plugin.version` in `pom.xml` |
+| Maven Clean | 3.5.0 | `clean-plugin.version` in `pom.xml` |
+| Maven Dependency | 3.11.0 | `dependency-plugin.version` in `pom.xml` |
+| Maven Enforcer | 3.6.3 | `enforcer-plugin.version` in `pom.xml`; also enforces Maven 3.6.3+ |
+| Maven Checkstyle plugin | 3.6.0 | `checkstyle-maven.version` in `pom.xml` |
+| Checkstyle engine | 14.3.0 | `checkstyle.version` in `pom.xml` |
+| JaCoCo | 0.8.16 | `jacoco.version` in `pom.xml` |
+| Sonar Maven plugin | 5.8.0.7211 | `sonar.version` in `pom.xml` |
+| Git Commit ID Maven plugin | 10.0.1 | `git-commit-id.version` in `pom.xml` |
+| Maven Versions | 2.23.0 | `versions-plugin.version` in `pom.xml` |
+| Maven Source / Javadoc | 3.4.0 / 3.12.0 | `source-plugin.version` / `javadoc-plugin.version` in `pom.xml` |
+| Maven GPG / Central Publishing | 3.2.8 / 0.12.0 | `gpg-plugin.version` / `central-plugin.version` in `pom.xml` |
+
+### Dependency update maintenance
+
+When changing a dependency, plugin, wrapper, or toolchain version, update its source-of-truth declaration first, regenerate and review `rust/Cargo.lock` for Cargo changes, then update this section in the same PR. Check every version here against `pom.xml`, `rust/Cargo.toml` and `rust/Cargo.lock`, `.mvn/wrapper/maven-wrapper.properties`, `rust-toolchain.toml`, and CI workflow pins. Clearly distinguish version requirements, lockfile resolutions, wrapper downloads, and CI-only pins; do not replace a floating toolchain channel with a CI pin or vice versa.
 
 **Never remove `org.eclipse.m2e:lifecycle-mapping` from `pom.xml`**: it is intentional IDE metadata (no build participation) used by the Eclipse m2e plugin and the VS Code Java extension to import the project properly (ignores `checkstyle:check` executions, skips `exec:exec` cargo invocations on incremental builds).
 
