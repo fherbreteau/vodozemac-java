@@ -27,6 +27,7 @@
 /.bloop/
 /.sonarlint/
 /.sonar/
+/.venv/
 
 # JVM crash logs
 hs_err_pid*.log

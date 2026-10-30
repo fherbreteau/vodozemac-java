@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 📚 Documentation
+
+- **Correct PK Backup Persistence Example**: Use the supported legacy pickle API and demonstrate restoring a serialized backup key and message components.
+
 ### 🐛 Fixes
 
 - **Preserve Full Megolm Index Range**: Use `long` consistently across Java/JNI for Megolm indices and validate unsigned 32-bit inputs (#127).
