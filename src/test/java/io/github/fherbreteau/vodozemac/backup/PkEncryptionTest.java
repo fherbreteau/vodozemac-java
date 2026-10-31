@@ -111,6 +111,25 @@ class PkEncryptionTest {
     }
 
     @Test
+    void testDecryptionFromReconstructedMessage() {
+        String message = "It's a secret to everybody";
+
+        try (PkDecryption decyption = new PkDecryption(); PkEncryption encryption = PkEncryption.fromKey(decyption.publicKey())) {
+            PkMessage original = encryption.encrypt(message.getBytes());
+
+            String ciphertext = original.ciphertext();
+            String mac = original.mac();
+            String ephemeralKey = original.ephemeralKey();
+
+            PkMessage reloaded = PkMessage.from(ciphertext, mac, ephemeralKey);
+            byte[] decrypted = decyption.decrypt(reloaded);
+            assertThat(decrypted)
+                .asString()
+                .isEqualTo(message);
+        }
+    }
+
+    @Test
     void testEncryptionExceptionIsVodozemacException() {
         assertThat(new EncryptionException("encryption failed"))
                 .as("EncryptionException should be a VodozemacException")

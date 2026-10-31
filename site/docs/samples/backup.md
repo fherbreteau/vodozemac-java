@@ -29,23 +29,24 @@ try (PkDecryption decryption = new PkDecryption();
         PkEncryption encryption = PkEncryption.fromKey(decryption.publicKey())) {
 
     PkMessage message = encryption.encrypt(plaintext);
-    message.ciphertext();   // base64 ciphertext
-    message.ephemeralKey(); // base64 ephemeral Curve25519 public key
-    message.mac();          // base64 MAC (does not authenticate the ciphertext)
+    String ciphertext = message.ciphertext();     // base64 ciphertext
+    String ephemeralKey = message.ephemeralKey(); // base64 ephemeral Curve25519 public key
+    String mac = message.mac();                   // base64 MAC (does not authenticate the ciphertext)
 
-    byte[] restored = decryption.decrypt(message); // == plaintext
+    PkMessage recreated = PkMessage.from(ciphertext, mac, ephemeralKey);
+    byte[] restored = decryption.decrypt(recreated); // == plaintext
 }
 ```
 
 ## Persistence
 
-`PkDecryption` supports the encrypted pickle for long-term storage:
+`PkDecryption` only supports the legacy pickle for long-term storage:
 
 ```java
 byte[] key = /* 32-byte key from your secret storage */;
-String pickle = decryption.pickle(key);
+String pickle = decryption.pickleLegacy(key);
 // restore later:
-try (PkDecryption restored = PkDecryption.unpickle(pickle, key)) { ... }
+try (PkDecryption restored = PkDecryption.unpickleLegacy(pickle, key)) { ... }
 ```
 
 A legacy libolm pickle can be imported with `unpickleLegacy(pickle, key)` —

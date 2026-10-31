@@ -260,7 +260,7 @@ An encrypted message produced by `PkEncryption`, consisting of three base64-enco
 | `String ciphertext()` | Get the base64-encoded ciphertext |
 | `String mac()` | Get the base64-encoded MAC (does not authenticate the ciphertext) |
 | `String ephemeralKey()` | Get the base64-encoded ephemeral Curve25519 public key |
-
+| `static PkMessage from(String ciphertext, String mac, String ephemeralKey)` | Create a new PkMessage from its content. |
 
 
 ## Cryptographic key types

@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 📚 Documentation
 
+- **Correct PK Backup Persistence Example**: Use the supported legacy pickle API and demonstrate restoring a serialized backup key and message components (#135).
+
 - **Synchronize Dependency Metadata**: Align `AGENTS.md` with current Java, Rust, wrapper, and CI dependency versions, distinguish declared/resolved/pinned versions, and document the update checklist; align the vodozemac Cargo requirement with its lockfile (#134).
 
 ### 🐛 Fixes

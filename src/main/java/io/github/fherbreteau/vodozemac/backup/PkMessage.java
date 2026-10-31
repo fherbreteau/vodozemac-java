@@ -67,6 +67,18 @@ public final class PkMessage {
         return ephemeralKey;
     }
 
+    /**
+     * Create a new PkMessage from its content.
+     *
+     * @param ciphertext the ciphertext as a base64 string
+     * @param mac the MAC as a base64 string
+     * @param ephemeralKey the ephemeral key as a base64 string
+     * @return an encrypted message to decrypt.
+     */
+    public static PkMessage from(String ciphertext, String mac, String ephemeralKey) {
+        return new PkMessage(ciphertext, mac, ephemeralKey);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (!(o instanceof PkMessage pkMessage)) {
