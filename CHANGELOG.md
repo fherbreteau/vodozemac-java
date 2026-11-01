@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🧪 Testing
 
-- **Expand Rust JNI Coverage**: Add JVM-attached coverage for backup, ECIES, Olm, Megolm, and SAS flows and report coverage per Rust source file; CI-equivalent aggregate Rust line coverage is now above 80%.
+- **Expand Rust JNI Coverage**: Add JVM-attached coverage for backup, ECIES, Olm, Megolm, and SAS flows and report coverage per Rust source file; CI-equivalent aggregate Rust line coverage is now above 80% (#137).
 
 ### 🔧 Build System
 
