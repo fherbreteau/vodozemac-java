@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔧 Build System
 
-- **Clean Up Workflow Shell Lint**: Select the fat-JAR smoke-test artifact safely and remove the unused release-version field.
+- **Clean Up Workflow Shell Lint**: Select the fat-JAR smoke-test artifact safely and remove the unused release-version field (#136).
 
 ### 📚 Documentation
 
