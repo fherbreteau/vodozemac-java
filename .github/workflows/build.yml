@@ -180,9 +180,14 @@ jobs:
               }
           }
           EOF
-          JAR=$(ls target/vodozemac-java-*.jar | head -1)
-          echo "Testing JAR: $JAR"
-          java --enable-native-access=ALL-UNNAMED -cp "$JAR" /tmp/SmokeTest.java
+          jars=(target/vodozemac-java-*.jar)
+          if [ "${#jars[@]}" -ne 1 ] || [ ! -f "${jars[0]}" ]; then
+            echo "::error::Expected exactly one vodozemac-java JAR, found ${#jars[@]}"
+            exit 1
+          fi
+          jar="${jars[0]}"
+          echo "Testing JAR: $jar"
+          java --enable-native-access=ALL-UNNAMED -cp "$jar" /tmp/SmokeTest.java
 
       - name: Upload Maven artifact (JAR complet)
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### 🔧 Build System
+
+- **Clean Up Workflow Shell Lint**: Select the fat-JAR smoke-test artifact safely and remove the unused release-version field.
+
 ### 📚 Documentation
 
 - **Correct PK Backup Persistence Example**: Use the supported legacy pickle API and demonstrate restoring a serialized backup key and message components (#135).

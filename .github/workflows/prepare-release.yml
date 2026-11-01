@@ -76,7 +76,7 @@ jobs:
             echo "cargoVersion=$BASE" >> "$GITHUB_OUTPUT"
           else
             echo "isFinal=true" >> "$GITHUB_OUTPUT"
-            IFS='.' read -r major minor patch <<< "$VERSION"
+            IFS='.' read -r major minor _ <<< "$VERSION"
             echo "nextVersion=$major.$((minor + 1)).0-SNAPSHOT" >> "$GITHUB_OUTPUT"
             echo "cargoVersion=$major.$((minor + 1)).0" >> "$GITHUB_OUTPUT"
           fi
