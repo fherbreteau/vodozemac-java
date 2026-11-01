@@ -189,13 +189,17 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_n
 mod tests {
     use super::*;
     use crate::helpers::get_jvm;
-    use jni::objects::JObject;
+    use jni::objects::{JByteArray, JObject};
     use jni::{jni_sig, jni_str};
     use vodozemac::sas::Sas;
 
     use super::Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_nativeBytes as native_bytes;
     use super::Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_nativeBytesRaw as native_bytes_raw;
+    use super::Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_nativeCalculateMac as native_calculate_mac;
     use super::Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_nativeCalculateMacInvalidBase64 as native_calculate_mac_invalid_base64;
+    use super::Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_nativeFree as native_established_free;
+    use super::Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_nativeOurPublicKey as native_our_public_key;
+    use super::Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_nativeTheirPublicKey as native_their_public_key;
     use super::Java_io_github_fherbreteau_vodozemac_sas_EstablishedSas_nativeVerifyMac as native_verify_mac;
 
     fn establish_sas_pair() -> (EstablishedSas, EstablishedSas) {
@@ -423,6 +427,98 @@ mod tests {
                 );
 
                 native_free::<EstablishedSas>(env, ptr);
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_jni_bytes_raw_returns_requested_bytes() {
+        let jvm = get_jvm();
+        let established = establish_sas_pair().0;
+        let expected = established
+            .bytes_raw("SAS_INFO", 32)
+            .expect("Should generate 32 expected bytes");
+        let ptr = Box::into_raw(Box::new(established)) as jlong;
+        jvm.attach_current_thread(move |env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let info = env.new_string("SAS_INFO")?;
+                let result = call(env, |unowned, class| {
+                    native_bytes_raw(unowned, class, ptr, info, 32)
+                });
+                assert!(
+                    !result.is_null(),
+                    "nativeBytesRaw should return a byte array"
+                );
+                let result = JByteArray::from_raw(env, result);
+                assert_eq!(env.convert_byte_array(result)?, expected);
+
+                call(env, |unowned, class| {
+                    native_established_free(unowned, class, ptr)
+                });
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_jni_calculate_verify_mac_keys_and_free() {
+        let jvm = get_jvm();
+        let (alice, bob) = establish_sas_pair();
+        let our_key = alice.our_public_key().to_base64();
+        let their_key = alice.their_public_key().to_base64();
+        let expected_mac = alice.calculate_mac("input", "info").to_base64();
+        let wrong_mac = alice.calculate_mac("different input", "info").to_base64();
+        let ptr = Box::into_raw(Box::new(alice)) as jlong;
+        jvm.attach_current_thread(move |env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let our_key_result = call(env, |unowned, class| {
+                    native_our_public_key(unowned, class, ptr)
+                });
+                let our_key_result = JString::from_raw(env, our_key_result).try_to_string(env)?;
+                assert_eq!(our_key_result, our_key);
+
+                let their_key_result = call(env, |unowned, class| {
+                    native_their_public_key(unowned, class, ptr)
+                });
+                let their_key_result =
+                    JString::from_raw(env, their_key_result).try_to_string(env)?;
+                assert_eq!(their_key_result, their_key);
+                assert_eq!(their_key, bob.our_public_key().to_base64());
+
+                let input = env.new_string("input")?;
+                let info = env.new_string("info")?;
+                let calculated = call(env, |unowned, class| {
+                    native_calculate_mac(unowned, class, ptr, input, info)
+                });
+                let calculated = JString::from_raw(env, calculated).try_to_string(env)?;
+                assert_eq!(calculated, expected_mac);
+
+                let input = env.new_string("input")?;
+                let info = env.new_string("info")?;
+                let mac = env.new_string(&expected_mac)?;
+                call(env, |unowned, class| {
+                    native_verify_mac(unowned, class, ptr, input, info, mac)
+                });
+                assert!(!env.exception_check(), "The correct MAC should verify");
+
+                let input = env.new_string("input")?;
+                let info = env.new_string("info")?;
+                let wrong_mac = env.new_string(&wrong_mac)?;
+                call(env, |unowned, class| {
+                    native_verify_mac(unowned, class, ptr, input, info, wrong_mac)
+                });
+                assert!(
+                    env.exception_check(),
+                    "A valid-format incorrect MAC should throw"
+                );
+                env.exception_clear();
+
+                call(env, |unowned, class| {
+                    native_established_free(unowned, class, ptr)
+                });
             }
             Ok(())
         })

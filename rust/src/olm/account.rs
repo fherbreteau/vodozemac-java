@@ -608,7 +608,17 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_account_Account_nati
 mod tests {
     use super::*;
     use crate::helpers::{PICKLE_KEY, get_jvm};
+    use jni::objects::JObject;
     use vodozemac::olm::SessionConfig;
+
+    unsafe fn call<R>(env: &mut Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
+        unsafe {
+            f(
+                EnvUnowned::from_raw(env.get_raw()),
+                JClass::from_raw(env, std::ptr::null_mut()),
+            )
+        }
+    }
 
     #[test]
     fn test_pickle_key_is_32_bytes() {
@@ -884,6 +894,375 @@ mod tests {
         let session =
             alice.create_outbound_session(SessionConfig::version_2(), bob_identity, bob_one_time);
         let _ = session;
+    }
+
+    #[test]
+    fn test_account_jni_lifecycle_and_operations() {
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeCurve25519Key as curve_key;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeEd25519Key as ed_key;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeEncryptedPickle as encrypted_pickle;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeEncryptedUnpickle as encrypted_unpickle;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeFallbackKey as fallback_key;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeForgetFallbackKey as forget_fallback;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeFromDehydratedDevice as from_dehydrated;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeGenerateFallbackKey as generate_fallback;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeGenerateOneTimeKeys as generate_one_time;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeIdentityKeys as identity_keys;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeMarkKeysAsPublished as mark_published;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeMaxNumberOfOneTimeKeys as max_keys;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeNew as native_new;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeOneTimeKeys as one_time_keys;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativePickle as pickle;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativePickleLegacy as pickle_legacy;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeSign as sign;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeStoredOneTimeKeyCount as stored_keys;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeToDehydratedDevice as to_dehydrated;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeUnpickle as unpickle;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeUnpickleLegacy as unpickle_legacy;
+
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let ptr = call(env, |unowned, class| native_new(unowned, class));
+                assert_ne!(ptr, 0);
+
+                let keys = call(env, |unowned, class| identity_keys(unowned, class, ptr));
+                assert!(!keys.is_null());
+                let keys = JObject::from_raw(env, keys);
+                let identity = env
+                    .call_method(
+                        &keys,
+                        jni_str!("identityKey"),
+                        jni_sig!(() -> io.github.fherbreteau.vodozemac.types.Curve25519PublicKey),
+                        &[],
+                    )?
+                    .l()?;
+                assert!(!identity.is_null());
+                assert!(
+                    !env.call_method(
+                        &identity,
+                        jni_str!("toBase64"),
+                        jni_sig!(() -> java.lang.String),
+                        &[],
+                    )?
+                    .l()?
+                    .is_null()
+                );
+                assert!(!call(env, |unowned, class| curve_key(unowned, class, ptr)).is_null());
+                assert!(!call(env, |unowned, class| ed_key(unowned, class, ptr)).is_null());
+                assert!(call(env, |unowned, class| max_keys(unowned, class, ptr)) > 0);
+                assert_eq!(
+                    call(env, |unowned, class| stored_keys(unowned, class, ptr)),
+                    0
+                );
+
+                let generated = call(env, |unowned, class| {
+                    generate_one_time(unowned, class, ptr, 2)
+                });
+                assert!(!generated.is_null());
+                assert_eq!(
+                    call(env, |unowned, class| stored_keys(unowned, class, ptr)),
+                    2
+                );
+                let map = call(env, |unowned, class| one_time_keys(unowned, class, ptr));
+                assert_eq!(
+                    env.call_method(
+                        &JObject::from_raw(env, map),
+                        jni_str!("size"),
+                        jni_sig!(() -> jint),
+                        &[]
+                    )?
+                    .i()?,
+                    2
+                );
+
+                assert!(
+                    call(env, |unowned, class| generate_fallback(unowned, class, ptr)).is_null()
+                );
+                let fallback = call(env, |unowned, class| fallback_key(unowned, class, ptr));
+                assert_eq!(
+                    env.call_method(
+                        &JObject::from_raw(env, fallback),
+                        jni_str!("size"),
+                        jni_sig!(() -> jint),
+                        &[]
+                    )?
+                    .i()?,
+                    1
+                );
+                call(env, |unowned, class| mark_published(unowned, class, ptr));
+                assert_eq!(
+                    call(env, |unowned, class| stored_keys(unowned, class, ptr)),
+                    2
+                );
+                let published_keys = call(env, |unowned, class| one_time_keys(unowned, class, ptr));
+                assert_eq!(
+                    env.call_method(
+                        &JObject::from_raw(env, published_keys),
+                        jni_str!("size"),
+                        jni_sig!(() -> jint),
+                        &[]
+                    )?
+                    .i()?,
+                    0
+                );
+                assert!(!call(env, |unowned, class| fallback_key(unowned, class, ptr)).is_null());
+                assert!(!call(env, |unowned, class| forget_fallback(
+                    unowned, class, ptr
+                )));
+                let forgotten_fallback =
+                    call(env, |unowned, class| fallback_key(unowned, class, ptr));
+                assert_eq!(
+                    env.call_method(
+                        &JObject::from_raw(env, forgotten_fallback),
+                        jni_str!("size"),
+                        jni_sig!(() -> jint),
+                        &[]
+                    )?
+                    .i()?,
+                    0
+                );
+
+                let message = env.byte_array_from_slice(b"account JNI signing")?;
+                assert!(!call(env, |unowned, class| sign(unowned, class, ptr, message)).is_null());
+
+                let json = call(env, |unowned, class| pickle(unowned, class, ptr));
+                let json = JString::from_raw(env, json).try_to_string(env)?;
+                let json_arg = env.new_string(&json)?;
+                let restored = call(env, |unowned, class| unpickle(unowned, class, json_arg));
+                assert_ne!(restored, 0);
+                let key = env.byte_array_from_slice(&PICKLE_KEY)?;
+                let encrypted = call(env, |unowned, class| {
+                    encrypted_pickle(unowned, class, ptr, key)
+                });
+                let encrypted = JString::from_raw(env, encrypted).try_to_string(env)?;
+                let encrypted_arg = env.new_string(&encrypted)?;
+                let key = env.byte_array_from_slice(&PICKLE_KEY)?;
+                let restored_encrypted = call(env, |unowned, class| {
+                    encrypted_unpickle(unowned, class, encrypted_arg, key)
+                });
+                assert_ne!(restored_encrypted, 0);
+
+                let key = env.byte_array_from_slice(&PICKLE_KEY)?;
+                let legacy = call(env, |unowned, class| {
+                    pickle_legacy(unowned, class, ptr, key)
+                });
+                assert!(!legacy.is_null());
+                let legacy = JString::from_raw(env, legacy).try_to_string(env)?;
+                let legacy_arg = env.new_string(&legacy)?;
+                let key = env.byte_array_from_slice(&PICKLE_KEY)?;
+                let restored_legacy = call(env, |unowned, class| {
+                    unpickle_legacy(unowned, class, legacy_arg, key)
+                });
+                assert_ne!(restored_legacy, 0);
+
+                let key = env.byte_array_from_slice(&PICKLE_KEY)?;
+                let dehydrated = call(env, |unowned, class| {
+                    to_dehydrated(unowned, class, ptr, key)
+                });
+                assert!(!dehydrated.is_null());
+                let dehydrated = JObject::from_raw(env, dehydrated);
+                let ciphertext = env
+                    .call_method(
+                        &dehydrated,
+                        jni_str!("ciphertext"),
+                        jni_sig!(() -> java.lang.String),
+                        &[],
+                    )?
+                    .l()?;
+                let nonce = env
+                    .call_method(
+                        &dehydrated,
+                        jni_str!("nonce"),
+                        jni_sig!(() -> java.lang.String),
+                        &[],
+                    )?
+                    .l()?;
+                let ciphertext = JString::from_raw(env, ciphertext.into_raw());
+                let nonce = JString::from_raw(env, nonce.into_raw());
+                let key = env.byte_array_from_slice(&PICKLE_KEY)?;
+                let restored_dehydrated = call(env, |unowned, class| {
+                    from_dehydrated(unowned, class, ciphertext, nonce, key)
+                });
+                assert_ne!(restored_dehydrated, 0);
+
+                for owned_ptr in [
+                    restored,
+                    restored_encrypted,
+                    restored_legacy,
+                    restored_dehydrated,
+                ] {
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_account_Account_nativeFree(
+                            unowned, class, owned_ptr,
+                        )
+                    });
+                }
+                call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_account_Account_nativeFree(
+                        unowned, class, ptr,
+                    )
+                });
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_account_jni_session_creation_exports() {
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeCreateInboundSession as create_inbound;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeCreateOutboundSession as create_outbound;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeCurve25519Key as curve_key;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeGenerateOneTimeKeys as generate_one_time;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeNew as native_new;
+
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let alice = call(env, |unowned, class| native_new(unowned, class));
+                let bob = call(env, |unowned, class| native_new(unowned, class));
+                let generated = call(env, |unowned, class| {
+                    generate_one_time(unowned, class, bob, 1)
+                });
+                assert!(!generated.is_null());
+                let created = env
+                    .call_method(
+                        &JObject::from_raw(env, generated),
+                        jni_str!("created"),
+                        jni_sig!(() -> java.util.List),
+                        &[],
+                    )?
+                    .l()?;
+                let one_time_key = env
+                    .call_method(&created, jni_str!("get"), jni_sig!((index: int) -> java.lang.Object), &[JValue::Int(0)])?
+                    .l()?;
+                let one_time_key = env
+                    .call_method(
+                        &one_time_key,
+                        jni_str!("toBase64"),
+                        jni_sig!(() -> java.lang.String),
+                        &[],
+                    )?
+                    .l()?;
+                let one_time_key = JString::from_raw(env, one_time_key.into_raw());
+                let identity_key = call(env, |unowned, class| curve_key(unowned, class, bob));
+                let identity_key = JObject::from_raw(env, identity_key);
+                let identity_key = env
+                    .call_method(
+                        &identity_key,
+                        jni_str!("toBase64"),
+                        jni_sig!(() -> java.lang.String),
+                        &[],
+                    )?
+                    .l()?;
+                let identity_key = JString::from_raw(env, identity_key.into_raw());
+                let outbound = call(env, |unowned, class| {
+                    create_outbound(unowned, class, alice, 2, identity_key, one_time_key)
+                });
+                assert!(!outbound.is_null());
+                let outbound = JObject::from_raw(env, outbound);
+                let plaintext = env.byte_array_from_slice(b"JNI inbound creation")?;
+                let message = env
+                    .call_method(
+                        &outbound,
+                        jni_str!("encrypt"),
+                        jni_sig!((plaintext: byte[]) -> io.github.fherbreteau.vodozemac.olm.OlmMessage),
+                        &[JValue::Object(&plaintext)],
+                    )?
+                    .l()?;
+                assert!(!message.is_null());
+                let message = env
+                    .call_method(&message, jni_str!("toJson"), jni_sig!(() -> java.lang.String), &[])?
+                    .l()?;
+                let message = JString::from_raw(env, message.into_raw());
+                let alice_identity = call(env, |unowned, class| curve_key(unowned, class, alice));
+                let alice_identity = JObject::from_raw(env, alice_identity);
+                let alice_identity = env
+                    .call_method(
+                        &alice_identity,
+                        jni_str!("toBase64"),
+                        jni_sig!(() -> java.lang.String),
+                        &[],
+                    )?
+                    .l()?;
+                let alice_identity = JString::from_raw(env, alice_identity.into_raw());
+                let inbound = call(env, |unowned, class| {
+                    create_inbound(unowned, class, bob, 2, alice_identity, message)
+                });
+                assert!(!inbound.is_null());
+                let inbound = JObject::from_raw(env, inbound);
+                let plaintext = env
+                    .call_method(
+                        &inbound,
+                        jni_str!("plaintext"),
+                        jni_sig!(() -> byte[]),
+                        &[],
+                    )?
+                    .l()?;
+                assert_eq!(
+                    env.convert_byte_array(jni::objects::JByteArray::from_raw(
+                        env,
+                        plaintext.as_raw(),
+                    ))?,
+                    b"JNI inbound creation"
+                );
+                env.call_method(&outbound, jni_str!("close"), jni_sig!(() -> void), &[])?;
+                env.call_method(&inbound, jni_str!("close"), jni_sig!(() -> void), &[])?;
+                call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_account_Account_nativeFree(
+                        unowned, class, alice,
+                    )
+                });
+                call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_account_Account_nativeFree(
+                        unowned, class, bob,
+                    )
+                });
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_account_jni_errors_clear_exceptions() {
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeGenerateOneTimeKeys as generate_one_time;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeNew as native_new;
+        use super::Java_io_github_fherbreteau_vodozemac_account_Account_nativeUnpickle as unpickle;
+
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let ptr = call(env, |unowned, class| native_new(unowned, class));
+                for count in [0, 101] {
+                    let result = call(env, |unowned, class| {
+                        generate_one_time(unowned, class, ptr, count)
+                    });
+                    assert!(result.is_null());
+                    assert!(env.exception_check());
+                    env.exception_clear();
+                }
+                let invalid_pickle = env.new_string("not-json")?;
+                assert_eq!(
+                    call(env, |unowned, class| unpickle(
+                        unowned,
+                        class,
+                        invalid_pickle
+                    )),
+                    0
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+                call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_account_Account_nativeFree(
+                        unowned, class, ptr,
+                    )
+                });
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
     }
 
     #[test]

@@ -333,4 +333,181 @@ mod tests {
         let restored_session = GroupSession::from_pickle(restored);
         assert_eq!(restored_session.session_id(), original_id);
     }
+
+    unsafe fn call<R>(env: &mut jni::Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
+        let unowned = unsafe { EnvUnowned::from_raw(env.get_raw()) };
+        let class = unsafe { JClass::from_raw(env, std::ptr::null_mut()) };
+        f(unowned, class)
+    }
+
+    #[test]
+    fn test_jni_outbound_session_lifecycle_and_pickle_errors() {
+        use jni::objects::JObject;
+        use jni::{jni_sig, jni_str};
+
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let ptr = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeNew(
+                        unowned, class, 2,
+                    )
+                });
+                assert_ne!(ptr, 0);
+
+                let session_id = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeSessionId(
+                        unowned, class, ptr,
+                    )
+                });
+                let session_id = JString::from_raw(env, session_id).try_to_string(env)?;
+                assert!(!session_id.is_empty());
+                assert_eq!(
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeMessageIndex(
+                            unowned, class, ptr,
+                        )
+                    }),
+                    0
+                );
+                assert_eq!(
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeSessionConfig(
+                            unowned, class, ptr,
+                        )
+                    }),
+                    2
+                );
+                let session_key = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeSessionKey(
+                        unowned, class, ptr,
+                    )
+                });
+                let session_key = JString::from_raw(env, session_key).try_to_string(env)?;
+                assert!(!session_key.is_empty());
+
+                let plaintext = env.byte_array_from_slice(b"JNI Megolm plaintext")?;
+                let message = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeEncrypt(
+                        unowned, class, ptr, plaintext,
+                    )
+                });
+                let message = JObject::from_raw(env, message);
+                let base64 = env
+                    .call_method(&message, jni_str!("toString"), jni_sig!(() -> java.lang.String), &[])?
+                    .l()?;
+                let base64 = JString::from_raw(env, base64.as_raw()).try_to_string(env)?;
+                assert!(!base64.is_empty());
+                assert_eq!(
+                    env.call_method(&message, jni_str!("messageIndex"), jni_sig!(() -> long), &[])?
+                        .j()?,
+                    0
+                );
+                assert_eq!(
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeMessageIndex(
+                            unowned, class, ptr,
+                        )
+                    }),
+                    1
+                );
+
+                let pickle = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativePickle(
+                        unowned, class, ptr,
+                    )
+                });
+                let pickle = JString::from_raw(env, pickle).try_to_string(env)?;
+                let key = env.byte_array_from_slice(&crate::helpers::PICKLE_KEY)?;
+                let encrypted_pickle = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeEncryptedPickle(
+                        unowned, class, ptr, key,
+                    )
+                });
+                let encrypted_pickle =
+                    JString::from_raw(env, encrypted_pickle).try_to_string(env)?;
+
+                let pickle_string = env.new_string(&pickle)?;
+                let restored = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeUnpickle(
+                        unowned, class, pickle_string,
+                    )
+                });
+                let key = env.byte_array_from_slice(&crate::helpers::PICKLE_KEY)?;
+                let encrypted_string = env.new_string(&encrypted_pickle)?;
+                let encrypted_restored = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeEncryptedUnpickle(
+                        unowned, class, encrypted_string, key,
+                    )
+                });
+                assert_ne!(restored, 0);
+                assert_ne!(encrypted_restored, 0);
+
+                let bad_json_pickle = env.new_string("invalid pickle")?;
+                assert_eq!(
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeUnpickle(
+                            unowned, class, bad_json_pickle,
+                        )
+                    }),
+                    0
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let bad_pickle = env.new_string("invalid pickle")?;
+                let key = env.byte_array_from_slice(&crate::helpers::PICKLE_KEY)?;
+                assert_eq!(
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeEncryptedUnpickle(
+                            unowned, class, bad_pickle, key,
+                        )
+                    }),
+                    0
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let bad_pickle = env.new_string("invalid legacy pickle")?;
+                let key = env.byte_array_from_slice(&crate::helpers::PICKLE_KEY)?;
+                assert_eq!(
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeUnpickleLegacy(
+                            unowned, class, bad_pickle, key,
+                        )
+                    }),
+                    0
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let invalid = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeNew(
+                        unowned, class, 3,
+                    )
+                });
+                assert_eq!(invalid, 0);
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeFree(
+                        unowned, class, restored,
+                    )
+                });
+                call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeFree(
+                        unowned, class, encrypted_restored,
+                    )
+                });
+                call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeFree(
+                        unowned, class, ptr,
+                    )
+                });
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
 }

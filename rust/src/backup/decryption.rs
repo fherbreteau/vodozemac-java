@@ -176,11 +176,222 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_
 
 #[cfg(test)]
 mod tests {
-    use crate::helpers::PICKLE_KEY;
+    use crate::helpers::{PICKLE_KEY, get_jvm};
+    use jni::Env;
+    use jni::objects::{JByteArray, JClass, JString};
     use vodozemac::Curve25519SecretKey;
     use vodozemac::pk_encryption::PkEncryption;
 
+    use super::Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_nativeDecrypt as native_decrypt;
+    use super::Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_nativeFree as native_free;
+    use super::Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_nativeFromKey as native_from_key;
+    use super::Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_nativeNew as native_new;
+    use super::Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_nativePickleLegacy as native_pickle_legacy;
+    use super::Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_nativePublicKey as native_public_key;
+    use super::Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_nativeSecretKey as native_secret_key;
+    use super::Java_io_github_fherbreteau_vodozemac_backup_PkDecryption_nativeUnpickleLegacy as native_unpickle_legacy;
     use super::*;
+
+    unsafe fn call<R>(env: &mut Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
+        let unowned = unsafe { EnvUnowned::from_raw(env.get_raw()) };
+        let class = unsafe { JClass::from_raw(env, std::ptr::null_mut()) };
+        f(unowned, class)
+    }
+
+    #[test]
+    fn test_jni_decryption_lifecycle_and_errors() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let ptr = call(env, |unowned, class| native_new(unowned, class));
+                assert_ne!(ptr, 0);
+
+                let secret = call(env, |unowned, class| native_secret_key(unowned, class, ptr));
+                let secret = JString::from_raw(env, secret).try_to_string(env)?;
+                assert_eq!(base64_decode(&secret).expect("valid key").len(), 32);
+                let public = call(env, |unowned, class| native_public_key(unowned, class, ptr));
+                let public = JString::from_raw(env, public).try_to_string(env)?;
+                let secret_bytes: [u8; 32] = base64_decode(&secret)
+                    .expect("valid secret key")
+                    .try_into()
+                    .expect("secret key has the correct size");
+                assert_eq!(
+                    public,
+                    PkDecryption::from_key(Curve25519SecretKey::from_slice(&secret_bytes))
+                        .public_key()
+                        .to_base64()
+                );
+
+                let encryption = PkEncryption::from_key(
+                    Curve25519PublicKey::from_base64(&public).expect("valid public key"),
+                );
+                let plaintext = b"JNI backup decryption";
+                let message = encryption.encrypt(plaintext).expect("encrypt message");
+                let ciphertext = env.new_string(base64_encode(&message.ciphertext))?;
+                let mac = env.new_string(base64_encode(&message.mac))?;
+                let ephemeral_key = env.new_string(message.ephemeral_key.to_base64())?;
+                let decrypted = call(env, |unowned, class| {
+                    native_decrypt(unowned, class, ptr, ciphertext, mac, ephemeral_key)
+                });
+                assert_eq!(
+                    env.convert_byte_array(JByteArray::from_raw(env, decrypted))?,
+                    plaintext
+                );
+
+                let pickle_key = env.byte_array_from_slice(&PICKLE_KEY)?;
+                let pickle = call(env, |unowned, class| {
+                    native_pickle_legacy(unowned, class, ptr, pickle_key)
+                });
+                let pickle = JString::from_raw(env, pickle).try_to_string(env)?;
+                let pickle_data = env.new_string(&pickle)?;
+                let pickle_key = env.byte_array_from_slice(&PICKLE_KEY)?;
+                let restored_ptr = call(env, |unowned, class| {
+                    native_unpickle_legacy(unowned, class, pickle_data, pickle_key)
+                });
+                assert_ne!(restored_ptr, 0);
+                let restored_public = call(env, |unowned, class| {
+                    native_public_key(unowned, class, restored_ptr)
+                });
+                assert_eq!(
+                    JString::from_raw(env, restored_public).try_to_string(env)?,
+                    public
+                );
+                call(env, |unowned, class| {
+                    native_free(unowned, class, restored_ptr)
+                });
+
+                let key = env.new_string(secret)?;
+                let from_key_ptr = call(env, |unowned, class| native_from_key(unowned, class, key));
+                assert_ne!(from_key_ptr, 0);
+                call(env, |unowned, class| {
+                    native_free(unowned, class, from_key_ptr)
+                });
+
+                let malformed_key = env.new_string("not base64")?;
+                assert_eq!(
+                    call(env, |unowned, class| native_from_key(
+                        unowned,
+                        class,
+                        malformed_key
+                    )),
+                    0
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let wrong_size_key = env.new_string(base64_encode([1u8; 31]))?;
+                assert_eq!(
+                    call(env, |unowned, class| native_from_key(
+                        unowned,
+                        class,
+                        wrong_size_key
+                    )),
+                    0
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let malformed_pickle = env.new_string("not a pickle")?;
+                let pickle_key = env.byte_array_from_slice(&PICKLE_KEY)?;
+                assert_eq!(
+                    call(env, |unowned, class| native_unpickle_legacy(
+                        unowned,
+                        class,
+                        malformed_pickle,
+                        pickle_key,
+                    )),
+                    0
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let pickle_key = env.byte_array_from_slice(&PICKLE_KEY[..31])?;
+                assert!(
+                    call(env, |unowned, class| {
+                        native_pickle_legacy(unowned, class, ptr, pickle_key)
+                    })
+                    .is_null()
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let wrong_size_pickle_key = env.byte_array_from_slice(&PICKLE_KEY[..31])?;
+                let pickle_data = env.new_string(&pickle)?;
+                assert_eq!(
+                    call(env, |unowned, class| native_unpickle_legacy(
+                        unowned,
+                        class,
+                        pickle_data,
+                        wrong_size_pickle_key,
+                    )),
+                    0
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let malformed_ciphertext = env.new_string("not base64")?;
+                let mac = env.new_string(base64_encode([0u8; 8]))?;
+                let ephemeral_key = env.new_string(public.clone())?;
+                assert!(
+                    call(env, |unowned, class| {
+                        native_decrypt(
+                            unowned,
+                            class,
+                            ptr,
+                            malformed_ciphertext,
+                            mac,
+                            ephemeral_key,
+                        )
+                    })
+                    .is_null()
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let ciphertext = env.new_string(base64_encode([0u8; 16]))?;
+                let mac = env.new_string(base64_encode([0u8; 8]))?;
+                let malformed_ephemeral_key = env.new_string("not a public key")?;
+                assert!(
+                    call(env, |unowned, class| {
+                        native_decrypt(
+                            unowned,
+                            class,
+                            ptr,
+                            ciphertext,
+                            mac,
+                            malformed_ephemeral_key,
+                        )
+                    })
+                    .is_null()
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let ciphertext = env.new_string(base64_encode([0u8; 16]))?;
+                let malformed_mac = env.new_string(base64_encode([0u8; 8]))?;
+                let ephemeral_key = env.new_string(public)?;
+                assert!(
+                    call(env, |unowned, class| {
+                        native_decrypt(
+                            unowned,
+                            class,
+                            ptr,
+                            ciphertext,
+                            malformed_mac,
+                            ephemeral_key,
+                        )
+                    })
+                    .is_null()
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                call(env, |unowned, class| native_free(unowned, class, ptr));
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
 
     #[test]
     fn test_pk_decryption_new_generates_keys() {

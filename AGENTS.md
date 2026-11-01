@@ -77,16 +77,21 @@ red coverage gate blocks the merge — never land code that drops coverage
 below the gate, and never waive it; add tests in the same change instead.
 
 - **Java**: enforced locally by `mvn verify` (JaCoCo check fails the build).
-- **Rust**: there is no local hard gate — verify the effect of your change
-  with `cargo llvm-cov` (from `rust/`: `cargo llvm-cov --lcov --output-path
-  ../target/rust-lcov.info`, or `cargo llvm-cov --open` for a browsable
-  report) and confirm the *Sonar code analysis* check stays green on the PR.
-- **JNI exports are invisible to pure-Rust tests**: every new
-  `extern "system"` export function needs a JVM-attached unit test
-  (`get_jvm()` + `EnvUnowned::from_raw(env.get_raw())`, mirroring how the JVM
-  invokes native methods — see the tests in `rust/src/types/keypair.rs` and
-  `rust/src/sas/established_sas.rs`), otherwise it drags the Rust coverage
-  down and breaks the gate.
+- **Rust**: there is no local hard gate — verify changes using the CI-equivalent
+  command `cargo llvm-cov --manifest-path rust/Cargo.toml --cobertura
+  --output-path target/coverage/rust-coverage.xml`, or produce an LCOV report
+  with `cargo llvm-cov --manifest-path rust/Cargo.toml --lcov --output-path
+  target/rust-lcov.info`. Confirm the *Sonar code analysis* check stays green
+  on the PR. Run `mvn compile -DskipTests` first when the crate's tests need
+  Java classes (as done in `.github/workflows/test.yml`). The CI job summary
+  reports aggregate and per-source-file Rust line coverage.
+- **JNI coverage**: `cargo llvm-cov` includes JNI code reached by Rust unit
+  tests that attach to a JVM. It does not include coverage collected by Maven's
+  separate Java integration-test run. A JNI export not called by a
+  JVM-attached Rust test remains uncovered, as do unexecuted module glue lines.
+  Add a JVM-attached test for each new `extern "system"` export using
+  `get_jvm()` and `EnvUnowned::from_raw(env.get_raw())`, mirroring tests in
+  `rust/src/types/keypair.rs` and `rust/src/sas/established_sas.rs`.
 
 ## Pull Requests
 
