@@ -71,27 +71,11 @@ All of the following must pass before committing:
 
 ### Coverage Rule (≥80%, both languages)
 
-Code coverage must remain **above 80%** for Java and Rust. The SonarCloud
-Quality Gate enforces `new_coverage ≥ 80%` on every PR and on `main`, and a
-red coverage gate blocks the merge — never land code that drops coverage
-below the gate, and never waive it; add tests in the same change instead.
+Code coverage must remain **above 80%** for Java and Rust. The SonarCloud Quality Gate enforces `new_coverage ≥ 80%` on every PR and on `main`, and a red coverage gate blocks the merge — never land code that drops coverage below the gate, and never waive it; add tests in the same change instead.
 
 - **Java**: enforced locally by `mvn verify` (JaCoCo check fails the build).
-- **Rust**: there is no local hard gate — verify changes using the CI-equivalent
-  command `cargo llvm-cov --manifest-path rust/Cargo.toml --cobertura
-  --output-path target/coverage/rust-coverage.xml`, or produce an LCOV report
-  with `cargo llvm-cov --manifest-path rust/Cargo.toml --lcov --output-path
-  target/rust-lcov.info`. Confirm the *Sonar code analysis* check stays green
-  on the PR. Run `mvn compile -DskipTests` first when the crate's tests need
-  Java classes (as done in `.github/workflows/test.yml`). The CI job summary
-  reports aggregate and per-source-file Rust line coverage.
-- **JNI coverage**: `cargo llvm-cov` includes JNI code reached by Rust unit
-  tests that attach to a JVM. It does not include coverage collected by Maven's
-  separate Java integration-test run. A JNI export not called by a
-  JVM-attached Rust test remains uncovered, as do unexecuted module glue lines.
-  Add a JVM-attached test for each new `extern "system"` export using
-  `get_jvm()` and `EnvUnowned::from_raw(env.get_raw())`, mirroring tests in
-  `rust/src/types/keypair.rs` and `rust/src/sas/established_sas.rs`.
+- **Rust**: there is no local hard gate — verify changes using the CI-equivalent command `cargo llvm-cov --manifest-path rust/Cargo.toml --cobertura --output-path target/coverage/rust-coverage.xml`, or produce an LCOV report with `cargo llvm-cov --manifest-path rust/Cargo.toml --lcov --output-path target/rust-lcov.info`. Confirm the *Sonar code analysis* check stays green on the PR. Run `mvn compile -DskipTests` first when the crate's tests need Java classes (as done in `.github/workflows/test.yml`). The CI job summary reports aggregate and per-source-file Rust line coverage. 
+- **JNI coverage**: `cargo llvm-cov` includes JNI code reached by Rust unit tests that attach to a JVM. It does not include coverage collected by Maven's separate Java integration-test run. A JNI export not called by a JVM-attached Rust test remains uncovered, as do unexecuted module glue lines. Add a JVM-attached test for each new `extern "system"` export using `get_jvm()` and `EnvUnowned::from_raw(env.get_raw())`, mirroring tests in `rust/src/types/keypair.rs` and `rust/src/sas/established_sas.rs`.
 
 ## Pull Requests
 
@@ -187,19 +171,9 @@ When changing a dependency, plugin, wrapper, or toolchain version, update its so
 
 ## Documentation Site (`site/`)
 
-The user guide lives in `site/` (MkDocs Material) and is deployed to
-<https://fherbreteau.github.io/vodozemac-java/> by the *GitHub Pages*
-workflow (`.github/workflows/pages.yml`) on every push to `main` touching
-`site/`.
+The user guide lives in `site/` (MkDocs Material) and is deployed to <https://fherbreteau.github.io/vodozemac-java/> by the *GitHub Pages* workflow (`.github/workflows/pages.yml`) on every push to `main` touching `site/`.
 
-**Update the site in the same PR** whenever a change affects user-facing
-documentation: new/changed public APIs (`site/docs/api.md`), usage behavior,
-installation requirements, thread-safety or resource-management semantics,
-security guidance, or the migration guide. `README.md` stays the repository
-landing page; the site is the canonical user guide. Verify locally with
-`pip install -r site/requirements.txt && (cd site && mkdocs build --strict)`
-— strict mode fails on broken internal links. Never edit the deployed site
-manually.
+**Update the site in the same PR** whenever a change affects user-facing documentation: new/changed public APIs (`site/docs/api.md`), usage behavior, installation requirements, thread-safety or resource-management semantics, security guidance, or the migration guide. `README.md` stays the repository landing page; the site is the canonical user guide. Verify locally with `pip install -r site/requirements.txt && (cd site && mkdocs build --strict)` — strict mode fails on broken internal links. Never edit the deployed site manually.
 
 ## Working Files (`docs/`)
 
