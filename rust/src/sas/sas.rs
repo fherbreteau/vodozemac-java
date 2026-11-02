@@ -53,10 +53,10 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeDiffie
     let outcome = env.with_env(|env| -> Result<jobject, jni::errors::Error> {
         catch_panic(env, |env| {
             check_ptr(env, ptr)?;
+            let sas = unsafe { Box::from_raw(ptr as *mut Sas) };
             let their_public_key_str = their_public_key.try_to_string(env)?;
             let their_public_key = Curve25519PublicKey::from_base64(&their_public_key_str)
                 .map_err(|e| throw_key_error(env, e))?;
-            let sas = unsafe { Box::from_raw(ptr as *mut Sas) };
 
             let established_sas = sas
                 .diffie_hellman(their_public_key)
@@ -172,11 +172,35 @@ mod tests {
     use crate::helpers::get_jvm;
 
     use super::Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeDiffieHellman as native_diffie_hellman;
+    use super::Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeFree as jni_free;
+    use super::Java_io_github_fherbreteau_vodozemac_sas_Sas_nativeNew as native_new;
+    use super::Java_io_github_fherbreteau_vodozemac_sas_Sas_nativePublicKey as native_public_key;
 
     unsafe fn call<R>(env: &mut Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
         let unowned = unsafe { EnvUnowned::from_raw(env.get_raw()) };
         let class = unsafe { JClass::from_raw(env, std::ptr::null_mut()) };
         f(unowned, class)
+    }
+
+    #[test]
+    fn test_jni_lifecycle_returns_public_key_and_frees_sas() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let ptr = call(env, |unowned, class| native_new(unowned, class));
+                assert_ne!(ptr, 0, "nativeNew should return a valid native pointer");
+
+                let public_key = call(env, |unowned, class| native_public_key(unowned, class, ptr));
+                let public_key = JString::from_raw(env, public_key).try_to_string(env)?;
+                let parsed_public_key = Curve25519PublicKey::from_base64(&public_key)
+                    .expect("nativePublicKey should return a valid Curve25519 key");
+                assert_eq!(public_key, parsed_public_key.to_base64());
+
+                call(env, |unowned, class| jni_free(unowned, class, ptr));
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
     }
 
     #[test]

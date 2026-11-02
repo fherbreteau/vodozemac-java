@@ -20,12 +20,24 @@ def parse_rust_coverage(path):
 
     methods_total = 0
     methods_covered = 0
+    files = []
 
-    for method in root.findall(".//method"):
-        methods_total += 1
-        method_line_rate = float(method.get("line-rate", "0"))
-        if method_line_rate > 0:
-            methods_covered += 1
+    for source_file in root.findall(".//class"):
+        filename = source_file.get("filename", "")
+        line_elements = source_file.findall("./lines/line")
+        file_lines_valid = len(line_elements)
+        file_lines_covered = sum(int(line.get("hits", "0")) > 0 for line in line_elements)
+        file_methods = source_file.findall(".//method")
+        file_methods_covered = sum(float(method.get("line-rate", "0")) > 0 for method in file_methods)
+        methods_total += len(file_methods)
+        methods_covered += file_methods_covered
+        files.append({
+            "filename": filename,
+            "lines_covered": file_lines_covered,
+            "lines_valid": file_lines_valid,
+            "methods_covered": file_methods_covered,
+            "methods_total": len(file_methods),
+        })
 
     return {
         "line_rate": line_rate,
@@ -33,6 +45,7 @@ def parse_rust_coverage(path):
         "lines_valid": lines_valid,
         "methods_total": methods_total,
         "methods_covered": methods_covered,
+        "files": files,
     }
 
 
@@ -160,9 +173,21 @@ def generate_markdown(rust_data, java_data):
         )
         lines.append("")
         lines.append(
-            "_Rust JNI functions are tested through Java integration tests "
-            "but not measured by cargo-llvm-cov._"
+            "_Rust coverage includes JNI code exercised by JVM-attached Rust unit tests. "
+            "The report does not include coverage from Maven's separate Java integration-test run. "
+            "JNI exports without JVM-attached Rust tests and unexecuted module glue remain uncovered._"
         )
+        lines.append("")
+        lines.append("### Rust Coverage by Source File")
+        lines.append("")
+        lines.append("| Rust source file | Lines | Functions |")
+        lines.append("|------------------|-------|-----------|")
+        for source_file in sorted(rust_data["files"], key=lambda item: item["filename"]):
+            lines.append(
+                f"| `{source_file['filename']}` "
+                f"| {fmt_pct(source_file['lines_covered'], source_file['lines_valid'])} "
+                f"| {fmt_pct(source_file['methods_covered'], source_file['methods_total'])} |"
+            )
 
     lines.append("")
     return "\n".join(lines)

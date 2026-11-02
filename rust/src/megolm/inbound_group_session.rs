@@ -404,6 +404,12 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupS
 mod tests {
     use super::*;
     use crate::helpers::PICKLE_KEY;
+    use crate::megolm::outbound_group_session::{
+        Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeEncrypt,
+        Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeFree,
+        Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeNew,
+        Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeSessionKey,
+    };
     use vodozemac::megolm::{GroupSession, SessionConfig as MegolmSessionConfig};
 
     #[test]
@@ -789,5 +795,394 @@ mod tests {
             );
             assert_eq!(imported.first_known_index(), i as u32);
         }
+    }
+
+    unsafe fn call<R>(env: &mut Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
+        let unowned = unsafe { EnvUnowned::from_raw(env.get_raw()) };
+        let class = unsafe { JClass::from_raw(env, std::ptr::null_mut()) };
+        f(unowned, class)
+    }
+
+    #[test]
+    fn test_jni_inbound_session_lifecycle_and_error_paths() {
+        use jni::objects::{JByteArray, JObject};
+        use jni::{jni_sig, jni_str};
+
+        let jvm = crate::helpers::get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let outbound_ptr = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeNew(
+                        unowned, class, 2,
+                    )
+                });
+                let session_key = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeSessionKey(
+                        unowned, class, outbound_ptr,
+                    )
+                });
+                let session_key = JString::from_raw(env, session_key).try_to_string(env)?;
+                let session_key_java = env.new_string(&session_key)?;
+                let inbound_ptr = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeNew(
+                        unowned,
+                        class,
+                        session_key_java,
+                        2,
+                    )
+                });
+                assert_ne!(inbound_ptr, 0);
+
+                let session_id = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeSessionId(
+                        unowned, class, inbound_ptr,
+                    )
+                });
+                let session_id = JString::from_raw(env, session_id).try_to_string(env)?;
+                assert!(!session_id.is_empty());
+                assert_eq!(
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeFirstKnownIndex(
+                            unowned, class, inbound_ptr,
+                        )
+                    }),
+                    0
+                );
+
+                let plaintext = env.byte_array_from_slice(b"JNI inbound plaintext")?;
+                let message = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeEncrypt(
+                        unowned, class, outbound_ptr, plaintext,
+                    )
+                });
+                let message = JObject::from_raw(env, message);
+                let wire_message = env
+                    .call_method(&message, jni_str!("toString"), jni_sig!(() -> java.lang.String), &[])?
+                    .l()?;
+                let wire_message = JString::from_raw(env, wire_message.as_raw()).try_to_string(env)?;
+                let wire_message_java = env.new_string(&wire_message)?;
+                let decrypted = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeDecrypt(
+                        unowned,
+                        class,
+                        inbound_ptr,
+                        wire_message_java,
+                    )
+                });
+                let decrypted = JObject::from_raw(env, decrypted);
+                let decrypted_plaintext = env
+                    .call_method(&decrypted, jni_str!("plaintext"), jni_sig!(() -> byte[]), &[])?
+                    .l()?;
+                let decrypted_plaintext = JByteArray::from_raw(env, decrypted_plaintext.as_raw());
+                assert_eq!(env.convert_byte_array(decrypted_plaintext)?, b"JNI inbound plaintext");
+                assert_eq!(
+                    env.call_method(&decrypted, jni_str!("messageIndex"), jni_sig!(() -> long), &[])?
+                        .j()?,
+                    0
+                );
+
+                let pickle = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativePickle(
+                        unowned, class, inbound_ptr,
+                    )
+                });
+                let pickle = JString::from_raw(env, pickle).try_to_string(env)?;
+                let key = env.byte_array_from_slice(&crate::helpers::PICKLE_KEY)?;
+                let encrypted_pickle = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeEncryptedPickle(
+                        unowned, class, inbound_ptr, key,
+                    )
+                });
+                let encrypted_pickle = JString::from_raw(env, encrypted_pickle).try_to_string(env)?;
+
+                let exported = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeExportAt(
+                        unowned, class, inbound_ptr, 0,
+                    )
+                });
+                let exported = JString::from_raw(env, exported).try_to_string(env)?;
+                assert!(!exported.is_empty());
+                let first_export = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeExportAtFirstKnownIndex(
+                        unowned, class, inbound_ptr,
+                    )
+                });
+                let first_export = JString::from_raw(env, first_export).try_to_string(env)?;
+                assert_eq!(first_export, exported);
+                assert!(call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeAdvanceTo(
+                        unowned, class, inbound_ptr, 5,
+                    )
+                }));
+                assert!(!call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeAdvanceTo(
+                        unowned, class, inbound_ptr, 2,
+                    )
+                }));
+                assert!(call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeExportAt(
+                        unowned, class, inbound_ptr, 0,
+                    )
+                })
+                .is_null());
+                assert_eq!(
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeExportAt(
+                            unowned, class, inbound_ptr, -1,
+                        )
+                    }),
+                    std::ptr::null_mut()
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let exported_java = env.new_string(&exported)?;
+                let imported_ptr = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeImport(
+                        unowned, class, exported_java, 2,
+                    )
+                });
+                let pickle_java = env.new_string(&pickle)?;
+                let unpickled_ptr = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeUnpickle(
+                        unowned, class, pickle_java,
+                    )
+                });
+                let key = env.byte_array_from_slice(&crate::helpers::PICKLE_KEY)?;
+                let encrypted_java = env.new_string(&encrypted_pickle)?;
+                let encrypted_unpickled_ptr = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeEncryptedUnpickle(
+                        unowned, class, encrypted_java, key,
+                    )
+                });
+                assert_ne!(imported_ptr, 0);
+                assert_ne!(unpickled_ptr, 0);
+                assert_ne!(encrypted_unpickled_ptr, 0);
+
+                for (left, right, expected) in [
+                    (imported_ptr, unpickled_ptr, "EQUAL"),
+                    (imported_ptr, inbound_ptr, "BETTER"),
+                ] {
+                    let ordering = call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeCompare(
+                            unowned, class, left, right,
+                        )
+                    });
+                    let ordering = JObject::from_raw(env, ordering);
+                    let name = env
+                        .call_method(
+                            &ordering,
+                            jni_str!("name"),
+                            jni_sig!(() -> java.lang.String),
+                            &[],
+                        )?
+                        .l()?;
+                    let name = JString::from_raw(env, name.as_raw()).try_to_string(env)?;
+                    assert_eq!(name, expected);
+                }
+
+                assert!(call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeConnected(
+                        unowned, class, inbound_ptr, imported_ptr,
+                    )
+                }));
+                let ordering = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeCompare(
+                        unowned, class, inbound_ptr, imported_ptr,
+                    )
+                });
+                let ordering = JObject::from_raw(env, ordering);
+                let ordering_name = env
+                    .call_method(&ordering, jni_str!("name"), jni_sig!(() -> java.lang.String), &[])?
+                    .l()?;
+                let ordering_name = JString::from_raw(env, ordering_name.as_raw()).try_to_string(env)?;
+                assert_eq!(ordering_name, "WORSE");
+                let boxed_long = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeMerge(
+                        unowned, class, inbound_ptr, imported_ptr,
+                    )
+                });
+                let boxed_long = JObject::from_raw(env, boxed_long);
+                let merged_ptr = env
+                    .call_method(&boxed_long, jni_str!("longValue"), jni_sig!(() -> long), &[])?
+                    .j()?;
+                assert_ne!(merged_ptr, 0);
+
+                let bad_message = env.new_string("not a megolm message")?;
+                assert!(call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeDecrypt(
+                        unowned,
+                        class,
+                        inbound_ptr,
+                        bad_message,
+                    )
+                })
+                .is_null());
+                assert!(env.exception_check());
+                env.exception_clear();
+                let bad_session_key = env.new_string("invalid session key")?;
+                let invalid_session = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeNew(
+                        unowned,
+                        class,
+                        bad_session_key,
+                        2,
+                    )
+                });
+                assert_eq!(invalid_session, 0);
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let other_outbound_ptr = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeNew(
+                        unowned, class, 2,
+                    )
+                });
+                let other_key = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeSessionKey(
+                        unowned, class, other_outbound_ptr,
+                    )
+                });
+                let other_key = JString::from_raw(env, other_key).try_to_string(env)?;
+                let other_key = env.new_string(&other_key)?;
+                let other_ptr = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeNew(
+                        unowned, class, other_key, 2,
+                    )
+                });
+                assert!(!call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeConnected(
+                        unowned, class, inbound_ptr, other_ptr,
+                    )
+                }));
+                assert!(call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeMerge(
+                        unowned, class, inbound_ptr, other_ptr,
+                    )
+                })
+                .is_null());
+                let unconnected_ordering = call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeCompare(
+                        unowned, class, inbound_ptr, other_ptr,
+                    )
+                });
+                let unconnected_ordering = JObject::from_raw(env, unconnected_ordering);
+                let unconnected_name = env
+                    .call_method(
+                        &unconnected_ordering,
+                        jni_str!("name"),
+                        jni_sig!(() -> java.lang.String),
+                        &[],
+                    )?
+                    .l()?;
+                let unconnected_name =
+                    JString::from_raw(env, unconnected_name.as_raw()).try_to_string(env)?;
+                assert_eq!(unconnected_name, "UNCONNECTED");
+                assert!(call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeCompare(
+                        unowned, class, inbound_ptr, inbound_ptr,
+                    )
+                })
+                .is_null());
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let bad_key = env.new_string("invalid key")?;
+                assert_eq!(
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeNew(
+                            unowned, class, bad_key, 2,
+                        )
+                    }),
+                    0
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let bad_pickle = env.new_string("invalid pickle")?;
+                assert_eq!(
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeUnpickle(
+                            unowned, class, bad_pickle,
+                        )
+                    }),
+                    0
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let bad_pickle = env.new_string("invalid encrypted pickle")?;
+                let key = env.byte_array_from_slice(&crate::helpers::PICKLE_KEY)?;
+                assert_eq!(
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeEncryptedUnpickle(
+                            unowned, class, bad_pickle, key,
+                        )
+                    }),
+                    0
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let bad_legacy_pickle = env.new_string("invalid legacy pickle")?;
+                let key = env.byte_array_from_slice(&crate::helpers::PICKLE_KEY)?;
+                assert_eq!(
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeUnpickleLegacy(
+                            unowned, class, bad_legacy_pickle, key,
+                        )
+                    }),
+                    0
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let invalid_version_key = env.new_string(&exported)?;
+                assert_eq!(
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeImport(
+                            unowned, class, invalid_version_key, 0,
+                        )
+                    }),
+                    0
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let bad_export = env.new_string("invalid export")?;
+                assert_eq!(
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeImport(
+                            unowned, class, bad_export, 2,
+                        )
+                    }),
+                    0
+                );
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                for ptr in [outbound_ptr, other_outbound_ptr] {
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_OutboundGroupSession_nativeFree(
+                            unowned, class, ptr,
+                        )
+                    });
+                }
+                for ptr in [inbound_ptr, imported_ptr, unpickled_ptr, encrypted_unpickled_ptr, other_ptr] {
+                    call(env, |unowned, class| {
+                        Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeFree(
+                            unowned, class, ptr,
+                        )
+                    });
+                }
+                call(env, |unowned, class| {
+                    Java_io_github_fherbreteau_vodozemac_megolm_InboundGroupSession_nativeFree(
+                        unowned, class, merged_ptr,
+                    )
+                });
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
     }
 }

@@ -265,4 +265,273 @@ mod tests {
         assert_eq!(decoded.public_key, outbound.message.public_key);
         assert_eq!(decoded.ciphertext, outbound.message.ciphertext);
     }
+
+    use jni::Env;
+    use jni::objects::{JByteArray, JObject};
+    use jni::sys::jlong;
+    use jni::{jni_sig, jni_str};
+
+    use crate::helpers::get_jvm;
+
+    use super::Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeEstablishInboundChannel as native_establish_inbound;
+    use super::Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeEstablishOutboundChannel as native_establish_outbound;
+    use super::Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeFree as native_free_export;
+    use super::Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeNew as native_new;
+    use super::Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativePublicKey as native_public_key;
+    use super::Java_io_github_fherbreteau_vodozemac_ecies_Ecies_nativeWithInfo as native_with_info;
+
+    unsafe fn call<R>(env: &mut Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
+        let unowned = unsafe { EnvUnowned::from_raw(env.get_raw()) };
+        let class = unsafe { JClass::from_raw(env, std::ptr::null_mut()) };
+        f(unowned, class)
+    }
+
+    #[test]
+    fn test_jni_creation_public_key_and_free() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let ptr = call(env, |unowned, class| native_new(unowned, class));
+                let public_key = call(env, |unowned, class| native_public_key(unowned, class, ptr));
+                let public_key = JString::from_raw(env, public_key).try_to_string(env)?;
+                assert!(!public_key.is_empty());
+
+                let info = env.new_string("JNI ECIES info")?;
+                let info_ptr = call(env, |unowned, class| native_with_info(unowned, class, info));
+                let info_public_key = call(env, |unowned, class| {
+                    native_public_key(unowned, class, info_ptr)
+                });
+                let info_public_key = JString::from_raw(env, info_public_key).try_to_string(env)?;
+                assert!(!info_public_key.is_empty());
+
+                call(env, |unowned, class| {
+                    native_free_export(unowned, class, ptr)
+                });
+                call(env, |unowned, class| {
+                    native_free_export(unowned, class, info_ptr)
+                });
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_jni_outbound_inbound_creation_results_and_accessors() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let alice_ptr = call(env, |unowned, class| native_new(unowned, class));
+                let bob_ptr = call(env, |unowned, class| native_new(unowned, class));
+                let alice_key = call(env, |unowned, class| {
+                    native_public_key(unowned, class, alice_ptr)
+                });
+                let alice_key = JString::from_raw(env, alice_key).try_to_string(env)?;
+                let bob_key = call(env, |unowned, class| {
+                    native_public_key(unowned, class, bob_ptr)
+                });
+                let bob_key = JString::from_raw(env, bob_key).try_to_string(env)?;
+
+                let their_key = env.new_string(&bob_key)?;
+                let initial_plaintext = env.byte_array_from_slice(b"initial JNI plaintext")?;
+                let outbound_raw = call(env, |unowned, class| {
+                    native_establish_outbound(
+                        unowned,
+                        class,
+                        alice_ptr,
+                        their_key,
+                        initial_plaintext,
+                    )
+                });
+                assert!(!outbound_raw.is_null());
+                assert!(!env.exception_check());
+                let outbound = JObject::from_raw(env, outbound_raw);
+                let initial_message = env
+                    .call_method(
+                        &outbound,
+                        jni_str!("initialMessage"),
+                        jni_sig!(() -> java.lang.String),
+                        &[],
+                    )?
+                    .l()?;
+                let initial_message =
+                    JString::from_raw(env, initial_message.into_raw()).try_to_string(env)?;
+                assert!(!initial_message.is_empty());
+                let outbound_ecies = env
+                    .call_method(
+                        &outbound,
+                        jni_str!("establishedEcies"),
+                        jni_sig!(() -> io.github.fherbreteau.vodozemac.ecies.EstablishedEcies),
+                        &[],
+                    )?
+                    .l()?;
+                let outbound_public_key = env
+                    .call_method(
+                        &outbound_ecies,
+                        jni_str!("publicKey"),
+                        jni_sig!(() -> java.lang.String),
+                        &[],
+                    )?
+                    .l()?;
+                assert_eq!(
+                    JString::from_raw(env, outbound_public_key.into_raw()).try_to_string(env)?,
+                    alice_key
+                );
+
+                let initial_message = env.new_string(&initial_message)?;
+                let inbound_raw = call(env, |unowned, class| {
+                    native_establish_inbound(unowned, class, bob_ptr, initial_message)
+                });
+                assert!(!inbound_raw.is_null());
+                assert!(!env.exception_check());
+                let inbound = JObject::from_raw(env, inbound_raw);
+                let plaintext = env
+                    .call_method(&inbound, jni_str!("plaintext"), jni_sig!(() -> byte[]), &[])?
+                    .l()?;
+                assert_eq!(
+                    env.convert_byte_array(JByteArray::from_raw(env, plaintext.as_raw()))?,
+                    b"initial JNI plaintext"
+                );
+                let inbound_ecies = env
+                    .call_method(
+                        &inbound,
+                        jni_str!("establishedEcies"),
+                        jni_sig!(() -> io.github.fherbreteau.vodozemac.ecies.EstablishedEcies),
+                        &[],
+                    )?
+                    .l()?;
+                let inbound_public_key = env
+                    .call_method(
+                        &inbound_ecies,
+                        jni_str!("publicKey"),
+                        jni_sig!(() -> java.lang.String),
+                        &[],
+                    )?
+                    .l()?;
+                assert_eq!(
+                    JString::from_raw(env, inbound_public_key.as_raw()).try_to_string(env)?,
+                    bob_key
+                );
+
+                let outbound_code = env
+                    .call_method(
+                        &outbound_ecies,
+                        jni_str!("checkCode"),
+                        jni_sig!(() -> io.github.fherbreteau.vodozemac.ecies.CheckCode),
+                        &[],
+                    )?
+                    .l()?;
+                let inbound_code = env
+                    .call_method(
+                        &inbound_ecies,
+                        jni_str!("checkCode"),
+                        jni_sig!(() -> io.github.fherbreteau.vodozemac.ecies.CheckCode),
+                        &[],
+                    )?
+                    .l()?;
+                let outbound_bytes = env
+                    .call_method(
+                        &outbound_code,
+                        jni_str!("asBytes"),
+                        jni_sig!(() -> byte[]),
+                        &[],
+                    )?
+                    .l()?;
+                let inbound_bytes = env
+                    .call_method(
+                        &inbound_code,
+                        jni_str!("asBytes"),
+                        jni_sig!(() -> byte[]),
+                        &[],
+                    )?
+                    .l()?;
+                assert_eq!(
+                    env.convert_byte_array(JByteArray::from_raw(env, outbound_bytes.as_raw()))?,
+                    env.convert_byte_array(JByteArray::from_raw(env, inbound_bytes.as_raw()))?
+                );
+                let digit = env
+                    .call_method(
+                        &outbound_code,
+                        jni_str!("toDigit"),
+                        jni_sig!(() -> int),
+                        &[],
+                    )?
+                    .i()?;
+                assert!((0..=99).contains(&digit));
+
+                env.call_method(
+                    &outbound_ecies,
+                    jni_str!("close"),
+                    jni_sig!(() -> void),
+                    &[],
+                )?;
+                env.call_method(&inbound_ecies, jni_str!("close"), jni_sig!(() -> void), &[])?;
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_jni_invalid_keys_messages_and_pointers_throw() {
+        let jvm = get_jvm();
+        jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let ptr = call(env, |unowned, class| native_new(unowned, class));
+                let invalid_key = env.new_string("not-a-curve25519-key")?;
+                let plaintext = env.byte_array_from_slice(b"plaintext")?;
+                let result = call(env, |unowned, class| {
+                    native_establish_outbound(unowned, class, ptr, invalid_key, plaintext)
+                });
+                assert!(result.is_null());
+                assert!(env.exception_check());
+                env.exception_clear();
+                call(env, |unowned, class| {
+                    native_free_export(unowned, class, ptr)
+                });
+
+                let ptr = call(env, |unowned, class| native_new(unowned, class));
+                let invalid_message = env.new_string("not-an-ecies-message")?;
+                let result = call(env, |unowned, class| {
+                    native_establish_inbound(unowned, class, ptr, invalid_message)
+                });
+                assert!(result.is_null());
+                assert!(env.exception_check());
+                env.exception_clear();
+                call(env, |unowned, class| {
+                    native_free_export(unowned, class, ptr)
+                });
+
+                let key = env.new_string("invalid")?;
+                let plaintext = env.byte_array_from_slice(b"plaintext")?;
+                let result = call(env, |unowned, class| {
+                    native_establish_outbound(unowned, class, 0, key, plaintext)
+                });
+                assert!(result.is_null());
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let message = env.new_string("invalid")?;
+                let result = call(env, |unowned, class| {
+                    native_establish_inbound(unowned, class, 0, message)
+                });
+                assert!(result.is_null());
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let key = call(env, |unowned, class| native_public_key(unowned, class, 0));
+                assert!(key.is_null());
+                assert!(env.exception_check());
+                env.exception_clear();
+                let zero: jlong = 0;
+                call(env, |unowned, class| {
+                    native_free_export(unowned, class, zero)
+                });
+                assert!(env.exception_check());
+                env.exception_clear();
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
 }

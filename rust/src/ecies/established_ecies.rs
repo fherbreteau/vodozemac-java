@@ -225,4 +225,153 @@ mod tests {
             .decrypt(&bad_message)
             .expect_err("Should fail to decrypt invalid message");
     }
+
+    use jni::Env;
+    use jni::objects::{JByteArray, JObject};
+    use jni::sys::jlong;
+    use jni::{jni_sig, jni_str};
+
+    use crate::helpers::get_jvm;
+
+    use super::Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEcies_nativeCheckCode as native_check_code;
+    use super::Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEcies_nativeDecrypt as native_decrypt;
+    use super::Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEcies_nativeEncrypt as native_encrypt;
+    use super::Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEcies_nativeFree as native_free_export;
+    use super::Java_io_github_fherbreteau_vodozemac_ecies_EstablishedEcies_nativePublicKey as native_public_key;
+
+    unsafe fn call<R>(env: &mut Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
+        let unowned = unsafe { EnvUnowned::from_raw(env.get_raw()) };
+        let class = unsafe { JClass::from_raw(env, std::ptr::null_mut()) };
+        f(unowned, class)
+    }
+
+    #[test]
+    fn test_jni_established_ecies_operations_and_free() {
+        let jvm = get_jvm();
+        let alice = Ecies::new();
+        let bob = Ecies::new();
+        let outbound = alice
+            .establish_outbound_channel(bob.public_key(), b"initial")
+            .expect("Should establish outbound channel");
+        let inbound = bob
+            .establish_inbound_channel(&outbound.message)
+            .expect("Should establish inbound channel");
+        let alice_key = outbound.ecies.public_key().to_base64();
+        let alice_ptr = Box::into_raw(Box::new(outbound.ecies)) as jlong;
+        let bob_ptr = Box::into_raw(Box::new(inbound.ecies)) as jlong;
+
+        jvm.attach_current_thread(move |env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let public_key = call(env, |unowned, class| {
+                    native_public_key(unowned, class, alice_ptr)
+                });
+                assert_eq!(
+                    JString::from_raw(env, public_key).try_to_string(env)?,
+                    alice_key
+                );
+
+                let code = call(env, |unowned, class| {
+                    native_check_code(unowned, class, alice_ptr)
+                });
+                assert!(!code.is_null());
+                let code = JObject::from_raw(env, code);
+                let bytes = env
+                    .call_method(&code, jni_str!("asBytes"), jni_sig!(() -> byte[]), &[])?
+                    .l()?;
+                assert_eq!(
+                    env.convert_byte_array(JByteArray::from_raw(env, bytes.as_raw()))?
+                        .len(),
+                    2
+                );
+                let digit = env
+                    .call_method(&code, jni_str!("toDigit"), jni_sig!(() -> int), &[])?
+                    .i()?;
+                assert!((0..=99).contains(&digit));
+
+                let plaintext = env.byte_array_from_slice(b"JNI established message")?;
+                let encrypted = call(env, |unowned, class| {
+                    native_encrypt(unowned, class, alice_ptr, plaintext)
+                });
+                let encrypted = JString::from_raw(env, encrypted).try_to_string(env)?;
+                assert!(!encrypted.is_empty());
+                let encrypted = env.new_string(&encrypted)?;
+                let decrypted = call(env, |unowned, class| {
+                    native_decrypt(unowned, class, bob_ptr, encrypted)
+                });
+                assert!(!decrypted.is_null());
+                assert_eq!(
+                    env.convert_byte_array(JByteArray::from_raw(env, decrypted))?,
+                    b"JNI established message"
+                );
+                assert!(!env.exception_check());
+
+                call(env, |unowned, class| {
+                    native_free_export(unowned, class, alice_ptr)
+                });
+                call(env, |unowned, class| {
+                    native_free_export(unowned, class, bob_ptr)
+                });
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
+
+    #[test]
+    fn test_jni_established_ecies_invalid_message_and_pointers_throw() {
+        let jvm = get_jvm();
+        let (alice, bob) = establish_ecies_pair();
+        let alice_ptr = Box::into_raw(Box::new(alice)) as jlong;
+        let bob_ptr = Box::into_raw(Box::new(bob)) as jlong;
+
+        jvm.attach_current_thread(move |env| -> Result<(), jni::errors::Error> {
+            unsafe {
+                let invalid = env.new_string("not-an-ecies-message")?;
+                let result = call(env, |unowned, class| {
+                    native_decrypt(unowned, class, bob_ptr, invalid)
+                });
+                assert!(result.is_null());
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let public_key = call(env, |unowned, class| native_public_key(unowned, class, 0));
+                assert!(public_key.is_null());
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let check_code = call(env, |unowned, class| native_check_code(unowned, class, 0));
+                assert!(check_code.is_null());
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let plaintext = env.byte_array_from_slice(b"plaintext")?;
+                let encrypted = call(env, |unowned, class| {
+                    native_encrypt(unowned, class, 0, plaintext)
+                });
+                assert!(encrypted.is_null());
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let invalid = env.new_string("invalid")?;
+                let decrypted = call(env, |unowned, class| {
+                    native_decrypt(unowned, class, 0, invalid)
+                });
+                assert!(decrypted.is_null());
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                call(env, |unowned, class| {
+                    native_free_export(unowned, class, alice_ptr)
+                });
+                call(env, |unowned, class| {
+                    native_free_export(unowned, class, bob_ptr)
+                });
+                call(env, |unowned, class| native_free_export(unowned, class, 0));
+                assert!(env.exception_check());
+                env.exception_clear();
+            }
+            Ok(())
+        })
+        .expect("JVM test failed");
+    }
 }

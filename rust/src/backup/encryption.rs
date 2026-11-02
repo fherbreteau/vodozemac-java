@@ -65,10 +65,20 @@ pub extern "system" fn Java_io_github_fherbreteau_vodozemac_backup_PkEncryption_
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use crate::helpers::get_jvm;
+    use jni::objects::JObject;
+    use jni::{Env, jni_sig, jni_str};
     use vodozemac::pk_encryption::PkDecryption;
 
-    use super::*;
-    use jni::Env;
+    use super::Java_io_github_fherbreteau_vodozemac_backup_PkEncryption_nativeEncrypt as native_encrypt;
+    use super::Java_io_github_fherbreteau_vodozemac_backup_PkEncryption_nativeFree as native_free;
+
+    unsafe fn call<R>(env: &mut Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
+        let unowned = unsafe { EnvUnowned::from_raw(env.get_raw()) };
+        let class = unsafe { JClass::from_raw(env, std::ptr::null_mut()) };
+        f(unowned, class)
+    }
 
     #[test]
     fn test_pk_encryption_from_key() {
@@ -160,33 +170,68 @@ mod tests {
 
         assert!(decrypted.is_empty());
     }
-    use crate::helpers::get_jvm;
-
     use super::Java_io_github_fherbreteau_vodozemac_backup_PkEncryption_nativeFromKey as native_from_key;
 
-    unsafe fn call<R>(env: &mut Env, f: impl FnOnce(EnvUnowned, JClass) -> R) -> R {
-        let unowned = unsafe { EnvUnowned::from_raw(env.get_raw()) };
-        let class = unsafe { JClass::from_raw(env, std::ptr::null_mut()) };
-        f(unowned, class)
-    }
-
     #[test]
-    fn test_jni_from_key() {
+    fn test_jni_encryption_lifecycle() {
         let jvm = get_jvm();
         jvm.attach_current_thread(|env| -> Result<(), jni::errors::Error> {
             unsafe {
                 let secret_key = vodozemac::Curve25519SecretKey::new();
                 let key = env.new_string(Curve25519PublicKey::from(&secret_key).to_base64())?;
                 let ptr = call(env, |unowned, class| native_from_key(unowned, class, key));
-                assert!(ptr != 0, "A valid public key should create a PkEncryption");
-                native_free::<PkEncryption>(env, ptr);
+                assert_ne!(ptr, 0);
+
+                let plaintext = env.byte_array_from_slice(b"JNI backup encryption")?;
+                let message = call(env, |unowned, class| {
+                    native_encrypt(unowned, class, ptr, plaintext)
+                });
+                assert!(!message.is_null());
+                let message = JObject::from_raw(env, message);
+                let ciphertext = env
+                    .call_method(
+                        &message,
+                        jni_str!("ciphertext"),
+                        jni_sig!(() -> java.lang.String),
+                        &[],
+                    )?
+                    .l()?;
+                let mac = env
+                    .call_method(
+                        &message,
+                        jni_str!("mac"),
+                        jni_sig!(() -> java.lang.String),
+                        &[],
+                    )?
+                    .l()?;
+                let ephemeral_key = env
+                    .call_method(
+                        &message,
+                        jni_str!("ephemeralKey"),
+                        jni_sig!(() -> java.lang.String),
+                        &[],
+                    )?
+                    .l()?;
+                assert!(!ciphertext.is_null());
+                assert!(!mac.is_null());
+                assert!(!ephemeral_key.is_null());
+
+                call(env, |unowned, class| native_free(unowned, class, ptr));
 
                 let invalid = env.new_string("invalid")?;
-                let ptr = call(env, |unowned, class| {
+                let invalid_ptr = call(env, |unowned, class| {
                     native_from_key(unowned, class, invalid)
                 });
-                assert_eq!(ptr, 0, "An invalid key should produce no PkEncryption");
-                assert!(env.exception_check(), "An invalid key should throw");
+                assert_eq!(invalid_ptr, 0);
+                assert!(env.exception_check());
+                env.exception_clear();
+
+                let wrong_size = env.new_string(vodozemac::base64_encode([1u8; 31]))?;
+                let wrong_size_ptr = call(env, |unowned, class| {
+                    native_from_key(unowned, class, wrong_size)
+                });
+                assert_eq!(wrong_size_ptr, 0);
+                assert!(env.exception_check());
                 env.exception_clear();
             }
             Ok(())
