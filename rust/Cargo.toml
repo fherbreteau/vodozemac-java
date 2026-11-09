@@ -9,10 +9,10 @@ name = "vodozemac_java"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-vodozemac = {version = "0.11.1", features = [ "libolm-compat", "experimental-session-config", "insecure-pk-encryption" ]}
+vodozemac = {version = "0.11.2", features = [ "libolm-compat", "experimental-session-config", "insecure-pk-encryption" ]}
 jni = "0.22.4"
-serde = { version = "1", features = ["derive"] }
-serde_json = "1.0.141"
+serde = { version = "1.0.229", features = ["derive"] }
+serde_json = "1.0.154"
 
 [dev-dependencies]
 jni = { version = "0.22.4", features = ["invocation"] }
