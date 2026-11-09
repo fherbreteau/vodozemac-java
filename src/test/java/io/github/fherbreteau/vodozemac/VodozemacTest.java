@@ -31,7 +31,7 @@ class VodozemacTest {
         String version = Vodozemac.version();
 
         assertThat(version).isNotNull()
-            .isEqualTo("0.11.1");
+            .isEqualTo("0.11.2");
     }
 
     @Test

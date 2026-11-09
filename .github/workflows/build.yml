@@ -17,7 +17,7 @@ on:
         required: false
 
 env:
-  RUST_VERSION: "1.88.0"
+  RUST_VERSION: "1.99.1"
   JAVA_VERSION: "25"
 
 concurrency:
